@@ -1,0 +1,523 @@
+// Hand-extracted from NIST.FIPS.180-4-August-2015.md
+module SHA where
+
+ROTL (n : [8]) x = x <<< n
+
+ROTLDef n x = ~(n < width x) || (ROTL n x == ((x << n) || (x >> ((width x) - n))))
+property ROTLDefs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) = 
+  ROTLDef n x8  && 
+  ROTLDef n x16 &&
+  ROTLDef n x32 && 
+  ROTLDef n x64
+
+ROTR (n : [8]) x = x >>> n
+
+ROTRDef n x = ~(n < width x) || (ROTR n x == ((x >> n) || (x << ((width x) - n))))
+property ROTRDefs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) = 
+  ROTRDef n x8 && ROTRDef n x16 && ROTRDef n x32 && ROTRDef n x64
+
+SHR : {a, b, c} (fin b) => [b] -> [a]c -> [a]c
+SHR n x = x >> n
+
+ROTLREquiv n x = ROTL n x == ROTR (width x - n) x
+property ROTLREquivs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) =
+  ROTLREquiv n x8 && ROTLREquiv n x16 && ROTLREquiv n x32 && ROTLREquiv n x64
+
+ROTRLEquiv n x = ROTR n x == ROTL (width x - n) x
+property ROTRLEquivs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) =
+  ROTRLEquiv n x8 && ROTRLEquiv n x16 && ROTRLEquiv n x32 && ROTRLEquiv n x64
+
+Ch : {a} a -> a -> a -> a
+Ch x y z = (x && y) ^ (~x && z)
+
+Parity : {a} a -> a -> a -> a
+Parity x y z = x ^ y ^ z
+
+Maj : {a} a -> a -> a -> a
+Maj x y z = (x && y) ^ (x && z) ^ (y && z)
+
+Ch' : {a} a -> a -> a -> a
+Ch' x y z = (x && y) || (~x && z)
+
+Maj' : {a} a -> a -> a -> a
+Maj' x y z = (x && y) || (x && z) || (y && z)
+
+ChXorOrEquiv x y z = Ch x y z == Ch' x y z
+property ChXorOrEquiv32 (x : [32]) (y : [32]) (z : [32]) = ChXorOrEquiv x y z
+
+f : [8] -> [32] -> [32] -> [32] -> [32]
+f t = if t <= 19 then Ch
+      else if t <= 39 then Parity
+      else if t <= 59 then Maj
+      else if t <= 79 then Parity
+      else error "f: t is out of range"
+
+S_0_256 x = ROTR  2 x ^ ROTR 13 x ^ ROTR 22 x
+S_1_256 x = ROTR  6 x ^ ROTR 11 x ^ ROTR 25 x
+s_0_256 x = ROTR  7 x ^ ROTR 18 x ^ SHR   3 x
+s_1_256 x = ROTR 17 x ^ ROTR 19 x ^ SHR  10 x
+
+property ChXorOrEquiv64 (x : [64]) (y : [64]) (z : [64]) = ChXorOrEquiv x y z
+
+S_0_512 x = ROTR 28 x ^ ROTR 34 x ^ ROTR 39 x
+S_1_512 x = ROTR 14 x ^ ROTR 18 x ^ ROTR 41 x
+s_0_512 x = ROTR  1 x ^ ROTR  8 x ^ SHR   7 x
+s_1_512 x = ROTR 19 x ^ ROTR 61 x ^ SHR   6 x
+
+sha1_K : [80][32]
+sha1_K = [ 0x5a827999 | t <- [ 0 .. 19] ] #
+         [ 0x6ed9eba1 | t <- [20 .. 39] ] #
+         [ 0x8f1bbcdc | t <- [40 .. 59] ] #
+         [ 0xca62c1d6 | t <- [60 .. 79] ]
+
+K32 : [64][32]
+K32 = [ 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2  ]
+
+K64 : [80][64]
+K64 = [ 0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
+        0x3956c25bf348b538, 0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118,
+        0xd807aa98a3030242, 0x12835b0145706fbe, 0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2,
+        0x72be5d74f27b896f, 0x80deb1fe3b1696b1, 0x9bdc06a725c71235, 0xc19bf174cf692694,
+        0xe49b69c19ef14ad2, 0xefbe4786384f25e3, 0x0fc19dc68b8cd5b5, 0x240ca1cc77ac9c65,
+        0x2de92c6f592b0275, 0x4a7484aa6ea6e483, 0x5cb0a9dcbd41fbd4, 0x76f988da831153b5,
+        0x983e5152ee66dfab, 0xa831c66d2db43210, 0xb00327c898fb213f, 0xbf597fc7beef0ee4,
+        0xc6e00bf33da88fc2, 0xd5a79147930aa725, 0x06ca6351e003826f, 0x142929670a0e6e70,
+        0x27b70a8546d22ffc, 0x2e1b21385c26c926, 0x4d2c6dfc5ac42aed, 0x53380d139d95b3df,
+        0x650a73548baf63de, 0x766a0abb3c77b2a8, 0x81c2c92e47edaee6, 0x92722c851482353b,
+        0xa2bfe8a14cf10364, 0xa81a664bbc423001, 0xc24b8b70d0f89791, 0xc76c51a30654be30,
+        0xd192e819d6ef5218, 0xd69906245565a910, 0xf40e35855771202a, 0x106aa07032bbd1b8,
+        0x19a4c116b8d2d0c8, 0x1e376c085141ab53, 0x2748774cdf8eeb99, 0x34b0bcb5e19b48a8,
+        0x391c0cb3c5c95a63, 0x4ed8aa4ae3418acb, 0x5b9cca4f7763e373, 0x682e6ff3d6b2b8a3,
+        0x748f82ee5defb2fc, 0x78a5636f43172f60, 0x84c87814a1f0ab72, 0x8cc702081a6439ec,
+        0x90befffa23631e28, 0xa4506cebde82bde9, 0xbef9a3f7b2c67915, 0xc67178f2e372532b,
+        0xca273eceea26619c, 0xd186b8c721c0c207, 0xeada7dd6cde0eb1e, 0xf57d4f7fee6ed178,
+        0x06f067aa72176fba, 0x0a637dc5a2c898a6, 0x113f9804bef90dae, 0x1b710b35131c471b,
+        0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,
+        0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817  ]
+
+pad512 : {msgLen}
+          (fin msgLen,
+           64 >= width msgLen) => 
+          [msgLen] -> [msgLen + 65 + (512 - (msgLen + 65) % 512) % 512]
+pad512 msg = msg # [True] # (zero:[padding]) # (`msgLen:[64])
+  where type contentLen = msgLen + 65
+        type padding    = (512 - contentLen % 512) % 512 
+
+pad1024 : {msgLen}
+          (fin msgLen,
+           128 >= width msgLen) => 
+          [msgLen] -> [msgLen + 129 + (1024 - (msgLen + 129) % 1024) % 1024]
+pad1024 msg = msg # [True] # (zero:[padding]) # (`msgLen:[128])
+  where type contentLen = msgLen + 129
+        type padding    = (1024 - contentLen % 1024) % 1024 
+
+parse512 : {blocks} [512 * blocks] -> [blocks][512]
+parse512 = split
+
+padparse512 : {msgLen,blocks} 
+              ( fin msgLen, 
+                64 >= width msgLen, 
+                blocks == (msgLen + 65 + 511) / 512) => 
+              [msgLen] -> [blocks][512]
+padparse512 M = parse512 (pad512 M) 
+
+parse1024 : {blocks} [1024 * blocks] -> [blocks][1024]
+parse1024 = split
+
+padparse1024 : {msgLen,blocks} 
+               ( fin msgLen, 
+                 128 >= width msgLen, 
+                 blocks == (msgLen + 129 + 1023) / 1024 ) => 
+               [msgLen] -> [blocks][1024]
+padparse1024 M = parse1024 (pad1024 M)
+
+sha1_H0 : [5][32]
+sha1_H0 = [ 0x67452301, 
+            0xefcdab89,
+            0x98badcfe,
+            0x10325476,
+            0xc3d2e1f0  ]
+
+sha224_H0 : [8][32]
+sha224_H0 = [ 0xc1059ed8,
+              0x367cd507,
+              0x3070dd17,
+              0xf70e5939,
+              0xffc00b31,
+              0x68581511,
+              0x64f98fa7,
+              0xbefa4fa4  ]
+
+sha256_H0 : [8][32]
+sha256_H0 = [ 0x6a09e667,
+              0xbb67ae85,
+              0x3c6ef372,
+              0xa54ff53a,
+              0x510e527f,
+              0x9b05688c,
+              0x1f83d9ab,
+              0x5be0cd19  ]
+
+sha384_H0 : [8][64]
+sha384_H0 = [ 0xcbbb9d5dc1059ed8,
+              0x629a292a367cd507,
+              0x9159015a3070dd17,
+              0x152fecd8f70e5939,
+              0x67332667ffc00b31,
+              0x8eb44a8768581511,
+              0xdb0c2e0d64f98fa7,
+              0x47b5481dbefa4fa4  ]
+
+sha512_H0 : [8][64]
+sha512_H0 = [ 0x6a09e667f3bcc908,
+              0xbb67ae8584caa73b,
+              0x3c6ef372fe94f82b,
+              0xa54ff53a5f1d36f1,
+              0x510e527fade682d1,
+              0x9b05688c2b3e6c1f,
+              0x1f83d9abfb41bd6b,
+              0x5be0cd19137e2179  ]
+
+sha512t_H_internal : [8][64]
+sha512t_H_internal = [ h ^ 0xa5a5a5a5a5a5a5a5 | h <- sha512_H0]
+
+sha512_224_H0 : [8][64]
+sha512_224_H0 = [ 0x8C3D37C819544DA2,
+                  0x73E1996689DCD4D6,
+                  0x1DFAB7AE32FF9C82,
+                  0x679DD514582F9FCF,
+                  0x0F6D2B697BD44DA8,
+                  0x77E36F7304C48942,
+                  0x3F9D85A86A1D36C8,
+                  0x1112E6AD91D692A1  ]
+
+property sha512_224_H0s_equiv = 
+  sha512_224_H0 == split (sha512t "SHA-512/224" sha512t_H_internal)
+
+sha512_256_H0 : [8][64]
+sha512_256_H0 = [ 0x22312194FC2BF72C,
+                  0x9F555FA3C84C64C2,
+                  0x2393B86B6F53B151,
+                  0x963877195940EABD,
+                  0x96283EE2A88EFFE3,
+                  0xBE5E1E2553863992,
+                  0x2B0199FC2C85B8AA,
+                  0x0EB72DDC81C52CA2  ]
+
+property sha512_256_H0s_equiv = 
+  sha512_256_H0 == split (sha512t "SHA-512/256" sha512t_H_internal)
+
+sha1_W : [16][32] -> [80][32]
+sha1_W Mblock = W
+  where W = Mblock # [ ROTL 1 (W@(t - 3) ^ W@(t - 8) ^ W@(t - 14) ^ W@(t-16)) | t <- [16 .. 79] ]
+
+sha1_T : [80][32] -> [8] -> [5][32] -> [32]
+sha1_T W t abcde = (ROTL 5 a) + (f t b c d) + e + (sha1_K @ t) + (W @ t)
+  where [a, b, c, d, e] = abcde
+
+sha1_helper : [16][32] -> [80][32] -> [8] -> [6][32] -> [6][32]
+sha1_helper Mblock W t Tabcde = [ T', a', b', c', d', e' ]
+  where [T, a, b, c, d, e] = Tabcde
+        T' = sha1_T W t [a', b', c', d', e']
+        e' = d
+        d' = c
+        c' = ROTL 30 b
+        b' = a
+        a' = T
+
+sha1_block : [16][32] -> [5][32] -> [5][32]
+sha1_block Mblock abcde = drop`{1}(Tabcdes ! 0)
+  where W       = sha1_W Mblock
+        sha1_h  = sha1_helper Mblock W
+        Tabcde0 = [sha1_T W 0 abcde] # abcde
+        Tabcdes = [ Tabcde0 ] # [ sha1_h (t+1) (Tabcdes @ t) | t <- [ 0 .. 79 ] ]
+
+// Another (cleaner) specification of sha1_block processing
+sha1_block' : [16][32] -> [5][32] -> [5][32]
+sha1_block' Mblock [a0, b0, c0, d0, e0] = 
+    [as@80, bs@80, cs@80, ds@80, es@80]
+  where
+    W  = sha1_W Mblock
+    Ts = [ sha1_T W t [a, b, c, d, e]
+           | a <- as | b <- bs | c <- cs | d <- ds | e <- es
+           | t <- [0..79]
+           ]
+    es = [e0] # ds
+    ds = [d0] # cs
+    cs = [c0] # [ ROTL 30 b | b <- bs ]
+    bs = [b0] # as
+    as = [a0] # Ts
+
+property sha1_blocks_equiv Mblock H =
+  sha1_block Mblock H == sha1_block' Mblock H 
+
+sha1_H : [5][32] -> [5][32] -> [5][32]
+sha1_H H abcde = [H@0 + abcde@0, H@1 + abcde@1, H@2 + abcde@2, H@3 + abcde@3, H@4 + abcde@4 ]
+
+sha1_Hblock : [5][32] -> [512] -> [5][32]
+sha1_Hblock H Mblock = sha1_H H (sha1_block (split Mblock) H)
+
+sha1_Hblock' : [5][32] -> [512] -> [5][32]
+sha1_Hblock' H Mblock = sha1_H H (sha1_block' (split Mblock) H)
+
+property sha1_Hblocks_equiv Mblock H =
+  sha1_Hblock Mblock H == sha1_Hblock' Mblock H 
+
+sha1parsed : {blocks} (fin blocks) => [blocks][512] -> [160]
+sha1parsed Mparsed = join (Hs ! 0)
+  where Hs = [sha1_H0] # [ sha1_Hblock H Mblock | H <- Hs | Mblock <- Mparsed]
+
+sha1 : {n} (width (8*n) <= 64) => [n][8] -> [160]
+sha1 M = sha1parsed (padparse512 (join M))
+
+sha1_T_alt : [32] -> [8] -> [5][32] -> [32]
+sha1_T_alt Ws t abcde = (ROTL 5 a) + (f t b c d) + e + (sha1_K @ t) + Ws
+  where [a, b, c, d, e] = abcde
+
+sha1_helper_alt : [16][32] -> [8] -> [6][32] -> ([16][32], [6][32])
+sha1_helper_alt W t Tabcde = (W', [ T', a', b', c', d', e' ])
+  where [T, a, b, c, d, e] = Tabcde
+        MASK = 0x0000000f
+        s    = ((zero:[24]) # t) && MASK
+        Ws   = if t >= 16 then 
+                 ROTL 1 (W @ ((s + 13) && MASK) ^
+                         W @ ((s +  8) && MASK) ^
+                         W @ ((s +  2) && MASK) ^
+                         W @ s)
+               else W @ t
+        W'   = [ if s == i then Ws else W @ i | i <- [ 0 .. 15 ] ]
+        T'   = sha1_T_alt Ws t [a', b', c', d', e']
+        e'   = d
+        d'   = c
+        c'   = ROTL 30 b
+        b'   = a
+        a'   = T
+
+sha1_block_alt : [16][32] -> [5][32] -> [5][32]
+sha1_block_alt Mblock abcde = drop`{1} (WTabcdes ! 0).1
+  where W        = Mblock
+        Tabcde0  = [sha1_T_alt (W @ 0) 0 abcde] # abcde
+        WTabcdes = [ (W, Tabcde0) ] # 
+                   [ sha1_helper_alt Wt (t+1) Tabcde
+                       where (Wt, Tabcde) = WTabcdes @ t 
+                     | t <- [ 0 .. 79 ] ]
+
+property sha1_block_alt_equiv Mblock H =
+  sha1_block Mblock H == sha1_block_alt Mblock H
+
+sha1_Hblock_alt : [5][32] -> [512] -> [5][32]
+sha1_Hblock_alt H Mblock = sha1_H H (sha1_block_alt (split Mblock) H)
+
+property sha1_Hblock_alt_equiv Mblock H =
+  sha1_Hblock Mblock H == sha1_Hblock_alt Mblock H
+
+sha1parsed_alt : {blocks} (fin blocks) => [blocks][512] -> [160]
+sha1parsed_alt Mparsed = join (Hs ! 0)
+  where Hs = [sha1_H0] # [ sha1_Hblock_alt H Mblock | H <- Hs | Mblock <- Mparsed]
+
+sha1_alt : {n} (width (8*n) <= 64) => [n][8] -> [160]
+sha1_alt M = sha1parsed_alt (padparse512 (join M))
+
+// (Can only check, instead of prove)
+property sha1_alt_equiv M = sha1 M == sha1_alt M
+
+sha256_W : [16][32] -> [64][32]
+sha256_W Mblock = W
+  where W = Mblock # [ s_1_256 (W @ (t -  2)) +
+                                W @ (t -  7)  +
+                       s_0_256 (W @ (t - 15)) +
+                                W @ (t - 16) 
+                       | t <- [ 16 .. 63 ] ]
+
+sha256_T1 : [64][32] -> [8] -> [32] -> [32] -> [32] -> [32] -> [32]
+sha256_T1 W t e f g h = h + (S_1_256 e) + (Ch e f g) + (K32 @ t) + (W @ t)
+
+sha256_T2 : [32] -> [32] -> [32] -> [32]
+sha256_T2 a b c = (S_0_256 a) + (Maj a b c)
+
+sha256_helper : [16][32] -> [64][32] -> [8] -> [10][32] -> [10][32]
+sha256_helper Mblock W t T1T2abcdefgh = [ T1', T2', a', b', c', d', e', f', g', h' ]
+  where [T1, T2, a, b, c, d, e, f, g, h] = T1T2abcdefgh
+        T1' = sha256_T1 W t e' f' g' h'
+        T2' = sha256_T2 a' b' c'
+        h'  = g
+        g'  = f
+        f'  = e
+        e' = d + T1
+        d' = c
+        c' = b
+        b' = a
+        a' = T1 + T2
+
+sha256_block : [16][32] -> [8][32] -> [8][32]
+sha256_block Mblock abcdefgh = drop`{2}(T1T2abcdefghs ! 0)
+  where W             = sha256_W Mblock
+        sha256_h      = sha256_helper Mblock W
+        T1T2abcdefgh0 = [sha256_T1 W 0 e f g h] # [sha256_T2 a b c] # abcdefgh
+          where [a, b, c, d, e, f, g, h] = abcdefgh
+        T1T2abcdefghs = [ T1T2abcdefgh0 ] # 
+                        [ sha256_h (t+1) (T1T2abcdefghs @ t) 
+                          | t <- [ 0 .. 63 ] ]
+
+// Another (cleaner) specification of sha256_block processing
+sha256_block' : [16][32] -> [8][32] -> [8][32]
+sha256_block' Mblock abcdefgh = 
+    [as@64, bs@64, cs@64, ds@64, es@64, fs@64, gs@64, hs@64]
+  where
+    [ a, b, c, d, e, f, g, h ] = abcdefgh 
+    W  = sha256_W Mblock
+    T1 = [ sha256_T1 W t e f g h | h <- hs | e <- es | f <- fs | g <- gs | t <- [ 0 .. 63 ] ]
+    T2 = [ sha256_T2 a b c  | a <- as | b <- bs | c <- cs]
+    hs = [h] # gs
+    gs = [g] # fs
+    fs = [f] # es
+    es = [e] # [d + t1 | d <- ds | t1 <- T1]
+    ds = [d] # cs
+    cs = [c] # bs
+    bs = [b] # as
+    as = [a] # [t1 + t2 | t1 <- T1 | t2 <- T2]
+
+property sha256_blocks_equiv Mblock H =
+  sha256_block Mblock H == sha256_block' Mblock H 
+
+sha256_H : [8][32] -> [8][32] -> [8][32]
+sha256_H H abcdefgh =  [H@0 + abcdefgh@0, H@1 + abcdefgh@1, H@2 + abcdefgh@2, H@3 + abcdefgh@3,
+                        H@4 + abcdefgh@4, H@5 + abcdefgh@5, H@6 + abcdefgh@6, H@7 + abcdefgh@7 ]
+
+sha256_Hblock : [8][32] -> [512] -> [8][32]
+sha256_Hblock H Mblock = sha256_H H (sha256_block (split Mblock) H)
+
+sha256_Hblock' : [8][32] -> [512] -> [8][32]
+sha256_Hblock' H Mblock = sha256_H H (sha256_block' (split Mblock) H)
+
+property sha256_Hblocks_equiv Mblock H =
+  sha256_Hblock Mblock H == sha256_Hblock' Mblock H 
+
+sha256parsed : {blocks} (fin blocks) => [8][32] -> [blocks][512] -> [256]
+sha256parsed H0 Mparsed = join (Hs ! 0)
+  where Hs = [H0] # [ sha256_Hblock H Mblock | H <- Hs | Mblock <- Mparsed]
+
+sha256 : {n} (width (8*n) <= 64) => [n][8] -> [256]
+sha256 M = sha256parsed sha256_H0 (padparse512 (join M))
+
+sha224 : {n} (width (8*n) <= 64) => [n][8] -> [224]
+sha224 M = take`{224} (sha256parsed sha224_H0 (padparse512 (join M)))
+
+sha512_W : [16][64] -> [80][64]
+sha512_W Mblock = W
+  where W = Mblock # [ s_1_512 (W @ (t -  2)) +
+                                W @ (t -  7)  +
+                       s_0_512 (W @ (t - 15)) +
+                                W @ (t - 16) 
+                       | t <- [ 16 .. 79 ] ]
+
+sha512_T1 : [80][64] -> [8] -> [64] -> [64] -> [64] -> [64] -> [64]
+sha512_T1 W t e f g h = h + (S_1_512 e) + (Ch e f g) + (K64 @ t) + (W @ t)
+
+sha512_T2 : [64] -> [64] -> [64] -> [64]
+sha512_T2 a b c = (S_0_512 a) + (Maj a b c)
+
+sha512_helper : [16][64] -> [80][64] -> [8] -> [10][64] -> [10][64]
+sha512_helper Mblock W t T1T2abcdefgh = [ T1', T2', a', b', c', d', e', f', g', h' ]
+  where [T1, T2, a, b, c, d, e, f, g, h] = T1T2abcdefgh
+        T1' = sha512_T1 W t e' f' g' h'
+        T2' = sha512_T2 a' b' c'
+        h'  = g
+        g'  = f
+        f'  = e
+        e' = d + T1
+        d' = c
+        c' = b
+        b' = a
+        a' = T1 + T2
+
+sha512_block : [16][64] -> [8][64] -> [8][64]
+sha512_block Mblock abcdefgh = drop`{2}(T1T2abcdefghs ! 0)
+  where W             = sha512_W Mblock
+        sha512_h      = sha512_helper Mblock W
+        T1T2abcdefgh0 = [sha512_T1 W 0 e f g h] # [sha512_T2 a b c] # abcdefgh
+          where [a, b, c, d, e, f, g, h] = abcdefgh
+        T1T2abcdefghs = [ T1T2abcdefgh0 ] # 
+                        [ sha512_h (t+1) (T1T2abcdefghs @ t) 
+                          | t <- [ 0 .. 79 ] ]
+
+// Another (cleaner) specification of sha256_block processing
+sha512_block' : [16][64] -> [8][64] -> [8][64]
+sha512_block' Mblock abcdefgh = 
+    [as@80, bs@80, cs@80, ds@80, es@80, fs@80, gs@80, hs@80]
+  where
+    [ a, b, c, d, e, f, g, h ] = abcdefgh 
+    W  = sha512_W Mblock
+    T1 = [ sha512_T1 W t e f g h | h <- hs | e <- es | f <- fs | g <- gs | t <- [ 0 .. 79 ] ]
+    T2 = [ sha512_T2 a b c  | a <- as | b <- bs | c <- cs]
+    hs = [h] # gs
+    gs = [g] # fs
+    fs = [f] # es
+    es = [e] # [d + t1 | d <- ds | t1 <- T1]
+    ds = [d] # cs
+    cs = [c] # bs
+    bs = [b] # as
+    as = [a] # [t1 + t2 | t1 <- T1 | t2 <- T2]
+
+property sha512_blocks_equiv Mblock H =
+  sha512_block Mblock H == sha512_block' Mblock H 
+
+sha512_H : [8][64] -> [8][64] -> [8][64]
+sha512_H H abcdefgh = [H@0 + abcdefgh@0, H@1 + abcdefgh@1, H@2 + abcdefgh@2, H@3 + abcdefgh@3,
+                       H@4 + abcdefgh@4, H@5 + abcdefgh@5, H@6 + abcdefgh@6, H@7 + abcdefgh@7 ]
+
+sha512_Hblock : [8][64] -> [1024] -> [8][64]
+sha512_Hblock H Mblock = sha512_H H (sha512_block (split Mblock) H)
+
+sha512_Hblock' : [8][64] -> [1024] -> [8][64]
+sha512_Hblock' H Mblock = sha512_H H (sha512_block' (split Mblock) H)
+
+property sha512_Hblocks_equiv Mblock H =
+  sha512_Hblock Mblock H == sha512_Hblock' Mblock H 
+
+sha512parsed : {blocks} (fin blocks) => [8][64] -> [blocks][1024] -> [512]
+sha512parsed H0 Mparsed = join (Hs ! 0)
+  where Hs = [H0] # [ sha512_Hblock H Mblock | H <- Hs | Mblock <- Mparsed]
+
+sha512t : {n} (width (8*n) <= 64) => [n][8] -> [8][64] -> [512]
+sha512t M IV = sha512parsed IV (padparse1024 (join M))
+
+sha512 : {n} (width (8*n) <= 64) => [n][8] -> [512]
+sha512 M = sha512t M sha512_H0
+
+sha384 : {n} (width (8*n) <= 64) => [n][8] -> [384]
+sha384 M = take`{384} (sha512parsed sha384_H0 (padparse1024 (join M)))
+
+sha512_224 : {n} (width (8*n) <= 64) => [n][8] -> [224]
+sha512_224 M = take`{224} (sha512parsed sha512_224_H0 (padparse1024 (join M)))
+
+sha512_256 : {n} (width (8*n) <= 64) => [n][8] -> [256]
+sha512_256 M = take`{256} (sha512parsed sha512_256_H0 (padparse1024 (join M)))
+
+gen_sha1_Hblock : [5][32] -> [64][8] -> [5][32]
+gen_sha1_Hblock H Mblock = sha1_Hblock H (join Mblock)
+
+gen_sha1_Hblock' : [5][32] -> [64][8] -> [5][32]
+gen_sha1_Hblock' H Mblock = sha1_Hblock' H (join Mblock)
+
+gen_sha1_Hblock_alt : [5][32] -> [64][8] -> [5][32]
+gen_sha1_Hblock_alt H Mblock = sha1_Hblock_alt H (join Mblock)
+
+gen_sha256_Hblock : [8][32] -> [64][8] -> [8][32]
+gen_sha256_Hblock H Mblock = sha256_Hblock H (join Mblock)
+
+gen_sha256_Hblock' : [8][32] -> [64][8] -> [8][32]
+gen_sha256_Hblock' H Mblock = sha256_Hblock' H (join Mblock)
+
+gen_sha512_Hblock : [8][64] -> [128][8] -> [8][64]
+gen_sha512_Hblock H Mblock = sha512_Hblock H (join Mblock)
+
+gen_sha512_Hblock' : [8][64] -> [128][8] -> [8][64]
+gen_sha512_Hblock' H Mblock = sha512_Hblock' H (join Mblock)
