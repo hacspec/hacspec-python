@@ -63,7 +63,9 @@ def main () :
     expected = bytes([
         0xa8, 0x06, 0x1d, 0xc1, 0x30, 0x51, 0x36, 0xc6,
         0xc2, 0x2b, 0x8b, 0xaf, 0x0c, 0x01, 0x27, 0xa9 ])
+    computed = poly1305_mac(34,msg,k)
     print("expected mac:",expected)
-    print("computed mac:",poly1305_mac(34,msg,k))
-
+    print("computed mac:",computed)
+    assert(computed == expected)
+    
 main()
