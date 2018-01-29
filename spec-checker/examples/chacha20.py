@@ -13,7 +13,7 @@ nonceType = bytes # length: 12
 
 def line(a: index, b: index, d: index, s: shiftval, m: state) -> state:
     r = m[:]
-    r[a] = (r[a] + r[b]) 
+    r[a] = (r[a] + r[b])
     r[d] = (r[d] ^ r[a]).rotate_left(s)
     return r
 
@@ -75,9 +75,10 @@ def main(x: int):
     d = uint32(0x01234567)
     my_state = [a, b, c, d]
     my_state = quarter_round(0, 1, 2, 3, my_state)
-    exp_state = [0xea2a9254, 0xcb1cf8ce, 0x4581472e, 0x5881c4bb]
+    exp_state = [uint32(0xea2a92f4), uint32(0xcb1cf8ce), uint32(0x4581472e), uint32(0x5881c4bb)]
     print("computed qround = ",my_state[0:4])
     print("expected qround = ",exp_state)
+    assert(my_state == exp_state)
 
     # Test vector from RFX 7539 section 2.3.2
     key = bytes([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f])
@@ -85,13 +86,14 @@ def main(x: int):
     counter = uint32(1)
     result = chacha20(key, counter, nonce)
     expected_state = [
-        0xe4e7f110, 0x15593bd1, 0x1fdd0f50, 0xc47120a3,
-        0xc7f4d1c7, 0x0368c033, 0x9aaa2204, 0x4e6cd4c3,
-        0x466482d2, 0x09aa9f07, 0x05d7c214, 0xa2028bd9,
-        0xd19c12b5, 0xb94e16de, 0xe883d0cb, 0x4e3c50a2
+        uint32(0xe4e7f110), uint32(0x15593bd1), uint32(0x1fdd0f50), uint32(0xc47120a3),
+        uint32(0xc7f4d1c7), uint32(0x0368c033), uint32(0x9aaa2204), uint32(0x4e6cd4c3),
+        uint32(0x466482d2), uint32(0x09aa9f07), uint32(0x05d7c214), uint32(0xa2028bd9),
+        uint32(0xd19c12b5), uint32(0xb94e16de), uint32(0xe883d0cb), uint32(0x4e3c50a2)
     ]
     print("expected state:",expected_state)
     print("computed state:",result)
+    assert(result == expected_state)
 
 if __name__ == "__main__":
     main(0)
