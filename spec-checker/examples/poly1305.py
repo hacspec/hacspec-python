@@ -15,12 +15,12 @@ def fmul(a:int,b:int) -> int:
     return (a * b) % p130m5
 
 def encode(len:int, word:bytes) -> int:
-    welem = int.from_bytes(word, byteorder='little')
+    welem = uint128.from_bytes_le(word).to_int()
     lelem = 2 ** (8 * len)
     return fadd(lelem,welem)
 
 def encode_r(r:bytes) -> int:
-    relem = int.from_bytes(r, byteorder='little')
+    relem = uint128.from_bytes_le(r).to_int()
     clamp = 0x0ffffffc0ffffffc0ffffffc0fffffff
     return  relem & clamp
 
@@ -41,10 +41,10 @@ def poly1305_mac(len:int,text:bytes,k:bytes) -> bytes :
     r = k[0:blocksize]
     s = k[blocksize:2*blocksize]
     relem = encode_r(r)
-    selem = int.from_bytes(s, byteorder='little')
+    selem = uint128.from_bytes_le(s).to_int()
     a = poly(len,text,relem)
-    n = (a + selem) & 0xffffffffffffffffffffffffffffffff
-    return n.to_bytes(blocksize,byteorder='little')
+    n = uint128(a + selem) 
+    return n.to_bytes_le()
 
 
 def main () :
