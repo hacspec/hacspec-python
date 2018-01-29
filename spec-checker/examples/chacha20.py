@@ -4,7 +4,6 @@
 
 from speclib import *
 from typing import List
-from ctr import counter_mode
 
 index = int          # range: (0,16)
 shiftval = int       # range: (0,32)
@@ -71,14 +70,20 @@ def chacha20_block(k: keyType, counter:int, nonce: nonceType) -> bytes:
     block = bytes([x for i in st for x in i.to_bytes_le()])
     return block
 
-def chacha20_encrypt(key: keyType, counter: uint32, nonce: nonceType, len:int, msg:bytes) -> bytes:
-    return counter_mode(64,chacha20_block,key,counter.to_int(),nonce,len,msg)
+from ctr import counter_mode
 
-def chacha20_decrypt(key: keyType, counter: uint32, nonce: nonceType, len:int, msg:bytes) -> bytes:
-    return counter_mode(64,chacha20_block,key,counter.to_int(),nonce,len,msg)
+def chacha20_encrypt(key: keyType, counter: int, nonce: nonceType,
+                     len:int, msg:bytes) -> bytes:
+    return counter_mode(64,chacha20_block,
+                        key,counter,nonce,len,msg)
+
+def chacha20_decrypt(key: keyType, counter: int, nonce: nonceType,
+                     len:int, msg:bytes) -> bytes:
+    return counter_mode(64,chacha20_block,
+                        key,counter,nonce,len,msg)
 
 # mypy only checks functions that have types. So add an argument :)
-def main(x: int):
+def main(x: int) -> None:
     # Quarter round test vectors from RFC 7539
     a = uint32(0x11111111)
     b = uint32(0x01020304)
@@ -127,7 +132,6 @@ def main(x: int):
                  0x1b, 0x1c, 0x1d, 0x1e, 0x1f])
     nonce = bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4a,
                    0x00, 0x00, 0x00, 0x00])
-    counter = uint32(1)
     expected = bytes([0x6e, 0x2e, 0x35, 0x9a, 0x25, 0x68, 0xf9, 0x80,
                       0x41, 0xba, 0x07, 0x28, 0xdd, 0x0d, 0x69, 0x81,
                       0xe9, 0x7e, 0x7a, 0xec, 0x1d, 0x43, 0x60, 0xc2,
@@ -143,7 +147,7 @@ def main(x: int):
                       0x5a, 0xf9, 0x0b, 0xbf, 0x74, 0xa3, 0x5b, 0xe6,
                       0xb4, 0x0b, 0x8e, 0xed, 0xf2, 0x78, 0x5e, 0x42,
                       0x87, 0x4d])
-    computed = chacha20_encrypt(key,counter,nonce,114,plaintext)
+    computed = chacha20_encrypt(key,1,nonce,114,plaintext)
     print("expected ciphertext:",expected)
     print("computed ciphertext:",computed)
     assert(computed == expected)
