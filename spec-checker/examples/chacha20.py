@@ -5,17 +5,17 @@
 from speclib import *
 from typing import List
 
+index = int          # range: (0,16)
+shiftval = int       # range: (0,32)
 state = List[uint32] # length : 32
-index = int
-shiftval = int
-keyType = bytes # length: 32
-nonceType = bytes # length: 12
+keyType = bytes      # length: 32
+nonceType = bytes    # length: 12
 
 def line(a: index, b: index, d: index, s: shiftval, m: state) -> state:
-    r = m[:]
-    r[a] = (r[a] + r[b])
-    r[d] = (r[d] ^ r[a]).rotate_left(s)
-    return r
+    m = m.copy()
+    m[a] = (m[a] + m[b])
+    m[d] = (m[d] ^ m[a]).rotate_left(s)
+    return m
 
 def quarter_round(a: index, b: index, c:index, d: index, m: state) -> state :
     m = line(a, b, d, 16, m)
@@ -41,11 +41,9 @@ constants = [uint32(0x61707865), uint32(0x3320646e),
              uint32(0x79622d32), uint32(0x6b206574)]
 
 def chacha20(k: keyType, counter: uint32, nonce: nonceType) -> state:
-    my_state = [
-        constants[0],
-        constants[1],
-        constants[2],
-        constants[3],
+    st = [uint32(0)] * 15
+    st[0:3] = constants
+    st[4:12] = [
         uint32.from_bytes_le(k[0:4]),
         uint32.from_bytes_le(k[4:8]),
         uint32.from_bytes_le(k[8:12]),
@@ -53,18 +51,19 @@ def chacha20(k: keyType, counter: uint32, nonce: nonceType) -> state:
         uint32.from_bytes_le(k[16:20]),
         uint32.from_bytes_le(k[20:24]),
         uint32.from_bytes_le(k[24:28]),
-        uint32.from_bytes_le(k[28:32]),
-        counter,
+        uint32.from_bytes_le(k[28:32]) ]
+    st[12] = counter
+    st[13:16] = [
         uint32.from_bytes_le(nonce[0:4]),
         uint32.from_bytes_le(nonce[4:8]),
         uint32.from_bytes_le(nonce[8:12]),
     ]
-    working_state = my_state[:]
+    working_state = st.copy()
     for x in range(1,11):
         working_state = inner_block(working_state)
     for i in range(16):
-        my_state[i] += working_state[i]
-    return my_state
+        st[i] += working_state[i]
+    return st
 
 # mypy only checks functions that have types. So add an argument :)
 def main(x: int):
