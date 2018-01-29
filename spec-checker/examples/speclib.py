@@ -1,4 +1,4 @@
-from typing import Any, NewType
+from typing import Any, NewType, List
 
 nat = int
 
@@ -132,3 +132,36 @@ class uint128:
         return uint128(int.from_bytes(n,byteorder='little'))
     def to_bytes_le(self) -> bytes:
         return self.v.to_bytes(16,byteorder='little')
+
+# Prime Fields
+class felem:   
+    def __init__(self,x:int,p:int) -> None:
+        if x < 0:
+            raise Exception("cannot convert negative integer to uint32")
+        else:
+            self.p = p
+            self.v = x % p
+    def __str__(self) -> str:
+        return hex(self.v)
+    def __repr__(self) -> str:
+        return hex(self.v)
+    def __add__(self,other:'felem') -> 'felem':
+        if other.p == self.p:
+            return felem(self.v + other.v,self.p)
+        else:
+            raise Exception("cannot add elements from different fields")
+    def __mul__(self,other:'felem') -> 'felem':
+        if other.p == self.p:
+            return felem(self.v * other.v,self.p)
+        else:
+            raise Exception("cannot multiply elements from different fields")
+    def to_int(self) -> int:
+        return self.v
+
+def split_blocks(blocksize:int,len:int,msg:bytes) -> List[bytes]:
+    return [msg[x:x+blocksize] for x in range(0,len,blocksize)]
+
+def concat_blocks(blocks:List[bytes]) -> bytes:
+    concat = [b for block in blocks for b in block]
+    return bytes(concat)
+
