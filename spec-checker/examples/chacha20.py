@@ -8,7 +8,7 @@ state = List[int]
 keyType = List[int] # length: 32
 nonceType = List[int] # length: 12
 
-def rotate(x: int, n: int):
+def rotate(x: int, n: int) -> int:
     x &= 0xffffffff
     return ((x << n) | (x >> (32 - n))) & 0xffffffff
 
