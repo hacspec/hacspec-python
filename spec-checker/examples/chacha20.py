@@ -4,19 +4,20 @@
 
 from typing import List
 
-state = List[int]
-keyType = List[int] # length: 32
-nonceType = List[int] # length: 12
+Uint32 = int # length: 32
+state = List[Uint32]
+keyType = List[Uint32] # length: 32
+nonceType = List[Uint32] # length: 12
 
-def rotate(x: int, n: int) -> int:
+def rotate(x: Uint32, n: Uint32) -> Uint32:
     x &= 0xffffffff
     return ((x << n) | (x >> (32 - n))) & 0xffffffff
 
-def line(a: int, b: int, d: int, s: int, m: state):
+def line(a: Uint32, b: Uint32, d: Uint32, s: Uint32, m: state):
     m[a] = (m[a] + m[b]) % (2**32)
     m[d] = rotate(m[d] ^ m[a], s)
 
-def quarter_round(a: int, b: int, c:int, d: int, m: state):
+def quarter_round(a: Uint32, b: Uint32, c:Uint32, d: Uint32, m: state):
     line(a, b, d, 16, m)
     line(c, d, b, 12, m)
     line(a, b, d,  8, m)
@@ -34,7 +35,7 @@ def inner_block(m: state):
     quarter_round(3, 4,  9, 14, m)
 
 
-def chacha20(k: keyType, counter: int, nonce: nonceType) -> state:
+def chacha20(k: keyType, counter: Uint32, nonce: nonceType) -> state:
     my_state: state = [
         0x61707865, 0x3320646e, 0x79622d32, 0x6b206574,
         k[0], k[1], k[2], k[3], k[4], k[5], k[6], k[7],
@@ -47,12 +48,13 @@ def chacha20(k: keyType, counter: int, nonce: nonceType) -> state:
         my_state[i] = (my_state[i] + working_state[i]) % (2**32)
     return my_state
 
-def main():
+# mypy only checks functions that have types. So add an argument :)
+def main(x: int):
     # Quarter round test vectors from RFC 7539
-    a: int = 0x11111111
-    b: int = 0x01020304
-    c: int = 0x9b8d6f43
-    d: int = 0x01234567
+    a: Uint32 = 0x11111111
+    b: Uint32 = 0x01020304
+    c: Uint32 = 0x9b8d6f43
+    d: Uint32 = 0x01234567
     my_state: state = [a, b, c, d]
     quarter_round(0, 1, 2, 3, my_state)
     assert(my_state[0] == 0xea2a92f4)
@@ -63,7 +65,7 @@ def main():
     # Test vector from RFX 7539 section 2.3.2
     key: keyType = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c,
                     0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c]
-    counter: int = 1
+    counter: Uint32 = 1
     nonce: nonceType = [0x09000000, 0x4a000000, 0x00000000]
     result = chacha20(key, counter, nonce)
     expected_state: state = [
@@ -75,4 +77,4 @@ def main():
     assert(result == expected_state)
 
 if __name__ == "__main__":
-    main()
+    main(0)
