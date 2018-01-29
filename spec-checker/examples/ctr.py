@@ -4,20 +4,20 @@ from functools import reduce
 def separate_blocks(blocksize:int,len:int,msg:bytes) -> List[bytes]:
     return [msg[x:x+blocksize] for x in range(0,len,blocksize)]
 
-def concat_blocks(blocks:Iterator[bytes]) -> bytes:
+def concat_blocks(blocks:List[bytes]) -> bytes:
     concat = [b for block in blocks for b in block]
     return bytes(concat)
 
 def block_encrypt(block_cipher:Callable[[bytes,int,bytes],bytes],
                   key:bytes,counter:int,nonce:bytes,len:int,msg:bytes) -> bytes:
     keyblock = block_cipher(key,counter,nonce)
-    cipherblock = map(lambda x,y: x ^ y,keyblock,msg)
+    cipherblock = [x ^ y for (x,y) in zip(keyblock,msg)]
     return bytes(cipherblock)
 
 def counter_mode(blocksize:int,block_cipher:Callable[[bytes,int,bytes],bytes],
                  key:bytes,counter:int,nonce:bytes,len:int,msg:bytes) -> bytes :
     msg_blocks = separate_blocks(blocksize,len,msg)
-    cipherblocks = map(lambda x: block_encrypt(block_cipher,key,counter+x[0],nonce,64,x[1]), enumerate(msg_blocks))
+    cipherblocks = [block_encrypt(block_cipher,key,counter+i,nonce,64,b) for (i,b) in enumerate(msg_blocks)]
     return concat_blocks(cipherblocks)
                                                
 def counter_mode_iter(blocksize:int,block_cipher:Callable[[bytes,int,bytes],bytes],
@@ -41,7 +41,7 @@ def mapi_blocks(blocksize:int,
                 func:Callable[[Tuple[int,bytes]],bytes],
                 len:int,msg:bytes) -> bytes:
     msg_blocks = separate_blocks(blocksize,len,msg)
-    map_blocks = map(func, enumerate(msg_blocks))
+    map_blocks = [func(x) for x in enumerate(msg_blocks)]
     return concat_blocks(map_blocks)
 
 def reduce_blocks(blocksize:int, default: bytes,
