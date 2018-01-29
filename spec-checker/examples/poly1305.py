@@ -3,6 +3,8 @@
 # To typecheck this file: mypy poly1305.py
 # To run this file: python3 poly1305.py
 
+from speclib import *
+
 p130m5 = (2 ** 130) - 5 #type: int
 blocksize = 16
 
@@ -63,5 +65,5 @@ def main () :
         0xc2, 0x2b, 0x8b, 0xaf, 0x0c, 0x01, 0x27, 0xa9 ])
     print("expected mac:",expected)
     print("computed mac:",poly1305_mac(34,msg,k))
-        
+
 main()
