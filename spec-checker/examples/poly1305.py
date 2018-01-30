@@ -56,7 +56,7 @@ def poly1305_mac(text:bytes,k:bytes) -> bytes :
     return uint128.to_bytes_le(n)
 
 
-def main (x: int) :
+def main (x: int) -> None :
     # RFC 7539 Test Vectors
     msg = bytes([
         0x43, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x67, 0x72,
