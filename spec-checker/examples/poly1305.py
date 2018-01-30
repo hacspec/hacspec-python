@@ -6,34 +6,32 @@
 # To run this file: python3 poly1305.py
 
 from speclib import *
-from typing import List
+from typing import List, NewType
 
 p130m5 = (2 ** 130) - 5 # type: int
-blocksize = 16
+felem = NewType('felem',int)
 
-def elem(a:int) -> felem:
-    return felem(a,p130m5)
 def fadd(a:felem,b:felem) -> felem:
-    return a + b
+    return felem((a + b) % p130m5)
 def fmul(a:felem,b:felem) -> felem:
-    return a * b
+    return felem((a * b) % p130m5)
 
 def encode(block:bytes) -> felem:
-    welem = elem(uint128.from_bytes_le(block).to_int())
-    lelem = elem(2 ** (8 * len(block)))
+    welem = felem(uint128.int_value(uint128.from_bytes_le(block)))
+    lelem = felem(2 ** (8 * len(block)))
     return fadd(lelem,welem)
 
 def encode_r(r:bytes) -> felem:
     ruint = uint128.from_bytes_le(r)
     ruint &= uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
-    return  elem(ruint.to_int())
+    return  felem(uint128.int_value(ruint))
 
 # There are many ways of writing the polynomial evaluation function
-
 # First version: use a loop to accumulate the result
-def poly(tlen:int,text:bytes,r:felem) -> felem:
-    blocks = split_blocks(blocksize,tlen,text)
-    acc = elem(0)
+blocksize = 16
+def poly(text:bytes,r:felem) -> felem:
+    blocks = split_blocks(text,blocksize)
+    acc = felem(0)
     for i in range(len(blocks)):
         blen = len(blocks[i])
         acc = fmul(fadd(acc,encode(blocks[i])),r)
@@ -42,35 +40,23 @@ def poly(tlen:int,text:bytes,r:felem) -> felem:
 # Second version: use higher-order reduce
 from functools import reduce
 def poly_reduce(tlen:int,text:bytes,r:felem) -> felem:
-    blocks = split_blocks(blocksize,tlen,text)
-    acc = reduce(lambda acc,b: fmul(fadd(acc,encode(b)),r), blocks, elem(0))
+    def accumulate(acc:felem,block:bytes) -> felem:
+        return (fmul(fadd(acc,encode(block)),r))
+    blocks = split_blocks(text,blocksize)
+    acc = reduce(accumulate, blocks, felem(0))
     return acc
 
-# Third version: use local iteration without relying on split_blocks
-def poly_iter(len:int,text:bytes,r:felem) -> felem:
-    acc = elem(0)
-    nblocks = len // blocksize
-    last = len % blocksize
-    for i in range(nblocks):
-        block = text[i*blocksize : i*blocksize + blocksize]
-        acc = fmul(fadd(acc,encode(block)),r)
-    if last > 0:
-        block = text[len-last:len]
-        acc = fmul(fadd(acc,encode(block)),r)
-    return acc
-
-
-def poly1305_mac(len:int,text:bytes,k:bytes) -> bytes :
+def poly1305_mac(text:bytes,k:bytes) -> bytes :
     r = k[0:blocksize]
     s = k[blocksize:2*blocksize]
     relem = encode_r(r)
     selem = uint128.from_bytes_le(s)
-    a = poly(len,text,relem)
-    n = uint128(a.to_int()) + selem
-    return n.to_bytes_le()
+    a = poly(text,relem)
+    n = uint128(a) + selem
+    return uint128.to_bytes_le(n)
 
 
-def main (x: int) :
+def main (x: int) -> None :
     # RFC 7539 Test Vectors
     msg = bytes([
         0x43, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x67, 0x72,
@@ -86,7 +72,7 @@ def main (x: int) :
     expected = bytes([
         0xa8, 0x06, 0x1d, 0xc1, 0x30, 0x51, 0x36, 0xc6,
         0xc2, 0x2b, 0x8b, 0xaf, 0x0c, 0x01, 0x27, 0xa9 ])
-    computed = poly1305_mac(34,msg,k)
+    computed = poly1305_mac(msg,k)
     print("expected mac:",expected)
     print("computed mac:",computed)
     assert(computed == expected)

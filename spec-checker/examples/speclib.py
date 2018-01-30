@@ -1,4 +1,4 @@
-from typing import Any, NewType, List
+from typing import Any, NewType, List, TypeVar
 
 nat = int
 
@@ -33,19 +33,23 @@ class uint32:
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return self.v == other.v
-    def rotate_left(self,other:int) -> 'uint32':
-        return (self << other | self >> (32 - other))
-    def rotate_right(self,other:int) -> 'uint32':
-        return (self >> other | self << (32 - other))
-    def to_int(self) -> int:
-        return self.v
+    
+    @staticmethod
+    def rotate_left(x:'uint32',other:int) -> 'uint32':
+        return (x << other | x >> (32 - other))
+    @staticmethod
+    def rotate_right(x:'uint32',other:int) -> 'uint32':
+        return (x >> other | x << (32 - other))
+    @staticmethod
+    def int_value(x:'uint32') -> int:
+        return x.v
     @staticmethod
     def from_bytes_le(n:bytes) -> 'uint32':
         return uint32(int.from_bytes(n,byteorder='little'))
-    def to_bytes_le(self) -> bytes:
-        return self.v.to_bytes(4,byteorder='little')
-
-
+    @staticmethod
+    def to_bytes_le(x:'uint32') -> bytes:
+        return x.v.to_bytes(4,byteorder='little')
+    
 class uint64:
     def __init__(self,x:int) -> None:
         if x < 0:
@@ -77,17 +81,21 @@ class uint64:
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return self.v == other.v
-    def rotate_left(self,other:int) -> 'uint64':
-        return (self << other | self >> (64 - other))
-    def rotate_right(self,other:int) -> 'uint64':
-        return (self >> other | self << (64 - other))
-    def to_int(self) -> int:
-        return self.v
+    @staticmethod
+    def rotate_left(x:'uint64',other:int) -> 'uint64':
+        return (x << other | x >> (64 - other))
+    @staticmethod
+    def rotate_right(x:'uint64',other:int) -> 'uint64':
+        return (x >> other | x << (64 - other))
+    @staticmethod
+    def int_value(x:'uint64') -> int:
+        return x.v
     @staticmethod
     def from_bytes_le(n:bytes) -> 'uint64':
         return uint64(int.from_bytes(n,byteorder='little'))
-    def to_bytes_le(self) -> bytes:
-        return self.v.to_bytes(8,byteorder='little')
+    @staticmethod
+    def to_bytes_le(x:'uint64') -> bytes:
+        return x.v.to_bytes(8,byteorder='little')
 
 
 class uint128:
@@ -121,47 +129,47 @@ class uint128:
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return self.v == other.v
-    def rotate_left(self,other:int) -> 'uint128':
-        return (self << other | self >> (128 - other))
-    def rotate_right(self,other:int) -> 'uint128':
-        return (self >> other | self << (128 - other))
-    def to_int(self) -> int:
-        return self.v
+
+    @staticmethod
+    def rotate_left(x:'uint128',other:int) -> 'uint128':
+        return (x << other | x >> (128 - other))
+    @staticmethod
+    def rotate_right(x:'uint128',other:int) -> 'uint128':
+        return (x >> other | x << (128 - other))
+    @staticmethod
+    def int_value(x:'uint128') -> int:
+        return x.v
     @staticmethod
     def from_bytes_le(n:bytes) -> 'uint128':
         return uint128(int.from_bytes(n,byteorder='little'))
-    def to_bytes_le(self) -> bytes:
-        return self.v.to_bytes(16,byteorder='little')
+    @staticmethod
+    def to_bytes_le(x:'uint128') -> bytes:
+        return x.v.to_bytes(16,byteorder='little')
 
-# Prime Fields
-class felem:
-    def __init__(self,x:int,p:int) -> None:
-        if x < 0:
-            raise Exception("cannot convert negative integer to uint32")
-        else:
-            self.p = p
-            self.v = x % p
-    def __str__(self) -> str:
-        return hex(self.v)
-    def __repr__(self) -> str:
-        return hex(self.v)
-    def __add__(self,other:'felem') -> 'felem':
-        if other.p == self.p:
-            return felem(self.v + other.v,self.p)
-        else:
-            raise Exception("cannot add elements from different fields")
-    def __mul__(self,other:'felem') -> 'felem':
-        if other.p == self.p:
-            return felem(self.v * other.v,self.p)
-        else:
-            raise Exception("cannot multiply elements from different fields")
-    def to_int(self) -> int:
-        return self.v
+T = TypeVar('T')
 
-def split_blocks(blocksize:int,len:int,msg:bytes) -> List[bytes]:
-    return [msg[x:x+blocksize] for x in range(0,len,blocksize)]
+class array(List[T]):
+    @staticmethod
+    def create(default:T, len:int) -> 'array[T]':
+        return array([default] * len)
 
-def concat_blocks(blocks:List[bytes]) -> bytes:
+    @staticmethod
+    def clone(x:'array[T]') -> 'array[T]':
+        return array(x[:])
+
+def split_blocks(msg:bytes,blocksize:int) -> array[bytes]:
+    return array([msg[x:x+blocksize] for x in range(0,len(msg),blocksize)])
+
+def concat_blocks(blocks:array[bytes]) -> bytes:
     concat = [b for block in blocks for b in block]
     return bytes(concat)
 
+    
+def uint32s_from_bytes_le(b:bytes) -> array[uint32]:
+    blocks = split_blocks(b,4)
+    ints = [uint32.from_bytes_le(b) for b in blocks]
+    return array(ints)
+
+def uint32s_to_bytes_le(ints:array[uint32]) -> bytes:
+    blocks = array([uint32.to_bytes_le(i) for i in ints])
+    return concat_blocks(blocks)
