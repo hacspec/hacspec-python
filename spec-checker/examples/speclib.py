@@ -134,7 +134,7 @@ class uint128:
         return self.v.to_bytes(16,byteorder='little')
 
 # Prime Fields
-class felem:   
+class felem:
     def __init__(self,x:int,p:int) -> None:
         if x < 0:
             raise Exception("cannot convert negative integer to uint32")

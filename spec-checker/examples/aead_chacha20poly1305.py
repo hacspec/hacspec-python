@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from chacha20 import chacha20_block, chacha20_encrypt, chacha20_decrypt
 from poly1305 import poly1305_mac
 from speclib import *
@@ -37,7 +39,7 @@ def aead_chacha20poly1305_decrypt(key:bytes,nonce:bytes,
     else:
         raise Exception("mac failed")
 
-def main():
+def main(x: int):
     k = bytes([0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,
                0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,
 	       0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,
@@ -85,7 +87,6 @@ def main():
     print("computed mac: ", mac)
     assert(exp_cipher == cipher)
     assert(exp_mac == mac)
-    
-    
+
 if __name__ == "__main__":
-    main()
+    main(0)

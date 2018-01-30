@@ -39,7 +39,7 @@ def counter_mode_iter(blocksize:int,block_cipher:Callable[[bytes,int,bytes],byte
         for j in range(last):
             ciphertext[start+j] ^= keyblock[j]
     return bytes(ciphertext)
-            
+
 def mapi_blocks(blocksize:int,
                 func:Callable[[Tuple[int,bytes]],bytes],
                 len:int,msg:bytes) -> bytes:
@@ -53,5 +53,3 @@ def reduce_blocks(blocksize:int, default: bytes,
     msg_blocks = split_blocks(blocksize,len,msg)
     acc = reduce(func, msg_blocks, default)
     return acc
-
-        

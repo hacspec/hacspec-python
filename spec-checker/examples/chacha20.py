@@ -151,7 +151,6 @@ def main(x: int) -> None:
     print("expected ciphertext:",expected)
     print("computed ciphertext:",computed)
     assert(computed == expected)
-    
-    
+
 if __name__ == "__main__":
     main(0)

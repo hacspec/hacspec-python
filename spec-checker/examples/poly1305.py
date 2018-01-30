@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 # To run and check this file, you need Python 3 + mypy
 # See install instructions at: http://mypy.readthedocs.io/en/latest/getting_started.html
 # To typecheck this file: mypy poly1305.py
@@ -6,7 +8,7 @@
 from speclib import *
 from typing import List
 
-p130m5 = (2 ** 130) - 5 #type: int
+p130m5 = (2 ** 130) - 5 # type: int
 blocksize = 16
 
 def elem(a:int) -> felem:
@@ -64,11 +66,11 @@ def poly1305_mac(len:int,text:bytes,k:bytes) -> bytes :
     relem = encode_r(r)
     selem = uint128.from_bytes_le(s)
     a = poly(len,text,relem)
-    n = uint128(a.to_int()) + selem 
+    n = uint128(a.to_int()) + selem
     return n.to_bytes_le()
 
 
-def main () :
+def main (x: int) :
     # RFC 7539 Test Vectors
     msg = bytes([
         0x43, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x67, 0x72,
@@ -88,5 +90,5 @@ def main () :
     print("expected mac:",expected)
     print("computed mac:",computed)
     assert(computed == expected)
-    
-main()
+
+main(0)
