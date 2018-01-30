@@ -5,7 +5,9 @@ from poly1305 import poly1305_mac
 from speclib import *
 from typing import Tuple
 
-def padded_aad_msg(laad:int,aad:bytes,lmsg:int,msg:bytes) -> Tuple[int,bytes]:
+def padded_aad_msg(aad:bytes,msg:bytes) -> Tuple[int,bytes]:
+    laad = len(aad)
+    lmsg = len(msg)
     pad_aad = laad if laad % 16 == 0 else 16 * (laad // 16 + 1)
     pad_msg = lmsg if lmsg % 16 == 0 else 16 * (lmsg // 16 + 1)
     to_mac = [0] * (pad_aad + pad_msg + 16);
@@ -15,26 +17,24 @@ def padded_aad_msg(laad:int,aad:bytes,lmsg:int,msg:bytes) -> Tuple[int,bytes]:
     to_mac[pad_aad+pad_msg+8:pad_aad+pad_msg+16] = uint64.to_bytes_le(uint64(lmsg))
     return pad_aad+pad_msg+16, bytes(to_mac)
 
-def aead_chacha20poly1305_encrypt(key:bytes,nonce:bytes,
-                                  laad:int,aad:bytes,
-                                  lmsg:int,msg:bytes) -> Tuple[bytes,bytes]:
+def aead_chacha20poly1305_encrypt(key:bytes,nonce:bytes,aad:bytes,msg:bytes) -> Tuple[bytes,bytes]:
     keyblock0 = chacha20_block(key,0,nonce)
     mac_key = keyblock0[0:32]
-    ciphertext = chacha20_encrypt(key,1,nonce,lmsg,msg)
-    len, to_mac = padded_aad_msg(laad,aad,lmsg,ciphertext)
+    ciphertext = chacha20_encrypt(key,1,nonce,msg)
+    len, to_mac = padded_aad_msg(aad,ciphertext)
     mac = poly1305_mac(to_mac,mac_key)
     return ciphertext, mac
 
 def aead_chacha20poly1305_decrypt(key:bytes,nonce:bytes,
-                                  laad:int,aad:bytes,
-                                  lmsg:int,ciphertext:bytes,
+                                  aad:bytes,
+                                  ciphertext:bytes,
                                   tag:bytes) -> bytes:
     keyblock0 = chacha20_block(key,0,nonce)
     mac_key = keyblock0[0:32]
-    len, to_mac = padded_aad_msg(laad,aad,lmsg,ciphertext)
+    len, to_mac = padded_aad_msg(aad,ciphertext)
     mac = poly1305_mac(to_mac,mac_key)
     if mac == tag:
-        msg = chacha20_decrypt(key,1,nonce,lmsg,ciphertext)
+        msg = chacha20_decrypt(key,1,nonce,ciphertext)
         return msg
     else:
         raise Exception("mac failed")
@@ -80,7 +80,7 @@ def main(x: int):
 	       0x61,0x16])
     exp_mac = bytes([0x1a,0xe1,0x0b,0x59,0x4f,0x09,0xe2,0x6a,
             0x7e,0x90,0x2e,0xcb,0xd0,0x60,0x06,0x91])
-    cipher, mac = aead_chacha20poly1305_encrypt(k,n,12,aad,114,p)
+    cipher, mac = aead_chacha20poly1305_encrypt(k,n,aad,p)
     print("expected cipher: ", exp_cipher)
     print("computed cipher: ", cipher)
     print("expected mac: ", exp_mac)
