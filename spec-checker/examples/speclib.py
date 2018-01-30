@@ -1,6 +1,7 @@
 from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union
 
 nat = int
+felem = NewType('felem',int)
 
 class uint32:
     def __init__(self,x:int) -> None:

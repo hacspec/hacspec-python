@@ -9,7 +9,6 @@ from speclib import *
 from typing import List, NewType
 
 p130m5 = (2 ** 130) - 5 # type: int
-felem = NewType('felem',int)
 
 def fadd(a:felem,b:felem) -> felem:
     return felem((a + b) % p130m5)
