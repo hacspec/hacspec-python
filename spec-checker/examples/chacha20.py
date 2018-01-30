@@ -12,7 +12,7 @@ keyType = bytes       # length: 32
 nonceType = bytes     # length: 12
 
 def line(a: index, b: index, d: index, s: shiftval, m: state) -> state:
-    m = array.clone(m)
+    m = array.copy(m)
     m[a] = (m[a] + m[b])
     m[d] = uint32.rotate_left(m[d] ^ m[a],s)
     return m
@@ -43,13 +43,13 @@ constants = array([uint32(0x61707865), uint32(0x3320646e),
 def chacha20_init(k: keyType, counter: uint32, nonce: nonceType) -> state:
     st = array.create(uint32(0),16)
     st[0:4] = constants
-    st[4:12] = uint32s_from_bytes_le(k)
+    st[4:12] = array.uint32s_from_bytes_le(k)
     st[12] = counter
-    st[13:16] = uint32s_from_bytes_le(nonce)
+    st[13:16] = array.uint32s_from_bytes_le(nonce)
     return st
 
 def chacha20_core(st:state) -> state:
-    working_state = array.clone(st)
+    working_state = array.copy(st)
     for x in range(1,11):
         working_state = inner_block(working_state)
     for i in range(16):
@@ -62,7 +62,7 @@ def chacha20(k: keyType, counter: uint32, nonce: nonceType) -> state:
 
 def chacha20_block(k: keyType, counter:int, nonce: nonceType) -> bytes:
     st = chacha20(k,uint32(counter),nonce)
-    block = concat_blocks(array([uint32.to_bytes_le(i) for i in st]))
+    block = array.uint32s_to_bytes_le(st)
     return block
 
 # Many ways of extending this to CTR
@@ -81,17 +81,17 @@ def chacha20_decrypt(key: keyType, counter: int, nonce: nonceType, msg:bytes) ->
 
 blocksize = 64
 def xor_block(block:bytes, keyblock:bytes) -> bytes:
-    out = array.clone(array(block))
+    out = array(list(block))
     for i in range(len(out)):
         out[i] ^= keyblock[i]
     return bytes(out)
 
 def chacha20_counter_mode(key: keyType, counter: int, nonce: nonceType, msg:bytes) -> bytes:
-    blocks = split_blocks(msg,blocksize)
+    blocks = array.split_bytes(msg,blocksize)
     for i in range(0,len(blocks)):
         keyblock = chacha20_block(key,counter + i,nonce)
         blocks[i] = xor_block(blocks[i],keyblock)
-    return concat_blocks(blocks)
+    return array.concat_bytes(blocks)
 
 def chacha20_encrypt_(key: keyType, counter: int, nonce: nonceType,msg:bytes) -> bytes:
     return chacha20_counter_mode(key,counter,nonce,msg)

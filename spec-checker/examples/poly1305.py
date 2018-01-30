@@ -30,10 +30,9 @@ def encode_r(r:bytes) -> felem:
 # First version: use a loop to accumulate the result
 blocksize = 16
 def poly(text:bytes,r:felem) -> felem:
-    blocks = split_blocks(text,blocksize)
+    blocks = array.split_bytes(text,blocksize)
     acc = felem(0)
     for i in range(len(blocks)):
-        blen = len(blocks[i])
         acc = fmul(fadd(acc,encode(blocks[i])),r)
     return acc
 
@@ -42,7 +41,7 @@ from functools import reduce
 def poly_reduce(tlen:int,text:bytes,r:felem) -> felem:
     def accumulate(acc:felem,block:bytes) -> felem:
         return (fmul(fadd(acc,encode(block)),r))
-    blocks = split_blocks(text,blocksize)
+    blocks = array.split_bytes(text,blocksize)
     acc = reduce(accumulate, blocks, felem(0))
     return acc
 

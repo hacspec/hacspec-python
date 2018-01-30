@@ -1,4 +1,4 @@
-from typing import Any, NewType, List, TypeVar
+from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union
 
 nat = int
 
@@ -146,30 +146,61 @@ class uint128:
     def to_bytes_le(x:'uint128') -> bytes:
         return x.v.to_bytes(16,byteorder='little')
 
+
 T = TypeVar('T')
 
-class array(List[T]):
+class array(Iterable[T]):
+    def __init__(self,x:List[T]) -> None:
+        self.l = x
+
+    def __len__(self) -> int:
+        return len(self.l)
+
+    def __iter__(self) -> Iterator[T]:
+        return iter(self.l)
+
+    def __getitem__(self, key:Union[int, slice]):
+        if isinstance(key, slice):
+            return array(self.l[key.start:key.stop])
+        return self.l[key]
+
+    def __getslice__(self, i:int, j:int) -> 'array[T]':
+        return array(self.l[i:j])
+
+    def __setitem__(self,key,v) -> None:
+        if isinstance(key, slice):
+            self.l[key.start:key.stop] = v;
+        else:
+            self.l[key] = v
+            
     @staticmethod
     def create(default:T, len:int) -> 'array[T]':
         return array([default] * len)
 
     @staticmethod
-    def clone(x:'array[T]') -> 'array[T]':
-        return array(x[:])
+    def len(a:'array[T]') -> int:
+        return len(a.l)
 
-def split_blocks(msg:bytes,blocksize:int) -> array[bytes]:
-    return array([msg[x:x+blocksize] for x in range(0,len(msg),blocksize)])
+    @staticmethod
+    def copy(x:'array[T]') -> 'array[T]':
+        return array(x.l[:])
 
-def concat_blocks(blocks:array[bytes]) -> bytes:
-    concat = [b for block in blocks for b in block]
-    return bytes(concat)
+    @staticmethod
+    def split_bytes(a:bytes,blocksize:int) -> 'array[bytes]':
+        return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
 
+    @staticmethod
+    def concat_bytes(blocks:'array[bytes]') -> bytes:
+        concat = [b for block in blocks for b in block]
+        return bytes(array(concat))
     
-def uint32s_from_bytes_le(b:bytes) -> array[uint32]:
-    blocks = split_blocks(b,4)
-    ints = [uint32.from_bytes_le(b) for b in blocks]
-    return array(ints)
+    @staticmethod
+    def uint32s_from_bytes_le(b:bytes) -> 'array[uint32]':
+        blocks = array.split_bytes(b,4)
+        ints = [uint32.from_bytes_le(b) for b in blocks]
+        return array(ints)
 
-def uint32s_to_bytes_le(ints:array[uint32]) -> bytes:
-    blocks = array([uint32.to_bytes_le(i) for i in ints])
-    return concat_blocks(blocks)
+    @staticmethod
+    def uint32s_to_bytes_le(ints:'array[uint32]') -> bytes:
+        blocks = array([uint32.to_bytes_le(i) for i in ints])
+        return array.concat_bytes(blocks)

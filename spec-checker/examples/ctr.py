@@ -11,16 +11,16 @@ def block_encrypt(block_cipher:Callable[[bytes,int,bytes],bytes],
 # First version: using list comprehensions to map encryption
 def counter_mode(blocksize:int,block_cipher:Callable[[bytes,int,bytes],bytes],
                  key:bytes,counter:int,nonce:bytes,msg:bytes) -> bytes :
-    msg_blocks = split_blocks(msg,blocksize)
+    msg_blocks = array.split_bytes(msg,blocksize)
     cipherblocks = array ([block_encrypt(block_cipher,key,counter+i,nonce,b) for (i,b) in enumerate(msg_blocks)])
-    return concat_blocks(cipherblocks)
+    return array.concat_bytes(cipherblocks)
 
 # Second version: using map
 def counter_mode_map(blocksize:int,block_cipher:Callable[[bytes,int,bytes],bytes],
                  key:bytes,counter:int,nonce:bytes,msg:bytes) -> bytes :
-    msg_blocks = split_blocks(msg,blocksize)
+    msg_blocks = array.split_bytes(msg,blocksize)
     cipherblocks = map(lambda x: block_encrypt(block_cipher,key,counter+x[0],nonce,x[1]), enumerate(msg_blocks))
-    return concat_blocks(array(cipherblocks))
+    return array.concat_bytes(array(list(cipherblocks)))
 
 # Third version: using a local loop
 def counter_mode_iter(blocksize:int,block_cipher:Callable[[bytes,int,bytes],bytes],
