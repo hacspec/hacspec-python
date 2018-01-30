@@ -3,7 +3,6 @@
 # Run mypy chacha20.py to type check.
 
 from speclib import *
-from typing import List
 
 index = int           # range: (0,16)
 shiftval = int        # range: (0,32)

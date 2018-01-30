@@ -1,16 +1,16 @@
 #!/usr/bin/python3
 
-from chacha20 import chacha20_block, chacha20_encrypt, chacha20_decrypt
-from poly1305 import poly1305_mac
 from speclib import *
 from typing import Tuple
+from chacha20 import chacha20_block, chacha20_encrypt, chacha20_decrypt
+from poly1305 import poly1305_mac
 
 def padded_aad_msg(aad:bytes,msg:bytes) -> Tuple[int,bytes]:
     laad = len(aad)
     lmsg = len(msg)
     pad_aad = laad if laad % 16 == 0 else 16 * (laad // 16 + 1)
     pad_msg = lmsg if lmsg % 16 == 0 else 16 * (lmsg // 16 + 1)
-    to_mac = [0] * (pad_aad + pad_msg + 16);
+    to_mac = array.create(0,pad_aad + pad_msg + 16);
     to_mac[0:laad] = aad
     to_mac[pad_aad:pad_aad+lmsg] = msg
     to_mac[pad_aad+pad_msg:pad_aad+pad_msg+8] = uint64.to_bytes_le(uint64(laad))

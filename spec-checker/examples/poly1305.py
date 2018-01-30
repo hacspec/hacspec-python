@@ -6,7 +6,6 @@
 # To run this file: python3 poly1305.py
 
 from speclib import *
-from typing import List, NewType
 
 p130m5 = (2 ** 130) - 5 # type: int
 
