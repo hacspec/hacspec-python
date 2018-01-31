@@ -1,6 +1,6 @@
 
 #[derive(Clone, Debug)]
-pub struct state {
+pub struct State {
     pub v: [u32; 16],
 }
 
@@ -8,14 +8,14 @@ fn rotate_left(x: u32, s: u32) -> u32 {
     x << s | x >> (32 - s)
 }
 
-fn line(a: u16, b: u16, d: u16, s: u32, m: state) -> state {
+fn line(a: u16, b: u16, d: u16, s: u32, m: State) -> State {
     let mut m = m.clone();
     m.v[a as usize] = ((m.v[a as usize] as u64 + m.v[b as usize] as u64) & 0xFFFFFFFF) as u32;
     m.v[d as usize] = rotate_left(m.v[d as usize] ^ m.v[a as usize], s);
     m
 }
 
-pub fn quarter_round(a: u16, b: u16, c: u16, d: u16, m: state) -> state {
+pub fn quarter_round(a: u16, b: u16, c: u16, d: u16, m: State) -> State {
     let mut m = m.clone();
     m = line(a, b, d, 16, m);
     m = line(c, d, b, 12, m);
@@ -24,7 +24,7 @@ pub fn quarter_round(a: u16, b: u16, c: u16, d: u16, m: state) -> state {
     m
 }
 
-pub fn inner_block(m: state) -> state {
+pub fn inner_block(m: State) -> State {
     let mut m = m.clone();
     m = quarter_round(0, 4,  8, 12, m);
     m = quarter_round(1, 5,  9, 13, m);
@@ -42,8 +42,8 @@ fn from_bytes_le(x: &[u8]) -> u32 {
     x[0] as u32 | (x[1] as u32) << 8 | (x[2] as u32) << 16 | (x[3] as u32) << 24
 }
 
-pub fn chacha20(k: &[u8; 32], counter: u32, nonce: &[u8; 12]) -> state {
-    let st = state{
+pub fn chacha20(k: &[u8; 32], counter: u32, nonce: &[u8; 12]) -> State {
+    let st = State{
         v: [ 0x61707865, 0x3320646e, 0x79622d32, 0x6b206574,
              from_bytes_le(&k[0..4]), from_bytes_le(&k[4..8]),
              from_bytes_le(&k[8..12]), from_bytes_le(&k[12..16]),
