@@ -3,6 +3,54 @@ from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Uni
 nat = int
 felem = NewType('felem',int)
 
+class uint8:
+    def __init__(self,x:int) -> None:
+        if x < 0:
+            raise Exception("cannot convert negative integer to uint8")
+        else:
+            self.v = x & 0xff
+    def __str__(self) -> str:
+        return hex(self.v)
+    def __repr__(self) -> str:
+        return hex(self.v)
+    def __add__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v + other.v)
+    def __sub__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v - other.v)
+    def __or__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v | other.v)
+    def __and__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v & other.v)
+    def __xor__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v ^ other.v)
+    def __lshift__(self,other:int) -> 'uint8':
+        if other < 0 or other >= 8:
+            raise Exception("uint8 cannot be shifted by < 0 or >= 8")
+        return uint8(self.v << other)
+    def __rshift__(self,other:int) -> 'uint8':
+        if other < 0 or other >= 8:
+            raise Exception("uint8 cannot be shifted by < 0 or >= 8")
+        return uint8((self.v & 0xff) >> other)
+    # See https://github.com/python/mypy/issues/2783
+    def __eq__(self,other:Any) -> Any:
+        return self.v == other.v
+    
+    @staticmethod
+    def rotate_left(x:'uint8',other:int) -> 'uint8':
+        return (x << other | x >> (8 - other))
+    @staticmethod
+    def rotate_right(x:'uint8',other:int) -> 'uint8':
+        return (x >> other | x << (8 - other))
+    @staticmethod
+    def int_value(x:'uint8') -> int:
+        return x.v
+    @staticmethod
+    def from_bytes_le(n:bytes) -> 'uint8':
+        return uint8(int.from_bytes(n,byteorder='little'))
+    @staticmethod
+    def to_bytes_le(x:'uint8') -> bytes:
+        return x.v.to_bytes(1,byteorder='little')
+
 class uint32:
     def __init__(self,x:int) -> None:
         if x < 0:
@@ -50,7 +98,7 @@ class uint32:
     @staticmethod
     def to_bytes_le(x:'uint32') -> bytes:
         return x.v.to_bytes(4,byteorder='little')
-    
+
 class uint64:
     def __init__(self,x:int) -> None:
         if x < 0:
@@ -168,7 +216,7 @@ class array(Iterable[T]):
     def __getslice__(self, i:int, j:int) -> 'array[T]':
         return array(self.l[i:j])
 
-    def __setitem__(self,key,v) -> None:
+    def __setitem__(self,key:Union[int,slice],v) -> None:
         if isinstance(key, slice):
             self.l[key.start:key.stop] = v;
         else:

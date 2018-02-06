@@ -5,7 +5,7 @@ from speclib import *
 def block_encrypt(block_cipher:Callable[[bytes,int,bytes],bytes],
                   key:bytes,counter:int,nonce:bytes,msg:bytes) -> bytes:
     keyblock = block_cipher(key,counter,nonce)
-    cipherblock = [x ^ y for (x,y) in zip(keyblock,msg)]
+    cipherblock = array([x ^ y for (x,y) in zip(keyblock,msg)])
     return bytes(cipherblock)
 
 # First version: using list comprehensions to map encryption

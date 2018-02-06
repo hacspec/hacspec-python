@@ -53,6 +53,8 @@ def poly1305_mac(text:bytes,k:bytes) -> bytes :
     return uint128.to_bytes_le(n)
 
 
+from test_vectors.poly1305_test_vectors import *
+
 def main (x: int) -> None :
     # RFC 7539 Test Vectors
     msg = bytes([
@@ -70,8 +72,24 @@ def main (x: int) -> None :
         0xa8, 0x06, 0x1d, 0xc1, 0x30, 0x51, 0x36, 0xc6,
         0xc2, 0x2b, 0x8b, 0xaf, 0x0c, 0x01, 0x27, 0xa9 ])
     computed = poly1305_mac(msg,k)
-    print("expected mac:",expected)
-    print("computed mac:",computed)
-    assert(computed == expected)
+    if (computed == expected):
+        print("Test  0 passed.")
+    else:
+        print("Test  0 failed:")
+        print("expected mac:",expected)
+        print("computed mac:",computed)
+    for i in range(len(poly1305_test_vectors)):
+        msg = bytes.fromhex(poly1305_test_vectors[i]['input'])
+        k   = bytes.fromhex(poly1305_test_vectors[i]['key'])
+        expected = bytes.fromhex(poly1305_test_vectors[i]['tag'])
+        computed = poly1305_mac(msg,k)
+        if (computed == expected):
+            print("Test ",i+1," passed.")
+        else:
+            print("Test ",i+1," failed:")
+            print("expected mac:",expected)
+            print("computed mac:",computed)
+        
 
+    
 main(0)
