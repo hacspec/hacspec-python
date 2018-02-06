@@ -1,4 +1,4 @@
-from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union
+from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence
 
 nat = int
 felem = NewType('felem',int)
@@ -151,8 +151,8 @@ class uint128:
 T = TypeVar('T')
 
 class array(Iterable[T]):
-    def __init__(self,x:List[T]) -> None:
-        self.l = x
+    def __init__(self,x:Sequence[T]) -> None:
+        self.l = list(x)
 
     def __len__(self) -> int:
         return len(self.l)
