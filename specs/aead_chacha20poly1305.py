@@ -84,8 +84,9 @@ def main(x: int) -> None :
             0x7e,0x90,0x2e,0xcb,0xd0,0x60,0x06,0x91])
     cipher, mac = aead_chacha20poly1305_encrypt(k,n,aad,p)
     if (exp_cipher == cipher and exp_mac == mac):
-        print("Test  0 passed.")
+        print("AEAD-ChachaPoly Test  0 passed.")
     else:
+        print("AEAD-ChachaPoly Test  0 failed.")
         print("expected cipher: ", exp_cipher)
         print("computed cipher: ", cipher)
         print("expected mac: ", exp_mac)
@@ -100,9 +101,9 @@ def main(x: int) -> None :
         exp_cipher = expected[0:len(msg)]
         cipher,mac = aead_chacha20poly1305_encrypt(k,n,aad,msg)
         if (exp_cipher == cipher and exp_mac == mac):
-            print("Test ",i+1," passed.")
+            print("AEAD-ChachaPoly Test ",i+1," passed.")
         else:
-            print("Test ",i+1," failed:")
+            print("AEAD-ChachaPoly Test ",i+1," failed:")
             print("expected cipher: ", exp_cipher)
             print("computed cipher: ", cipher)
             print("expected mac: ", exp_mac)

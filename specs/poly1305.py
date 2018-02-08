@@ -73,9 +73,9 @@ def main (x: int) -> None :
         0xc2, 0x2b, 0x8b, 0xaf, 0x0c, 0x01, 0x27, 0xa9 ])
     computed = poly1305_mac(msg,k)
     if (computed == expected):
-        print("Test  0 passed.")
+        print("Poly1305 Test  0 passed.")
     else:
-        print("Test  0 failed:")
+        print("Poly1305 Test  0 failed:")
         print("expected mac:",expected)
         print("computed mac:",computed)
     with open("test_vectors/poly1305_test_vectors.json") as json_data:
@@ -86,9 +86,9 @@ def main (x: int) -> None :
             expected = bytes.fromhex(poly1305_test_vectors[i]['tag'])
             computed = poly1305_mac(msg,k)
             if (computed == expected):
-                print("Test ",i+1," passed.")
+                print("Poly1305 Test ",i+1," passed.")
             else:
-                print("Test ",i+1," failed:")
+                print("Poly1305 Test ",i+1," failed:")
                 print("expected mac:",expected)
                 print("computed mac:",computed)
 

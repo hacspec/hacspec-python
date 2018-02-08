@@ -1,4 +1,4 @@
-from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence
+from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple
 
 nat = int
 felem = NewType('felem',int)
@@ -197,6 +197,7 @@ class uint128:
 
 
 T = TypeVar('T')
+U = TypeVar('U')
 
 class array(Iterable[T]):
     def __init__(self,x:Sequence[T]) -> None:
@@ -255,6 +256,10 @@ class array(Iterable[T]):
     @staticmethod
     def copy(x:'array[T]') -> 'array[T]':
         return array(x.l[:])
+
+    @staticmethod
+    def zip(x:'array[T]',y:'array[U]') -> 'array[Tuple[T,U]]':
+        return array(list(zip(x.l,y.l)))
 
     @staticmethod
     def split_bytes(a:bytes,blocksize:int) -> 'array[bytes]':

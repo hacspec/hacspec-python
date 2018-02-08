@@ -168,9 +168,9 @@ def main(x: int) -> None:
                       0x87, 0x4d])
     computed = chacha20_encrypt(key,1,nonce,plaintext)
     if (computed == expected):
-        print("Test  0 passed.")
+        print("Chacha20 Test  0 passed.")
     else:
-        print("Test  0 failed:")
+        print("Chacha20 Test  0 failed:")
         print("expected ciphertext:",expected)
         print("computed ciphertext:",computed)
     for i in range(len(chacha20_test_vectors)):
@@ -181,9 +181,9 @@ def main(x: int) -> None:
         expected = bytes.fromhex(chacha20_test_vectors[i]['output'])
         computed = chacha20_encrypt(key,ctr,n,msg)
         if (computed == expected):
-            print("Test ",i+1," passed.")
+            print("Chacha20 Test ",i+1," passed.")
         else:
-            print("Test ",i+1," failed:")
+            print("Chacha20 Test ",i+1," failed:")
             print("expected ciphertext:",expected)
             print("computed ciphertext:",computed)
 
