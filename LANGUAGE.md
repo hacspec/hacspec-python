@@ -15,7 +15,7 @@ Expressions e ::= x                    (variables)
             |  uintN.to_int(e)e        (convert uintN to int)
             |  uintN.from_bytes_le     (bytes to uintN)
             |  uintN.to_bytes_le       (uintN to bytes)
-    
+
     array(Iterable[T])
             |  array([e0,...,en])      (make array)
             |  array.copy(e)           (copy array)
@@ -40,4 +40,37 @@ Statements s ::= x = e            (assignment)
            | s \n s               (sequential composition)
            | def f(x1:t1,...,xn:tn) -> t : s
            | from x import x1,x2,...,xn
+```
+
+Test vectors are define in [JSON](http://json-schema.org/specification.html) following some schema.
+
+MAC test vector scheme
+```
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "input_len": {
+        "type": "string"
+      },
+      "input": {
+        "type": "string"
+      },
+      "key": {
+        "type": "string"
+      },
+      "tag": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "input_len",
+      "input",
+      "key",
+      "tag"
+    ]
+  },
+  "maxProperties": 4
+}
 ```

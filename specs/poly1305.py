@@ -6,6 +6,7 @@
 # To run this file: python3 poly1305.py
 
 from speclib import *
+import json
 
 p130m5 = (2 ** 130) - 5 # type: int
 
@@ -52,9 +53,6 @@ def poly1305_mac(text:bytes,k:bytes) -> bytes :
     n = uint128(a) + selem
     return uint128.to_bytes_le(n)
 
-
-from test_vectors.poly1305_test_vectors import *
-
 def main (x: int) -> None :
     # RFC 7539 Test Vectors
     msg = bytes([
@@ -78,18 +76,20 @@ def main (x: int) -> None :
         print("Test  0 failed:")
         print("expected mac:",expected)
         print("computed mac:",computed)
-    for i in range(len(poly1305_test_vectors)):
-        msg = bytes.fromhex(poly1305_test_vectors[i]['input'])
-        k   = bytes.fromhex(poly1305_test_vectors[i]['key'])
-        expected = bytes.fromhex(poly1305_test_vectors[i]['tag'])
-        computed = poly1305_mac(msg,k)
-        if (computed == expected):
-            print("Test ",i+1," passed.")
-        else:
-            print("Test ",i+1," failed:")
-            print("expected mac:",expected)
-            print("computed mac:",computed)
-        
+    with open("test_vectors/poly1305_test_vectors.json") as json_data:
+        poly1305_test_vectors = json.load(json_data)
+        for i in range(len(poly1305_test_vectors)):
+            msg = bytes.fromhex(poly1305_test_vectors[i]['input'])
+            k   = bytes.fromhex(poly1305_test_vectors[i]['key'])
+            expected = bytes.fromhex(poly1305_test_vectors[i]['tag'])
+            computed = poly1305_mac(msg,k)
+            if (computed == expected):
+                print("Test ",i+1," passed.")
+            else:
+                print("Test ",i+1," failed:")
+                print("expected mac:",expected)
+                print("computed mac:",computed)
 
-    
+
+
 main(0)
