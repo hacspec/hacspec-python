@@ -39,6 +39,8 @@ def aead_chacha20poly1305_decrypt(key:bytes,nonce:bytes,
     else:
         raise Exception("mac failed")
 
+from test_vectors.aead_chacha20poly1305_test_vectors import *
+
 def main(x: int) -> None :
     k = bytes([0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,
                0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,
@@ -81,12 +83,30 @@ def main(x: int) -> None :
     exp_mac = bytes([0x1a,0xe1,0x0b,0x59,0x4f,0x09,0xe2,0x6a,
             0x7e,0x90,0x2e,0xcb,0xd0,0x60,0x06,0x91])
     cipher, mac = aead_chacha20poly1305_encrypt(k,n,aad,p)
-    print("expected cipher: ", exp_cipher)
-    print("computed cipher: ", cipher)
-    print("expected mac: ", exp_mac)
-    print("computed mac: ", mac)
-    assert(exp_cipher == cipher)
-    assert(exp_mac == mac)
+    if (exp_cipher == cipher and exp_mac == mac):
+        print("Test  0 passed.")
+    else:
+        print("expected cipher: ", exp_cipher)
+        print("computed cipher: ", cipher)
+        print("expected mac: ", exp_mac)
+        print("computed mac: ", mac)
+    for i in range(len(aead_chacha20poly1305_test_vectors)):
+        msg = aead_chacha20poly1305_test_vectors[i]['input']
+        k   = aead_chacha20poly1305_test_vectors[i]['key']
+        n = aead_chacha20poly1305_test_vectors[i]['nonce']
+        aad  = aead_chacha20poly1305_test_vectors[i]['aad']
+        expected = aead_chacha20poly1305_test_vectors[i]['output']
+        exp_mac = expected[len(msg):len(expected)]
+        exp_cipher = expected[0:len(msg)]
+        cipher,mac = aead_chacha20poly1305_encrypt(k,n,aad,msg)
+        if (exp_cipher == cipher and exp_mac == mac):
+            print("Test ",i+1," passed.")
+        else:
+            print("Test ",i+1," failed:")
+            print("expected cipher: ", exp_cipher)
+            print("computed cipher: ", cipher)
+            print("expected mac: ", exp_mac)
+            print("computed mac: ", mac)
 
 if __name__ == "__main__":
     main(0)

@@ -204,14 +204,36 @@ class array(Iterable[T]):
 
     def __len__(self) -> int:
         return len(self.l)
+    def __str__(self) -> str:
+        return str(self.l)
+    def __repr__(self) -> str:
+        return repr(self.l)
 
     def __iter__(self) -> Iterator[T]:
         return iter(self.l)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return (self.l == other.l)
+        else:
+            return False
+
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return (self.l != other.l)
+        else:
+            return True
+    
     def __getitem__(self, key:Union[int, slice]):
-        if isinstance(key, slice):
-            return array(self.l[key.start:key.stop])
-        return self.l[key]
+        try:
+            if isinstance(key, slice):
+                return array(self.l[key.start:key.stop])
+            return self.l[key]
+        except:
+            print('Array access error:')
+            print('array content:',self.l)
+            print('array index:',key)
+            raise Exception('array index error')
 
     def __getslice__(self, i:int, j:int) -> 'array[T]':
         return array(self.l[i:j])

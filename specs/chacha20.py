@@ -99,6 +99,8 @@ def chacha20_decrypt_(key: keyType, counter: int, nonce: nonceType,msg:bytes) ->
     return chacha20_counter_mode(key,counter,nonce,msg)
 
 
+from test_vectors.chacha20_test_vectors import *
+
 # mypy only checks functions that have types. So add an argument :)
 def main(x: int) -> None:
     # Quarter round test vectors from RFC 7539
@@ -108,9 +110,9 @@ def main(x: int) -> None:
     d = uint32(0x01234567)
     my_state = array([a, b, c, d])
     my_state = quarter_round(0, 1, 2, 3, my_state)
-    exp_state = [uint32(0xea2a92f4), uint32(0xcb1cf8ce), uint32(0x4581472e), uint32(0x5881c4bb)]
-    print("computed qround = ",my_state[0:4])
-    print("expected qround = ",exp_state)
+    exp_state = array([uint32(0xea2a92f4), uint32(0xcb1cf8ce), uint32(0x4581472e), uint32(0x5881c4bb)])
+    print("computed qround = ",str(my_state[0:4]))
+    print("expected qround = ",str(exp_state))
     assert(my_state == exp_state)
 
     # Test vector from RFX 7539 section 2.3.2
@@ -118,12 +120,12 @@ def main(x: int) -> None:
     nonce = bytes([0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x00, 0x00])
     counter = uint32(1)
     result = chacha20(key, counter, nonce)
-    expected_state = [
+    expected_state = array([
         uint32(0xe4e7f110), uint32(0x15593bd1), uint32(0x1fdd0f50), uint32(0xc47120a3),
         uint32(0xc7f4d1c7), uint32(0x0368c033), uint32(0x9aaa2204), uint32(0x4e6cd4c3),
         uint32(0x466482d2), uint32(0x09aa9f07), uint32(0x05d7c214), uint32(0xa2028bd9),
         uint32(0xd19c12b5), uint32(0xb94e16de), uint32(0xe883d0cb), uint32(0x4e3c50a2)
-    ]
+    ])
     print("expected state:",expected_state)
     print("computed state:",result)
     assert(result == expected_state)
@@ -165,9 +167,26 @@ def main(x: int) -> None:
                       0xb4, 0x0b, 0x8e, 0xed, 0xf2, 0x78, 0x5e, 0x42,
                       0x87, 0x4d])
     computed = chacha20_encrypt(key,1,nonce,plaintext)
-    print("expected ciphertext:",expected)
-    print("computed ciphertext:",computed)
-    assert(computed == expected)
+    if (computed == expected):
+        print("Test  0 passed.")
+    else:
+        print("Test  0 failed:")
+        print("expected ciphertext:",expected)
+        print("computed ciphertext:",computed)
+    for i in range(len(chacha20_test_vectors)):
+        msg = bytes.fromhex(chacha20_test_vectors[i]['input'])
+        k   = bytes.fromhex(chacha20_test_vectors[i]['key'])
+        n   = bytes.fromhex(chacha20_test_vectors[i]['nonce'])
+        ctr = chacha20_test_vectors[i]['counter']
+        expected = bytes.fromhex(chacha20_test_vectors[i]['output'])
+        computed = chacha20_encrypt(key,ctr,n,msg)
+        if (computed == expected):
+            print("Test ",i+1," passed.")
+        else:
+            print("Test ",i+1," failed:")
+            print("expected ciphertext:",expected)
+            print("computed ciphertext:",computed)
+
 
 if __name__ == "__main__":
     main(0)

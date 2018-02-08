@@ -53,7 +53,7 @@ def poly1305_mac(text:bytes,k:bytes) -> bytes :
     return uint128.to_bytes_le(n)
 
 
-from test_vectors.poly1305_test_vectors import *
+from test_vectors.poly1305_test_vectors import poly1305_test_vectors
 
 def main (x: int) -> None :
     # RFC 7539 Test Vectors
