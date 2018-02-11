@@ -56,6 +56,7 @@ def chacha20_core(st:state) -> state:
     assert(len(working_state) == 16)
     return working_state
 
+@precondition(keyType, "> 0", nonceType)
 def chacha20(k: keyType, counter: uint32, nonce: nonceType) -> state:
     return chacha20_core(chacha20_init(k,counter,nonce))
 

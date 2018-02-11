@@ -39,7 +39,7 @@ class uint8:
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return self.v == other.v
-    
+
     @staticmethod
     def rotate_left(x:'uint8',other:int) -> 'uint8':
         return (x << other | x >> (8 - other))
@@ -56,7 +56,7 @@ class uint8:
     def to_bytes_le(x:'uint8') -> bytes:
         return x.v.to_bytes(1,byteorder='little')
 
-    
+
 class uint32:
     def __init__(self,x:int) -> None:
         if x < 0:
@@ -88,7 +88,7 @@ class uint32:
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return self.v == other.v
-    
+
     @staticmethod
     def rotate_left(x:'uint32',other:int) -> 'uint32':
         return (x << other | x >> (32 - other))
@@ -230,7 +230,7 @@ class array(Iterable[T]):
             return (self.l != other.l)
         else:
             return True
-    
+
     def __getitem__(self, key:Union[int, slice]):
         try:
             if isinstance(key, slice):
@@ -250,7 +250,7 @@ class array(Iterable[T]):
             self.l[key.start:key.stop] = v;
         else:
             self.l[key] = v
-            
+
     @staticmethod
     def create(default:T, len:int) -> 'array[T]':
         return array([default] * len)
@@ -270,7 +270,7 @@ class array(Iterable[T]):
     @staticmethod
     def enumerate(x:'array[T]') -> 'array[Tuple[int,T]]':
         return array(list(enumerate(x.l)))
-    
+
     @staticmethod
     def split_blocks(a:'array[T]',blocksize:int) -> 'array[array[T]]':
         return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
@@ -278,7 +278,7 @@ class array(Iterable[T]):
     @staticmethod
     def concat_blocks(blocks:'array[array[T]]') -> 'array[T]':
         return (array([b for block in blocks for b in block]))
-    
+
     @staticmethod
     def split_bytes(a:bytes,blocksize:int) -> 'array[bytes]':
         return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
@@ -287,7 +287,7 @@ class array(Iterable[T]):
     def concat_bytes(blocks:'array[bytes]') -> bytes:
         concat = [b for block in blocks for b in block]
         return bytes(array(concat))
-    
+
     @staticmethod
     def uint32s_from_bytes_le(b:bytes) -> 'array[uint32]':
         blocks = array.split_bytes(b,4)
@@ -298,3 +298,22 @@ class array(Iterable[T]):
     def uint32s_to_bytes_le(ints:'array[uint32]') -> bytes:
         blocks = array([uint32.to_bytes_le(i) for i in ints])
         return array.concat_bytes(blocks)
+
+def precondition(*types):
+    def precondition_decorator(func):
+        assert(len(types) == func.__code__.co_argcount)
+        def wrapper(*args, **kwds):
+            for (a, t) in zip(args, types):
+                if not isinstance(t, str):
+                    # Check type.
+                    assert isinstance(a, t), "arg %r does not match %s" % (a,t)
+                else:
+                    # Parse string as condition on variable
+                    r = eval(str(a) + t)
+                    if not r:
+                        print("Precondition " + str(a) + t + " did not hold.")
+                        assert False, "Precondition %r %s did not hold." % (a, t)
+            return func(*args, **kwds)
+        wrapper.func_name = func.__name__
+        return wrapper
+    return precondition_decorator
