@@ -45,6 +45,8 @@ Statements s ::=
            | from x import x1,x2,...,xn (import from external module)
 ```
 
+## Library functions
+
 ```
 Builtin functions (hacspec library in speclib.py):
 
@@ -74,10 +76,23 @@ array[T]:
   					(create bytes from array[uint32])
 ```
 
+# Test Vectors
 
 Test vectors are define in [JSON](http://json-schema.org/specification.html) following some schema.
+Every schema can be checked either with `mypy` or with `jsonschema`.
 
-MAC test vector scheme
+## MAC Schema
+### Mypy TypedDict
+```
+poly1305_test = TypedDict('poly1305_test', {
+    'input_len': str,
+    'input': str,
+    'key' :  str,
+    'tag' :  str}
+)
+```
+
+### JSON Schema
 ```
 {
   "type": "array",
