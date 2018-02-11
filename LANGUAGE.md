@@ -82,7 +82,10 @@ Test vectors are define in [JSON](http://json-schema.org/specification.html) fol
 Every schema can be checked either with `mypy` or with `jsonschema`.
 
 ## MAC Schema
+
 ### Mypy TypedDict
+`mypy specs/test_vectors/poly1305_test_vectors.py`
+
 ```
 poly1305_test = TypedDict('poly1305_test', {
     'input_len': str,
@@ -93,6 +96,8 @@ poly1305_test = TypedDict('poly1305_test', {
 ```
 
 ### JSON Schema
+`python spec-checker/check_schema.py mac specs/test_vectors/poly1305_test_vectors.json`
+
 ```
 {
   "type": "array",
