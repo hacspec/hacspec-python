@@ -1,12 +1,17 @@
 from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple
 
-nat = int
-felem = NewType('felem',int)
+nat = NewType('nat',int)     # Should be a refinement type
+felem = NewType('felem',int) # Should be a refinement type
+
+class Error(Exception): pass
+
+def fail(s):
+    raise Error(s)
 
 class uint8:
     def __init__(self,x:int) -> None:
         if x < 0:
-            raise Exception("cannot convert negative integer to uint8")
+            fail("cannot convert negative integer to uint8")
         else:
             self.v = x & 0xff
     def __str__(self) -> str:
@@ -25,11 +30,11 @@ class uint8:
         return uint8(self.v ^ other.v)
     def __lshift__(self,other:int) -> 'uint8':
         if other < 0 or other >= 8:
-            raise Exception("uint8 cannot be shifted by < 0 or >= 8")
+            fail("uint8 cannot be shifted by < 0 or >= 8")
         return uint8(self.v << other)
     def __rshift__(self,other:int) -> 'uint8':
         if other < 0 or other >= 8:
-            raise Exception("uint8 cannot be shifted by < 0 or >= 8")
+            fail("uint8 cannot be shifted by < 0 or >= 8")
         return uint8((self.v & 0xff) >> other)
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
@@ -51,10 +56,11 @@ class uint8:
     def to_bytes_le(x:'uint8') -> bytes:
         return x.v.to_bytes(1,byteorder='little')
 
+    
 class uint32:
     def __init__(self,x:int) -> None:
         if x < 0:
-            raise Exception("cannot convert negative integer to uint32")
+            fail("cannot convert negative integer to uint32")
         else:
             self.v = x & 0xffffffff
     def __str__(self) -> str:
@@ -73,11 +79,11 @@ class uint32:
         return uint32(self.v ^ other.v)
     def __lshift__(self,other:int) -> 'uint32':
         if other < 0 or other >= 32:
-            raise Exception("uint32 cannot be shifted by < 0 or >= 32")
+            fail("uint32 cannot be shifted by < 0 or >= 32")
         return uint32(self.v << other)
     def __rshift__(self,other:int) -> 'uint32':
         if other < 0 or other >= 32:
-            raise Exception("uint32 cannot be shifted by < 0 or >= 32")
+            fail("uint32 cannot be shifted by < 0 or >= 32")
         return uint32((self.v & 0xffffffff) >> other)
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
@@ -102,7 +108,7 @@ class uint32:
 class uint64:
     def __init__(self,x:int) -> None:
         if x < 0:
-            raise Exception("cannot convert negative integer to uint64")
+            fail("cannot convert negative integer to uint64")
         else:
             self.v = x & 0xffffffffffffffff
     def __str__(self) -> str:
@@ -121,11 +127,11 @@ class uint64:
         return uint64(self.v ^ other.v)
     def __lshift__(self,other:int) -> 'uint64':
         if other < 0 or other >= 64:
-            raise Exception("uint64 cannot be shifted by < 0 or >= 64")
+            fail("uint64 cannot be shifted by < 0 or >= 64")
         return uint64(self.v << other)
     def __rshift__(self,other:int) -> 'uint64':
         if other < 0 or other >= 64:
-            raise Exception("uint64 cannot be shifted by < 0 or >= 64")
+            fail("uint64 cannot be shifted by < 0 or >= 64")
         return uint64((self.v & 0xffffffff) >> other)
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
@@ -150,7 +156,7 @@ class uint64:
 class uint128:
     def __init__(self,x:int) -> None:
         if x < 0:
-            raise Exception("cannot convert negative integer to uint128")
+            fail("cannot convert negative integer to uint128")
         else:
             self.v = x & 0xffffffffffffffffffffffffffffffff
     def __str__(self) -> str:
@@ -169,11 +175,11 @@ class uint128:
         return uint128(self.v ^ other.v)
     def __lshift__(self,other:int) -> 'uint128':
         if other < 0 or other >= 128:
-            raise Exception("uint128 cannot be shifted by < 0 or >= 128")
+            fail("uint128 cannot be shifted by < 0 or >= 128")
         return uint128(self.v << other)
     def __rshift__(self,other:int) -> 'uint128':
         if other < 0 or other >= 128:
-            raise Exception("uint128 cannot be shifted by < 0 or >= 128")
+            fail("uint128 cannot be shifted by < 0 or >= 128")
         return uint128((self.v & 0xffffffff) >> other)
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
@@ -234,7 +240,7 @@ class array(Iterable[T]):
             print('Array access error:')
             print('array content:',self.l)
             print('array index:',key)
-            raise Exception('array index error')
+            fail('array index error')
 
     def __getslice__(self, i:int, j:int) -> 'array[T]':
         return array(self.l[i:j])
@@ -261,6 +267,18 @@ class array(Iterable[T]):
     def zip(x:'array[T]',y:'array[U]') -> 'array[Tuple[T,U]]':
         return array(list(zip(x.l,y.l)))
 
+    @staticmethod
+    def enumerate(x:'array[T]') -> 'array[Tuple[int,T]]':
+        return array(list(enumerate(x.l)))
+    
+    @staticmethod
+    def split_blocks(a:'array[T]',blocksize:int) -> 'array[array[T]]':
+        return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
+
+    @staticmethod
+    def concat_blocks(blocks:'array[array[T]]') -> 'array[T]':
+        return (array([b for block in blocks for b in block]))
+    
     @staticmethod
     def split_bytes(a:bytes,blocksize:int) -> 'array[bytes]':
         return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])

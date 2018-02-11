@@ -37,7 +37,7 @@ def aead_chacha20poly1305_decrypt(key:bytes,nonce:bytes,
         msg = chacha20_decrypt(key,1,nonce,ciphertext)
         return msg
     else:
-        raise Exception("mac failed")
+        raise Error("mac failed")
 
 from test_vectors.aead_chacha20poly1305_test_vectors import *
 
