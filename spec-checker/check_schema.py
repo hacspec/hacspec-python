@@ -5,7 +5,7 @@ import json
 # pip install jsonschema
 from jsonschema import validate
 
-schema = {
+mac_schema = {
   "type": "array",
   "items": {
     "type": "object",
@@ -33,6 +33,42 @@ schema = {
   }
 }
 
+enc_schema = {
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "input_len": {
+        "type": "number"
+      },
+      "input": {
+        "type": "string"
+      },
+      "key": {
+        "type": "string"
+      },
+      "nonce": {
+        "type": "string"
+      },
+      "counter": {
+        "type": "number"
+      },
+      "output": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "input_len",
+      "input",
+      "key",
+      "nonce",
+      "counter",
+      "output"
+    ]
+  },
+  "maxProperties": 6
+}
+
 if len(sys.argv) != 3:
     print("Usage: check_schema.py [mac|enc] <file-name>")
     sys.exit(1)
@@ -40,13 +76,16 @@ if len(sys.argv) != 3:
 if sys.argv[1] == "mac":
     with open(sys.argv[2]) as json_data:
         data = json.load(json_data)
-        validate(data, schema)
+        validate(data, mac_schema)
         print("Validation successful")
         sys.exit(0)
 
 if sys.argv[1] == "enc":
-    print("Sorry, enc is not supported yet.")
-    sys.exit(1)
+    with open(sys.argv[2]) as json_data:
+        data = json.load(json_data)
+        validate(data, enc_schema)
+        print("Validation successful")
+        sys.exit(0)
 
 
 print("Usage: check_schema.py [mac|enc] <file-name>")

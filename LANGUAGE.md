@@ -78,16 +78,21 @@ array[T]:
 
 # Test Vectors
 
-Test vectors are define in [JSON](http://json-schema.org/specification.html) following some schema.
-Every schema can be checked either with `mypy` or with `jsonschema`.
+Test vectors are define in JSON following some schema.
+Every schema can be checked either with `mypy` or with [`jsonschema`](http://json-schema.org/specification.html).
+Note that `jsonschema` is stricter as it checks the JSON key names while `mypy` only checks types.
 
-## MAC Schema
+Test vector schemata MUST NOT use types other than "string" and "int"/"number".
+Integers MUST be base 10.
+
+## MAC
 
 ### Mypy TypedDict
+Usage example:
 `mypy specs/test_vectors/poly1305_test_vectors.py`
 
 ```
-poly1305_test = TypedDict('poly1305_test', {
+mac_test = TypedDict('mac_test', {
     'input_len': str,
     'input': str,
     'key' :  str,
@@ -96,6 +101,7 @@ poly1305_test = TypedDict('poly1305_test', {
 ```
 
 ### JSON Schema
+Usage example:
 `python spec-checker/check_schema.py mac specs/test_vectors/poly1305_test_vectors.json`
 
 ```
@@ -125,5 +131,63 @@ poly1305_test = TypedDict('poly1305_test', {
     ]
   },
   "maxProperties": 4
+}
+```
+
+## Symmetric Encryption
+
+### Mypy TypedDict
+Usage example:
+`mypy specs/test_vectors/chacha20_test_vectors.py`
+
+```
+enc_test = TypedDict('enc_test', {
+    'input_len': int,
+    'input': str,
+    'key' :  str,
+    'nonce' :  str,
+    'counter' : int,
+    'output' :  str})
+```
+
+### JSON Schema
+Usage example:
+`python spec-checker/check_schema.py enc specs/test_vectors/chacha20_test_vectors.json`
+
+```
+enc_schema = {
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "input_len": {
+        "type": "number"
+      },
+      "input": {
+        "type": "string"
+      },
+      "key": {
+        "type": "string"
+      },
+      "nonce": {
+        "type": "string"
+      },
+      "counter": {
+        "type": "number"
+      },
+      "output": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "input_len",
+      "input",
+      "key",
+      "nonce",
+      "counter",
+      "output"
+    ]
+  },
+  "maxProperties": 6
 }
 ```
