@@ -10,39 +10,42 @@ import json
 
 p130m5 = (2 ** 130) - 5 # type: int
 
-def fadd(a:felem,b:felem) -> felem:
-    return felem((a + b) % p130m5)
-def fmul(a:felem,b:felem) -> felem:
-    return felem((a * b) % p130m5)
+class Felem:
+    def __init__(self,x:felem) -> None:
+        self.v = x
+    def __str__(self) -> str:
+        return str(self.v)
+    def __repr__(self) -> str:
+        return repr(self.v)
+    def __add__(self,other:'Felem') -> 'Felem':
+        return Felem(int(self.v + other.v) % p130m5)
+    def __mul__(self,other:'Felem') -> 'Felem':
+        return Felem(int(self.v * other.v) % p130m5)
+    def __pow__(self,other:int) -> 'Felem':
+        return Felem(int(self.v ** other) % p130m5)
+    # See https://github.com/python/mypy/issues/2783
+    def __eq__(self,other:Any) -> Any:
+        return self.v == other.v
+    def to128(self) -> uint128:
+        return uint128(self.v)
 
-def encode(block:bytes) -> felem:
-    welem = felem(uint128.int_value(uint128.from_bytes_le(block)))
-    lelem = felem(2 ** (8 * len(block)))
-    return fadd(lelem,welem)
+def encode(block:bytes) -> Felem:
+    welem = Felem(uint128.int_value(uint128.from_bytes_le(block)))
+    lelem = Felem(2 ** (8 * len(block)))
+    return lelem + welem
 
-def encode_r(r:bytes) -> felem:
+def encode_r(r:bytes) -> Felem:
     ruint = uint128.from_bytes_le(r)
     ruint &= uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
-    return  felem(uint128.int_value(ruint))
+    return Felem(uint128.int_value(ruint))
 
-# There are many ways of writing the polynomial evaluation function
-# First version: use a loop to accumulate the result
 blocksize = 16
-def poly(text:bytes,r:felem) -> felem:
-    blocks = array.split_bytes(text,blocksize)
-    acc = felem(0)
-    for i in range(len(blocks)):
-        acc = fmul(fadd(acc,encode(blocks[i])),r)
-    return acc
 
-# Second version: use higher-order reduce
-from functools import reduce
-def poly_reduce(tlen:int,text:bytes,r:felem) -> felem:
-    def accumulate(acc:felem,block:bytes) -> felem:
-        return (fmul(fadd(acc,encode(block)),r))
+def poly(text:bytes,r:Felem) -> Felem:
     blocks = array.split_bytes(text,blocksize)
-    acc = reduce(accumulate, blocks, felem(0))
-    return acc
+    return sum((encode(block) * r**(len(blocks)-i)
+                for i, block in enumerate(blocks)),
+               Felem(0))
 
 def poly1305_mac(text:bytes,k:bytes) -> bytes :
     r = k[0:blocksize]
@@ -50,7 +53,7 @@ def poly1305_mac(text:bytes,k:bytes) -> bytes :
     relem = encode_r(r)
     selem = uint128.from_bytes_le(s)
     a = poly(text,relem)
-    n = uint128(a) + selem
+    n = a.to128() + selem
     return uint128.to_bytes_le(n)
 
 from test_vectors.poly1305_test_vectors import poly1305_test_vectors
