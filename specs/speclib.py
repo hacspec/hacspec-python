@@ -88,6 +88,8 @@ class uint32:
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return self.v == other.v
+    def __invert__(self) -> 'uint32':
+        return uint32(~self.v & 0xffffffff)
 
     @staticmethod
     def rotate_left(x:'uint32',other:int) -> 'uint32':
@@ -104,6 +106,9 @@ class uint32:
     @staticmethod
     def to_bytes_le(x:'uint32') -> bytes:
         return x.v.to_bytes(4,byteorder='little')
+    @staticmethod
+    def from_u8array(x:'array[uint8]') -> 'uint32':
+        return uint32(int(x[0].v) << 24 | int(x[1].v) << 16 | int(x[2].v) << 8 | int(x[3].v))
 
 class uint64:
     def __init__(self,x:int) -> None:
@@ -151,6 +156,9 @@ class uint64:
     @staticmethod
     def to_bytes_le(x:'uint64') -> bytes:
         return x.v.to_bytes(8,byteorder='little')
+    @staticmethod
+    def to_bytes_be(x:'uint64') -> bytes:
+        return x.v.to_bytes(8,byteorder='big')
 
 
 class uint128:
@@ -251,9 +259,30 @@ class array(Iterable[T]):
         else:
             self.l[key] = v
 
+    def append(self, x:T) -> None:
+        self.l = self.l[len(self.l):] = [x]
+        return None
+
+    def extend(self, x:'array[T]') -> None:
+        self.l[len(self.l):] = x.l
+        return None
+
+    def split(self,blocksize:int) -> 'array[array[T]]':
+        return array([array(self.l[x:x+blocksize]) for x in range(0,len(self.l),blocksize)])
+
+    @staticmethod
+    def to_int(x:'array[uint32]') -> int:
+        result_int = 0
+        for (i, b) in enumerate(x):
+            result_int |= int(b.v) << (i*32)
+        return result_int
+
     @staticmethod
     def create(default:T, len:int) -> 'array[T]':
         return array([default] * len)
+    @staticmethod
+    def create_type(x:Iterable[U], T) -> 'array[T]':
+        return array(list([T(el) for el in x]))
 
     @staticmethod
     def len(a:'array[T]') -> int:

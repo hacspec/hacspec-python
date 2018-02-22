@@ -54,7 +54,7 @@ def chacha20_core(st:state) -> state:
     for i in range(16):
         working_state[i] += st[i]
     if (len(working_state) != 16):
-        return array([0, 0, 0, 0])
+        return array([uint32(0), uint32(0), uint32(0), uint32(0)])
     return working_state
 
 @precondition(keyType, "> 0", nonceType)
