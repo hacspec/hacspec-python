@@ -73,7 +73,7 @@ def read(node, indent="", allowed=None, previous=None):
         left = read(node.left, indent + "  ",
                     [Num, BinOp, Call, Name, Subscript], node)
         op = read(node.op, indent + "  ", [Add, Sub, Mult, Div,
-                                           Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd], node)
+                                           Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd, FloorDiv], node)
         right = read(node.right, indent + "  ",
                      [Num, BinOp, Call, Name, Subscript], node)
         if left is Num and right is Num:

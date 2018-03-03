@@ -43,15 +43,13 @@ def pad(msg: array[uint8]) -> array[uint8]:
     msg_len_bits = len(msg) * 8
     one_len = 512 - ((msg_len_bits + 1 + 64) % 512)
     pad_len = (one_len + 1) // 8
-    assert(float((one_len + 1) // 8) == (one_len + 1) / 8)
     padding = array.create(uint8(0), pad_len)
     padding[0] = uint8(0x80)
     msg_len_bytes = uint64.to_bytes_be(uint64(msg_len_bits))
-    msg_len_array: array[uint8] = array.create_type(msg_len_bytes, uint8)
+    msg_len_array = array.create_type(msg_len_bytes, uint8) # tpye: array[uint8]
     padding.extend(msg_len_array)
     padded_msg = array.copy(msg)
     padded_msg.extend(padding)
-    assert((len(padded_msg) * 8) % 512 == 0)
     return padded_msg
 
 
