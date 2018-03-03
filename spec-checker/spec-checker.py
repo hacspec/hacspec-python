@@ -6,11 +6,13 @@ from sys import exit
 import builtins
 
 ALLOWED_IMPORTS = ["speclib", "functools", "test_vectors.", "json", "ctr"]
-DEBUG_PRINT=True
+DEBUG_PRINT = True
+
 
 def print(*args, **kwargs):
     if DEBUG_PRINT:
         builtins.print(*args, **kwargs)
+
 
 def isTypeAllowed(node, typeList):
     for aType in typeList:
@@ -18,13 +20,15 @@ def isTypeAllowed(node, typeList):
             return True
     return False
 
+
 def read(node, indent="", allowed=None, previous=None):
     print(indent + "processing: " + str(type(node)) + " ...")
     indent += "  "
 
     # If we have allowed types, check them.
     if not allowed is None and not isTypeAllowed(node, allowed):
-        raise SyntaxError("Operation " + str(node) + " is not allowed in " + str(previous) + ".")
+        raise SyntaxError("Operation " + str(node) +
+                          " is not allowed in " + str(previous) + ".")
 
     # Read a module.
     if isinstance(node, Module):
@@ -49,14 +53,16 @@ def read(node, indent="", allowed=None, previous=None):
     if isinstance(node, Assign):
         targets = [read(x, indent + "  ") for x in node.targets]
         print(indent + "targets: " + ', '.join(targets))
-        value = read(node.value, indent + "  ", [Call, BinOp, Num, Subscript, Name], node)
+        value = read(node.value, indent + "  ",
+                     [Call, BinOp, Num, Subscript, Name], node)
         print(indent + "value: " + str(value))
         type_comment = node.type_comment
         if type_comment:
             print(indent + "type_comment: " + type_comment)
     if isinstance(node, AugAssign):
         print(indent + "target: " + str(node.target.id))
-        value = read(node.value, indent + "  ", [Call, BinOp, Num, Subscript, Name], node)
+        value = read(node.value, indent + "  ",
+                     [Call, BinOp, Num, Subscript, Name], node)
         print(indent + "value: " + str(value))
         read(node.op, indent + "  ")
     # Assignments with types as annotations
@@ -64,9 +70,12 @@ def read(node, indent="", allowed=None, previous=None):
         raise SyntaxError("AnnAssign is not allowed yet.")
 
     if isinstance(node, BinOp):
-        left = read(node.left, indent + "  ", [Num, BinOp, Call, Name, Subscript], node)
-        op = read(node.op, indent + "  ", [Add, Sub, Mult, Div, Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd], node)
-        right = read(node.right, indent + "  ", [Num, BinOp, Call, Name, Subscript], node)
+        left = read(node.left, indent + "  ",
+                    [Num, BinOp, Call, Name, Subscript], node)
+        op = read(node.op, indent + "  ", [Add, Sub, Mult, Div,
+                                           Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd], node)
+        right = read(node.right, indent + "  ",
+                     [Num, BinOp, Call, Name, Subscript], node)
         if left is Num and right is Num:
             return Num
         return BinOp
@@ -176,16 +185,19 @@ def read(node, indent="", allowed=None, previous=None):
         for x in node:
             read(x, indent + "  ")
 
+
 def check_ast(ast):
     if not isinstance(ast, AST):
         raise TypeError('Expected AST, got %r' % node.__class__.__name__)
     read(ast)
+
 
 def main(filename):
     with open(filename, 'r', encoding='utf-8') as py_file:
         code = py_file.read()
         ast = parse(source=code, filename=filename)
         check_ast(ast)
+
 
 if __name__ == "__main__":
     if len(argv) != 2:

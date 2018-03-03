@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Run mypy sha2.py to type check.
 
 from speclib import *
@@ -14,30 +13,32 @@ H6 = uint32(0x1f83d9ab)
 H7 = uint32(0x5be0cd19)
 
 constants = array([
-   uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf),
-   uint32(0xe9b5dba5), uint32(0x3956c25b), uint32(0x59f111f1),
-   uint32(0x923f82a4), uint32(0xab1c5ed5), uint32(0xd807aa98),
-   uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3),
-   uint32(0x72be5d74), uint32(0x80deb1fe), uint32(0x9bdc06a7),
-   uint32(0xc19bf174), uint32(0xe49b69c1), uint32(0xefbe4786),
-   uint32(0x0fc19dc6), uint32(0x240ca1cc), uint32(0x2de92c6f),
-   uint32(0x4a7484aa), uint32(0x5cb0a9dc), uint32(0x76f988da),
-   uint32(0x983e5152), uint32(0xa831c66d), uint32(0xb00327c8),
-   uint32(0xbf597fc7), uint32(0xc6e00bf3), uint32(0xd5a79147),
-   uint32(0x06ca6351), uint32(0x14292967), uint32(0x27b70a85),
-   uint32(0x2e1b2138), uint32(0x4d2c6dfc), uint32(0x53380d13),
-   uint32(0x650a7354), uint32(0x766a0abb), uint32(0x81c2c92e),
-   uint32(0x92722c85), uint32(0xa2bfe8a1), uint32(0xa81a664b),
-   uint32(0xc24b8b70), uint32(0xc76c51a3), uint32(0xd192e819),
-   uint32(0xd6990624), uint32(0xf40e3585), uint32(0x106aa070),
-   uint32(0x19a4c116), uint32(0x1e376c08), uint32(0x2748774c),
-   uint32(0x34b0bcb5), uint32(0x391c0cb3), uint32(0x4ed8aa4a),
-   uint32(0x5b9cca4f), uint32(0x682e6ff3), uint32(0x748f82ee),
-   uint32(0x78a5636f), uint32(0x84c87814), uint32(0x8cc70208),
-   uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7),
-   uint32(0xc67178f2)])
+    uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf),
+    uint32(0xe9b5dba5), uint32(0x3956c25b), uint32(0x59f111f1),
+    uint32(0x923f82a4), uint32(0xab1c5ed5), uint32(0xd807aa98),
+    uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3),
+    uint32(0x72be5d74), uint32(0x80deb1fe), uint32(0x9bdc06a7),
+    uint32(0xc19bf174), uint32(0xe49b69c1), uint32(0xefbe4786),
+    uint32(0x0fc19dc6), uint32(0x240ca1cc), uint32(0x2de92c6f),
+    uint32(0x4a7484aa), uint32(0x5cb0a9dc), uint32(0x76f988da),
+    uint32(0x983e5152), uint32(0xa831c66d), uint32(0xb00327c8),
+    uint32(0xbf597fc7), uint32(0xc6e00bf3), uint32(0xd5a79147),
+    uint32(0x06ca6351), uint32(0x14292967), uint32(0x27b70a85),
+    uint32(0x2e1b2138), uint32(0x4d2c6dfc), uint32(0x53380d13),
+    uint32(0x650a7354), uint32(0x766a0abb), uint32(0x81c2c92e),
+    uint32(0x92722c85), uint32(0xa2bfe8a1), uint32(0xa81a664b),
+    uint32(0xc24b8b70), uint32(0xc76c51a3), uint32(0xd192e819),
+    uint32(0xd6990624), uint32(0xf40e3585), uint32(0x106aa070),
+    uint32(0x19a4c116), uint32(0x1e376c08), uint32(0x2748774c),
+    uint32(0x34b0bcb5), uint32(0x391c0cb3), uint32(0x4ed8aa4a),
+    uint32(0x5b9cca4f), uint32(0x682e6ff3), uint32(0x748f82ee),
+    uint32(0x78a5636f), uint32(0x84c87814), uint32(0x8cc70208),
+    uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7),
+    uint32(0xc67178f2)])
 
 # We expect messages to have full byte lengths.
+
+
 def pad(msg: array[uint8]) -> array[uint8]:
     msg_len_bits = len(msg) * 8
     one_len = 512 - ((msg_len_bits + 1 + 64) % 512)
@@ -53,6 +54,7 @@ def pad(msg: array[uint8]) -> array[uint8]:
     assert((len(padded_msg) * 8) % 512 == 0)
     return padded_msg
 
+
 def hash(msg: array[uint8]) -> array[uint32]:
     blocks = msg.split(512//8)
     h0 = H0
@@ -65,11 +67,13 @@ def hash(msg: array[uint8]) -> array[uint32]:
     h7 = H7
     for block in blocks:
         state = array.create(uint32(0), 64)
-        for i in range(0,16):
+        for i in range(0, 16):
             state[i] = uint32.from_u8array(block[i*4:i*4+4])
-        for i in range(16,64):
-            s0 = uint32.rotate_right(state[i-15], 7) ^ uint32.rotate_right(state[i-15], 18) ^ (state[i-15] >> 3)
-            s1 = uint32.rotate_right(state[i-2], 17) ^ uint32.rotate_right(state[i-2], 19) ^ (state[i-2] >> 10)
+        for i in range(16, 64):
+            s0 = uint32.rotate_right(
+                state[i-15], 7) ^ uint32.rotate_right(state[i-15], 18) ^ (state[i-15] >> 3)
+            s1 = uint32.rotate_right(
+                state[i-2], 17) ^ uint32.rotate_right(state[i-2], 19) ^ (state[i-2] >> 10)
             state[i] = state[i-16] + s0 + state[i-7] + s1
         a = h0
         b = h1
@@ -79,11 +83,13 @@ def hash(msg: array[uint8]) -> array[uint32]:
         f = h5
         g = h6
         h = h7
-        for i in range(0,64):
-            s1 = uint32.rotate_right(e, 6) ^ uint32.rotate_right(e, 11) ^ uint32.rotate_right(e, 25)
+        for i in range(0, 64):
+            s1 = uint32.rotate_right(e, 6) ^ uint32.rotate_right(
+                e, 11) ^ uint32.rotate_right(e, 25)
             ch = (e & f) ^ (~e & g)
             tmp = h + s1 + ch + constants[i] + state[i]
-            s0 = uint32.rotate_right(a, 2) ^ uint32.rotate_right(a, 13) ^ uint32.rotate_right(a, 22)
+            s0 = uint32.rotate_right(a, 2) ^ uint32.rotate_right(
+                a, 13) ^ uint32.rotate_right(a, 22)
             maj = (a & b) ^ (a & c) ^ (b & c)
             tmp2 = s0 + maj
 
@@ -106,15 +112,3 @@ def hash(msg: array[uint8]) -> array[uint32]:
         h7 = h7 + h
 
     return array([h7, h6, h5, h4, h3, h2, h1, h0])
-
-# mypy only checks functions that have types. So add an argument :)
-def main(x: int) -> None:
-    padded = pad(array([uint8(0x68), uint8(0x61), uint8(0x63), uint8(0x73), uint8(0x70), uint8(0x65), uint8(0x63), uint8(0x20), uint8(0x69), uint8(0x73), uint8(0x20), uint8(0x61), uint8(0x20), uint8(0x70), uint8(0x72), uint8(0x6f), uint8(0x70), uint8(0x6f), uint8(0x73), uint8(0x61), uint8(0x6c), uint8(0x20), uint8(0x66), uint8(0x6f), uint8(0x72), uint8(0x20), uint8(0x61), uint8(0x20), uint8(0x6e), uint8(0x65), uint8(0x77), uint8(0x20), uint8(0x73), uint8(0x70), uint8(0x65), uint8(0x63), uint8(0x69), uint8(0x66), uint8(0x69), uint8(0x63), uint8(0x61), uint8(0x74), uint8(0x69), uint8(0x6f), uint8(0x6e), uint8(0x20), uint8(0x6c), uint8(0x61), uint8(0x6e), uint8(0x67), uint8(0x75), uint8(0x61), uint8(0x67), uint8(0x65), uint8(0x20), uint8(0x66), uint8(0x6f), uint8(0x72), uint8(0x20), uint8(0x63), uint8(0x72), uint8(0x79), uint8(0x70), uint8(0x74), uint8(0x6f), uint8(0x20), uint8(0x70), uint8(0x72), uint8(0x69), uint8(0x6d), uint8(0x69), uint8(0x74), uint8(0x69), uint8(0x76), uint8(0x65), uint8(0x73), uint8(0x20), uint8(0x74), uint8(0x68), uint8(0x61), uint8(0x74), uint8(0x20), uint8(0x69), uint8(0x73), uint8(0x20), uint8(0x73), uint8(0x75), uint8(0x63), uint8(0x63), uint8(0x69), uint8(0x6e), uint8(0x63), uint8(0x74), uint8(0x2c), uint8(0x20), uint8(0x74), uint8(0x68), uint8(0x61), uint8(0x74), uint8(0x20), uint8(0x69), uint8(0x73), uint8(0x20), uint8(0x65), uint8(0x61), uint8(0x73), uint8(0x79), uint8(0x20), uint8(0x74), uint8(0x6f), uint8(0x20), uint8(0x72), uint8(0x65), uint8(0x61), uint8(0x64), uint8(0x20), uint8(0x61), uint8(0x6e), uint8(0x64), uint8(0x20), uint8(0x69), uint8(0x6d), uint8(0x70), uint8(0x6c), uint8(0x65), uint8(0x6d), uint8(0x65), uint8(0x6e), uint8(0x74), uint8(0x2c), uint8(0x20), uint8(0x61), uint8(0x6e), uint8(0x64), uint8(0x20), uint8(0x74), uint8(0x68), uint8(0x61), uint8(0x74), uint8(0x20), uint8(0x6c), uint8(0x65), uint8(0x6e), uint8(0x64), uint8(0x73), uint8(0x20), uint8(0x69), uint8(0x74), uint8(0x73), uint8(0x65), uint8(0x6c), uint8(0x66), uint8(0x20), uint8(0x74), uint8(0x6f), uint8(0x20), uint8(0x66), uint8(0x6f), uint8(0x72), uint8(0x6d), uint8(0x61), uint8(0x6c), uint8(0x20), uint8(0x76), uint8(0x65), uint8(0x72), uint8(0x69), uint8(0x66), uint8(0x69), uint8(0x63), uint8(0x61), uint8(0x74), uint8(0x69), uint8(0x6f), uint8(0x6e), uint8(0x2e)]))
-    digest = hash(padded)
-    digest_int = array.to_int(digest)
-    expected_digest = 0x348ef044446d56e05210361af5a258588ad31765f446bf4cb3b67125a187a64a
-    assert(expected_digest == digest_int)
-    print(hex(digest_int))
-
-if __name__ == "__main__":
-    main(0)
