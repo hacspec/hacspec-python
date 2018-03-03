@@ -25,15 +25,6 @@ def encode_r(r:bytes) -> felem:
     ruint &= uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
     return  felem(uint128.int_value(ruint))
 
-def foo0(bla="blub", blub="bladefault"):
-    if bla == "blub":
-        print("a")
-    elif blub == "a":
-        print("b")
-    else:
-        print("c")
-    print(bla)
-
 # There are many ways of writing the polynomial evaluation function
 # First version: use a loop to accumulate the result
 blocksize = 16

@@ -84,7 +84,8 @@ def hash(msg: array[uint8]) -> array[uint32]:
         for i in range(0, 64):
             s1 = uint32.rotate_right(e, 6) ^ uint32.rotate_right(
                 e, 11) ^ uint32.rotate_right(e, 25)
-            ch = (e & f) ^ (~e & g)
+            not_e = ~e
+            ch = (e & f) ^ (not_e & g)
             tmp = h + s1 + ch + constants[i] + state[i]
             s0 = uint32.rotate_right(a, 2) ^ uint32.rotate_right(
                 a, 13) ^ uint32.rotate_right(a, 22)
