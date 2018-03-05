@@ -1,5 +1,7 @@
 from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple
 
+from random import SystemRandom as rand
+
 nat = NewType('nat',int)     # Should be a refinement type
 felem = NewType('felem',int) # Should be a refinement type
 
@@ -90,6 +92,8 @@ class uint32:
         return self.v == other.v
     def __invert__(self) -> 'uint32':
         return uint32(~self.v & 0xffffffff)
+    def as_int(self) -> int:
+        return int(self.v)
 
     @staticmethod
     def rotate_left(x:'uint32',other:int) -> 'uint32':
@@ -283,6 +287,10 @@ class array(Iterable[T]):
     @staticmethod
     def create_type(x:Iterable[U], T) -> 'array[T]':
         return array(list([T(el) for el in x]))
+    @staticmethod
+    def create_random_bytes(len:int) -> 'array[uint8]':
+        r = rand()
+        return array(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
     @staticmethod
     def len(a:'array[T]') -> int:
