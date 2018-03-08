@@ -12,7 +12,7 @@ typecheck:
 	$(MYPY) $(FILES)
 
 test:
-	$(PYTHON) poly1305.py
-	$(PYTHON) chacha20.py
-	$(PYTHON) aead_chacha20poly1305.py
+	$(PYTHON) poly1305_test.py
+	$(PYTHON) chacha20_test.py
+	$(PYTHON) aead_chacha20poly1305_test.py
 
