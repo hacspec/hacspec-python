@@ -1,7 +1,7 @@
 from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple
 
-nat = NewType('nat',int)     # Should be a refinement type
-felem = NewType('felem',int) # Should be a refinement type
+nat    = NewType('nat',int)     # Should be a refinement type
+felem  = NewType('felem',int) # Should be a refinement type
 
 class Error(Exception): pass
 
@@ -346,3 +346,7 @@ def precondition(*types):
         wrapper.func_name = func.__name__
         return wrapper
     return precondition_decorator
+
+
+
+
