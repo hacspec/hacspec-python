@@ -5,7 +5,6 @@ from sys import argv
 from sys import exit
 import builtins
 
-ALLOWED_IMPORTS = ["speclib", "functools", "test_vectors.", "json", "ctr"]
 DEBUG_PRINT = True
 
 
@@ -37,10 +36,7 @@ def read(node, indent="", allowed=None, previous=None):
     # Check that imports are only from a known list of imports (see ALLOWED_IMPORTS)
     if isinstance(node, ImportFrom):
         print(indent + "ImportFrom: " + node.module)
-        for imp in ALLOWED_IMPORTS:
-            if node.module.startswith(imp):
-                return
-        raise ImportError("Use of disallowed import.")
+        return
     if isinstance(node, Import):
         print(indent + "Import: " + str(node.names[0].name))
         for node_name in node.names:
