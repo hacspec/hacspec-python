@@ -1,4 +1,4 @@
-from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple
+from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable
 
 nat = NewType('nat',int)     # Should be a refinement type
 felem = NewType('felem',int) # Should be a refinement type
@@ -49,13 +49,6 @@ class uint8:
     @staticmethod
     def int_value(x:'uint8') -> int:
         return x.v
-    @staticmethod
-    def from_bytes_le(n:bytes) -> 'uint8':
-        return uint8(int.from_bytes(n,byteorder='little'))
-    @staticmethod
-    def to_bytes_le(x:'uint8') -> bytes:
-        return x.v.to_bytes(1,byteorder='little')
-
 
 class uint32:
     def __init__(self,x:int) -> None:
@@ -100,15 +93,6 @@ class uint32:
     @staticmethod
     def int_value(x:'uint32') -> int:
         return x.v
-    @staticmethod
-    def from_bytes_le(n:bytes) -> 'uint32':
-        return uint32(int.from_bytes(n,byteorder='little'))
-    @staticmethod
-    def to_bytes_le(x:'uint32') -> bytes:
-        return x.v.to_bytes(4,byteorder='little')
-    @staticmethod
-    def from_u8array(x:'array[uint8]') -> 'uint32':
-        return uint32(int(x[0].v) << 24 | int(x[1].v) << 16 | int(x[2].v) << 8 | int(x[3].v))
 
 class uint64:
     def __init__(self,x:int) -> None:
@@ -150,16 +134,6 @@ class uint64:
     @staticmethod
     def int_value(x:'uint64') -> int:
         return x.v
-    @staticmethod
-    def from_bytes_le(n:bytes) -> 'uint64':
-        return uint64(int.from_bytes(n,byteorder='little'))
-    @staticmethod
-    def to_bytes_le(x:'uint64') -> bytes:
-        return x.v.to_bytes(8,byteorder='little')
-    @staticmethod
-    def to_bytes_be(x:'uint64') -> bytes:
-        return x.v.to_bytes(8,byteorder='big')
-
 
 class uint128:
     def __init__(self,x:int) -> None:
@@ -202,12 +176,6 @@ class uint128:
     @staticmethod
     def int_value(x:'uint128') -> int:
         return x.v
-    @staticmethod
-    def from_bytes_le(n:bytes) -> 'uint128':
-        return uint128(int.from_bytes(n,byteorder='little'))
-    @staticmethod
-    def to_bytes_le(x:'uint128') -> bytes:
-        return x.v.to_bytes(16,byteorder='little')
 
 
 T = TypeVar('T')
@@ -295,11 +263,15 @@ class array(Iterable[T]):
     @staticmethod
     def zip(x:'array[T]',y:'array[U]') -> 'array[Tuple[T,U]]':
         return array(list(zip(x.l,y.l)))
-
+    
     @staticmethod
     def enumerate(x:'array[T]') -> 'array[Tuple[int,T]]':
         return array(list(enumerate(x.l)))
 
+    @staticmethod
+    def map(f:Callable[[T],U],a:'array[T]') -> 'array[U]':
+        return array(list(map(f,a)))
+    
     @staticmethod
     def split_blocks(a:'array[T]',blocksize:int) -> 'array[array[T]]':
         return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
@@ -307,26 +279,80 @@ class array(Iterable[T]):
     @staticmethod
     def concat_blocks(blocks:'array[array[T]]') -> 'array[T]':
         return (array([b for block in blocks for b in block]))
+    
+class bytes(array[uint8]):
+    @staticmethod
+    def from_ints(x:List[int]) -> array[uint8]:
+        return array([uint8(i) for i in x])
 
     @staticmethod
-    def split_bytes(a:bytes,blocksize:int) -> 'array[bytes]':
-        return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
-
-    @staticmethod
-    def concat_bytes(blocks:'array[bytes]') -> bytes:
+    def concat(blocks:'array[array[uint8]]') -> 'array[uint8]':
         concat = [b for block in blocks for b in block]
-        return bytes(array(concat))
+        return array(concat)
 
     @staticmethod
-    def uint32s_from_bytes_le(b:bytes) -> 'array[uint32]':
-        blocks = array.split_bytes(b,4)
-        ints = [uint32.from_bytes_le(b) for b in blocks]
-        return array(ints)
+    def from_hex(x:str) -> array[uint8]:
+        return array([uint8(int(x[i:i+2],16)) for i in range(0,len(x),2)])
+    
+    @staticmethod
+    def from_uint32_le(x:uint32) -> array[uint8]:
+        xv = uint32.int_value(x)
+        x0 = uint8(xv & 255)
+        x1 = uint8((xv >> 8) & 255)
+        x2 = uint8((xv >> 16) & 255)
+        x3 = uint8((xv >> 24) & 255)
+        return array([x0,x1,x2,x3])
 
     @staticmethod
-    def uint32s_to_bytes_le(ints:'array[uint32]') -> bytes:
-        blocks = array([uint32.to_bytes_le(i) for i in ints])
-        return array.concat_bytes(blocks)
+    def to_uint32_le(x:array[uint8]) -> uint32:
+        x0 = uint8.int_value(x[0])
+        x1 = uint8.int_value(x[1]) << 8
+        x2 = uint8.int_value(x[2]) << 16
+        x3 = uint8.int_value(x[3]) << 24
+        return uint32(x0 + x1 + x2 + x3)
+
+    @staticmethod
+    def from_uint64_le(x:uint64) -> array[uint8]:
+        xv = uint64.int_value(x)
+        x0 = uint32(xv & 0xffffffff)
+        x1 = uint32((xv >> 32) & 0xffffffff)
+        a:array[uint8] = array.create(uint8(0),8)
+        a[0:4] = bytes.from_uint32_le(x0)
+        a[4:8] = bytes.from_uint32_le(x1)
+        return a
+
+    @staticmethod
+    def to_uint64_le(x:array[uint8]) -> uint64:
+        x0 = bytes.to_uint32_le(x[0:4])
+        x1 = bytes.to_uint32_le(x[4:8])
+        return uint64(uint32.int_value(x0) +
+                      (uint32.int_value(x1) << 32))
+
+    @staticmethod
+    def from_uint128_le(x:uint128) -> array[uint8]:
+        xv = uint128.int_value(x)
+        x0 = uint64(xv & 0xffffffffffffffff)
+        x1 = uint64((xv >> 64) & 0xffffffffffffffff)
+        a = array.create(uint8(0),16)
+        a[0:8] = bytes.from_uint64_le(x0)
+        a[8:16] = bytes.from_uint64_le(x1)
+        return a
+
+    @staticmethod
+    def to_uint128_le(x:array[uint8]) -> uint128:
+        x0 = bytes.to_uint64_le(x[0:8])
+        x1 = bytes.to_uint64_le(x[8:16])
+        return uint128(uint64.int_value(x0) +
+                      (uint64.int_value(x1) << 64))
+
+    @staticmethod
+    def from_uint32s_le(x:array[uint32]) -> array[uint8]:
+        by = array([bytes.from_uint32_le(i) for i in x])
+        return(array.concat_blocks(by))
+    @staticmethod
+    def to_uint32s_le(x:array[uint8]) -> array[uint32]:
+        return(array([bytes.to_uint32_le(i) for i in array.split_blocks(x,4)]))
+
 
 def precondition(*types):
     def precondition_decorator(func):
@@ -346,3 +372,4 @@ def precondition(*types):
         wrapper.func_name = func.__name__
         return wrapper
     return precondition_decorator
+
