@@ -14,27 +14,28 @@ w_sixteen = uint32(16)
 # PRF: SHA2-256(toByte(3, 32) || KEY || M).
 
 
-def hash(prefix: array[uint8], key: array[uint8], m: array[uint8]) -> array[uint32]:
+def hash(prefix: array[uint8], key: array[uint8], m: array[uint8]) -> array[uint8]:
     h_in = array.create(uint8(0), 0)
     h_in.extend(prefix)
     h_in.extend(key)
     h_in.extend(m)
-    return sha2.hash(h_in)
+    h = sha2.sha256(h_in)
+    return array.uint32s_to_uint8s_be(h)
 
 
-def F(key: array[uint8], m: array[uint8]) -> array[uint32]:
+def F(key: array[uint8], m: array[uint8]) -> array[uint8]:
     return hash(array.create(uint8(0), 32), key, m)
 
 
-def H(key: array[uint8], m: array[uint8]) -> array[uint32]:
+def H(key: array[uint8], m: array[uint8]) -> array[uint8]:
     return hash(array.create(uint8(1), 32), key, m)
 
 
-def H_msg(key: array[uint8], m: array[uint8]) -> array[uint32]:
+def H_msg(key: array[uint8], m: array[uint8]) -> array[uint8]:
     return hash(array.create(uint8(2), 32), key, m)
 
 
-def PRF(key: array[uint8], m: array[uint8]) -> array[uint32]:
+def PRF(key: array[uint8], m: array[uint8]) -> array[uint8]:
     return hash(array.create(uint8(3), 32), key, m)
 
 
@@ -57,56 +58,85 @@ length = length1 + length2
 # 4-byte: hash address, tree index, tree index
 # 4-byte: key and mask
 address = NewType('address', array[uint8])
-def set_hash_address(adr:address, h_adr:uint32) -> address:
+
+# key pair type
+# I can't get mypy to handle these types :(
+SecretKey = NewType('SecretKey', array[array[uint8]])
+PublicKey = NewType('PublicKey', array[array[uint8]])
+KeyPair = NewType('KeyPair', Tuple[SecretKey, PublicKey])
+
+
+def set_chain_address(adr: address, h_adr: uint32) -> address:
     result = adr[:]
-    result[192] = uint8((h_adr.as_int() & 0xFF000000) >> 24)
-    result[200] = uint8((h_adr.as_int() & 0xFF0000) >> 16)
-    result[208] = uint8((h_adr.as_int() & 0xFF00) >> 8)
-    result[216] = uint8(h_adr.as_int() & 0xFF)
+    result[20] = uint8((h_adr.as_int() & 0xFF000000) >> 24)
+    result[21] = uint8((h_adr.as_int() & 0xFF0000) >> 16)
+    result[22] = uint8((h_adr.as_int() & 0xFF00) >> 8)
+    result[23] = uint8(h_adr.as_int() & 0xFF)
     return result
 
-def set_key_and_mask(adr:address, kam:uint32) -> address:
+
+def set_hash_address(adr: address, h_adr: uint32) -> address:
     result = adr[:]
-    result[224] = uint8((kam.as_int() & 0xFF000000) >> 24)
-    result[232] = uint8((kam.as_int() & 0xFF0000) >> 16)
-    result[240] = uint8((kam.as_int() & 0xFF00) >> 8)
-    result[248] = uint8(kam.as_int() & 0xFF)
+    result[24] = uint8((h_adr.as_int() & 0xFF000000) >> 24)
+    result[25] = uint8((h_adr.as_int() & 0xFF0000) >> 16)
+    result[26] = uint8((h_adr.as_int() & 0xFF00) >> 8)
+    result[27] = uint8(h_adr.as_int() & 0xFF)
+    return result
+
+
+def set_key_and_mask(adr: address, kam: uint32) -> address:
+    result = adr[:]
+    result[28] = uint8((kam.as_int() & 0xFF000000) >> 24)
+    result[29] = uint8((kam.as_int() & 0xFF0000) >> 16)
+    result[30] = uint8((kam.as_int() & 0xFF00) >> 8)
+    result[31] = uint8(kam.as_int() & 0xFF)
     return result
 
 # Input: Input string X, start index i, number of steps s, seed SEED, address ADRS
 # Output: value of F iterated s times on X
-def wots_chain(x: array[uint32], index: int, steps: int, seed: array[uint8], adr: address) -> array[uint32]:
+
+
+def wots_chain(x: array[uint8], index: int, steps: int, seed: array[uint8], adr: address) -> array[uint8]:
     if steps == 0:
         return x
     if index + steps > (w.as_int() - 1):
         return array([])
     tmp = wots_chain(x, index, steps - 1, seed, adr)
 
-    adr = set_hash_address(adr,  uint32(index + steps -1))
+    adr = set_hash_address(adr,  uint32(index + steps - 1))
     adr = set_key_and_mask(adr, uint32(0))
     key = PRF(seed, adr)
     adr = set_key_and_mask(adr, uint32(1))
     bm = PRF(seed, adr)
 
-    tmp2 = array([]) # type: array[uint32]
-    for (x, y) in zip(tmp, bm):
-        tmp2.append(x ^ y)
-    tmp = F(key, tmp2)
-    return tmp
+    tmp2 = array([])  # type: array[uint8]
+    for (a, b) in zip(tmp, bm):
+        tmp2.append(a ^ b)
+    tmp2 = F(key, tmp2)
+    return tmp2
 
-
-def key_gen() -> array[array[uint8]]:
-    k = array([])  # type: array[array[uint8]]
+def key_gen(adr: address, seed: array[uint8]) -> Tuple[array[array[uint8]], array[array[uint8]]]:
+    # TODO: we need separate functions here for xmss later.
+    sk = array([])  # type: array[array[uint8]]
+    pk = array([])  # type: array[array[uint8]]
     for i in range(0, uint32.int_value(length)):
-        k_i = array.create_random_bytes(n)
-        k.append(k_i)
-    return k
+        sk_i = array.create_random_bytes(n)
+        adr = set_chain_address(adr, uint32(i))
+        pk_i = wots_chain(sk_i, 0, w.as_int()-1, seed, adr)
+        sk.append(sk_i)
+        pk.append(pk_i)
+    return (sk, pk)
 
 
 def main(x: int) -> None:
+    adr = array.create_random_bytes(32*8) # type: 'address'
+    seed = array.create_random_bytes(n)
+    sk, pk = key_gen(adr, seed)
     print("WOTS+ sk")
-    sk = key_gen()
     for k in sk:
+        print(k)
+    print("WOTS+ pk")
+    for k in pk:
         print(k)
 
 

@@ -336,6 +336,16 @@ class array(Iterable[T]):
         blocks = array([uint32.to_bytes_le(i) for i in ints])
         return array.concat_bytes(blocks)
 
+    @staticmethod
+    def uint32s_to_uint8s_be(ints:'array[uint32]') -> 'array[uint8]':
+        blocks = [uint32.to_bytes_le(i) for i in ints]
+        return array([uint8(b) for block in blocks for b in reversed(block)])
+
+    @staticmethod
+    def uint32s_to_uint8s_le(ints:'array[uint32]') -> 'array[uint8]':
+        blocks = [uint32.to_bytes_le(i) for i in ints]
+        return array([uint8(b) for block in blocks for b in block])
+
 def precondition(*types):
     def precondition_decorator(func):
         assert(len(types) == func.__code__.co_argcount)

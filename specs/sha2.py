@@ -36,17 +36,18 @@ constants = array([
     uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7),
     uint32(0xc67178f2)])
 
-# We expect messages to have full byte lengths.
-
 
 def pad(msg: array[uint8]) -> array[uint8]:
+    # We expect messages to have full byte lengths.
     msg_len_bits = len(msg) * 8
     one_len = 512 - ((msg_len_bits + 1 + 64) % 512)
     pad_len = (one_len + 1) // 8
     padding = array.create(uint8(0), pad_len)
     padding[0] = uint8(0x80)
     msg_len_bytes = uint64.to_bytes_be(uint64(msg_len_bits))
-    msg_len_array = array.create_type(msg_len_bytes, uint8) # tpye: array[uint8]
+    # mypy doesn't use the type comment here :(
+    msg_len_array: array[uint8] = array.create_type(
+        msg_len_bytes, uint8)  # tpye: array[uint8]
     padding.extend(msg_len_array)
     padded_msg = array.copy(msg)
     padded_msg.extend(padding)
@@ -111,3 +112,8 @@ def hash(msg: array[uint8]) -> array[uint32]:
         h7 = h7 + h
 
     return array([h7, h6, h5, h4, h3, h2, h1, h0])
+
+
+def sha256(msg: array[uint8]) -> array[uint32]:
+    padded = pad(msg)
+    return hash(padded)
