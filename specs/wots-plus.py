@@ -5,7 +5,7 @@ import sha2
 import math
 
 # Influences signature length, not security
-w_two = uint32(4)
+w_four = uint32(4)
 w_sixteen = uint32(16)
 
 # F: SHA2-256(toByte(0, 32) || KEY || M),
@@ -42,7 +42,7 @@ def PRF(key: array[uint8], m: array[uint8]) -> array[uint8]:
 # Parameters
 # n := length (message, signature, key), SHA2 output length
 n = 32  # type: int
-w = w_two
+w = w_four
 
 length1 = uint32(int(math.ceil(8*n / math.log(uint32.int_value(w), 2))))
 tmp = uint32.int_value(length1) * (uint32.int_value(w) - 1)
@@ -115,7 +115,7 @@ def wots_chain(x: array[uint8], index: int, steps: int, seed: array[uint8], adr:
     tmp2 = F(key, tmp2)
     return tmp2
 
-def key_gen(adr: address, seed: array[uint8]) -> Tuple[array[array[uint8]], array[array[uint8]]]:
+def key_gen(adr: address, seed: array[uint8]) -> Tuple[array[array[uint8]], array[array[uint8]], address]:
     # TODO: we need separate functions here for xmss later.
     sk = array([])  # type: array[array[uint8]]
     pk = array([])  # type: array[array[uint8]]
@@ -125,13 +125,79 @@ def key_gen(adr: address, seed: array[uint8]) -> Tuple[array[array[uint8]], arra
         pk_i = wots_chain(sk_i, 0, w.as_int()-1, seed, adr)
         sk.append(sk_i)
         pk.append(pk_i)
-    return (sk, pk)
+    return (sk, pk, adr)
+
+def base_w(msg: array[uint8], l: uint32) -> array[uint8]:
+    i = 0 # type: int
+    out = 0 # type: int
+    total = 0 # type: int
+    bits = 0 # type: int
+    basew = array([]) # type: array[uint8]
+    for consumed in range(0, l.as_int()):
+        if bits == 0:
+            total = msg[i]
+            i = i + 1
+            bits = bits + 8
+        bits = bits - int(math.log(w.as_int(), 2))
+        # This is broken ... total and bits are ints but python things they are uint8
+        bw = (total >> bits).as_int() & (w.as_int() - 1)
+        basew.append(uint8(bw))
+        out = out + 1
+    return basew
+
+
+def wots_sign(msg: array[uint8], sk: array[array[uint8]], adr: address, seed: array[uint8]) -> array[array[uint8]]:
+    csum = 0
+    m = base_w(msg, length1)
+    for i in range(0, length1.as_int()):
+        csum = csum + w.as_int() - 1 - m[i].as_int()
+    w_lg = math.log(w.as_int(), 2);
+    csum = csum << int(8 - ((length2.as_int() * w_lg) % 8))
+    length2_bytes = math.ceil((length2.as_int() * w_lg) / 8)
+    csum_bytes = array.create(uint8(csum), length2_bytes)
+    tmp = base_w(csum_bytes, length2)
+    m.extend(tmp)
+    sig = array([]) # type: array[array[uint8]]
+    for i in range(0, length.as_int()):
+        adr = set_chain_address(adr, uint32(i))
+        sig_i = wots_chain(sk[i], 0, m[i].as_int(), seed, adr)
+        sig.append(sig_i)
+    return sig
+
+def wots_verify(pk: array[uint8], msg: array[uint8], sig: array[array[uint8]], adr: address, seed: array[uint8]) -> None:
+    csum = 0
+    m = base_w(msg, length1)
+    for i in range(0, length1.as_int()):
+        csum = csum + w.as_int() - 1 - m[i].as_int()
+    w_lg = math.log(w.as_int(), 2);
+    csum = csum << int(8 - ((length2.as_int() * w_lg) % 8))
+    length2_bytes = math.ceil((length2.as_int() * w_lg) / 8)
+    csum_bytes = array.create(uint8(csum), length2_bytes)
+    tmp = base_w(csum_bytes, length2)
+    m.extend(tmp)
+    pk2 = array([]) # type: array[array[uint8]]
+    for i in range(0, length.as_int()):
+        adr = set_chain_address(adr, uint32(i))
+        pk_i = wots_chain(sig[i], m[i].as_int(), w.as_int() - 1 - m[i].as_int(), seed, adr)
+        pk2.append(pk_i)
+    # Check pk
+    verified = True
+    for (k1, k2) in zip(pk, pk2):
+        if k1 != k2:
+            verified = False
+            break
+    if verified:
+        print("Signature verified")
+    else:
+        print("Verification error :(")
+
 
 
 def main(x: int) -> None:
     adr = array.create_random_bytes(32*8) # type: 'address'
     seed = array.create_random_bytes(n)
-    sk, pk = key_gen(adr, seed)
+
+    sk, pk, adr = key_gen(adr, seed)
     print("WOTS+ sk")
     for k in sk:
         print(k)
@@ -139,6 +205,12 @@ def main(x: int) -> None:
     for k in pk:
         print(k)
 
+    msg = array([uint8(0xFF), uint8(0xFF), uint8(0xFF), uint8(0xFF), uint8(0xFF)])
+    msg_h = array.uint32s_to_uint8s_be(sha2.sha256(msg))
+    sig = wots_sign(msg_h, sk, adr, seed)
+    print("WOTS+ sig")
+    print(sig)
+    wots_verify(pk, msg_h, sig, adr, seed)
 
 if __name__ == "__main__":
     main(0)

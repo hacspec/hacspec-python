@@ -41,6 +41,8 @@ class uint8:
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return self.v == other.v
+    def as_int(self) -> int:
+        return int(self.v)
 
     @staticmethod
     def rotate_left(x:'uint8',other:int) -> 'uint8':
@@ -264,7 +266,7 @@ class array(Iterable[T]):
             self.l[key] = v
 
     def append(self, x:T) -> None:
-        self.l = self.l[len(self.l):] = [x]
+        self.l.append(x)
         return None
 
     def extend(self, x:'array[T]') -> None:
