@@ -164,7 +164,7 @@ def wots_sign(msg: array[uint8], sk: array[array[uint8]], adr: address, seed: ar
         sig.append(sig_i)
     return sig
 
-def wots_verify(pk: array[uint8], msg: array[uint8], sig: array[array[uint8]], adr: address, seed: array[uint8]) -> None:
+def wots_verify(pk: array[uint8], msg: array[uint8], sig: array[array[uint8]], adr: address, seed: array[uint8]) -> array[array[uint8]]:
     csum = 0
     m = base_w(msg, length1)
     for i in range(0, length1.as_int()):
@@ -182,6 +182,8 @@ def wots_verify(pk: array[uint8], msg: array[uint8], sig: array[array[uint8]], a
         pk2.append(pk_i)
     # Check pk
     verified = True
+    if len(pk) != len(pk2):
+        verified = False
     for (k1, k2) in zip(pk, pk2):
         if k1 != k2:
             verified = False
@@ -190,6 +192,7 @@ def wots_verify(pk: array[uint8], msg: array[uint8], sig: array[array[uint8]], a
         print("Signature verified")
     else:
         print("Verification error :(")
+    return pk2
 
 
 
