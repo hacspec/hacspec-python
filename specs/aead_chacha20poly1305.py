@@ -20,10 +20,10 @@ def padded_aad_msg(aad:bytes_t,msg:bytes_t) -> Tuple[int,bytes_t]:
     else:
         pad_msg = 16 * (lmsg // 16 + 1)
     to_mac = array.create(uint8(0),pad_aad + pad_msg + 16);
-    to_mac[0:laad] = aad
-    to_mac[pad_aad:pad_aad+lmsg] = msg
-    to_mac[pad_aad+pad_msg:pad_aad+pad_msg+8] = bytes.from_uint64_le(uint64(laad))
-    to_mac[pad_aad+pad_msg+8:pad_aad+pad_msg+16] = bytes.from_uint64_le(uint64(lmsg))
+    to_mac = to_mac.set((0, laad), aad)
+    to_mac = to_mac.set((pad_aad, pad_aad+lmsg), msg)
+    to_mac = to_mac.set((pad_aad+pad_msg, pad_aad+pad_msg+8), bytes.from_uint64_le(uint64(laad)))
+    to_mac = to_mac.set((pad_aad+pad_msg+8, pad_aad+pad_msg+16), bytes.from_uint64_le(uint64(lmsg)))
     return pad_aad+pad_msg+16, to_mac
 
 def aead_chacha20poly1305_encrypt(key:bytes_t,nonce:bytes_t,aad:bytes_t,msg:bytes_t) -> Tuple[bytes_t,bytes_t]:
