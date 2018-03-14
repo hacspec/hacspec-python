@@ -44,7 +44,7 @@ def pad(msg: array[uint8]) -> array[uint8]:
     one_len = 512 - ((msg_len_bits + 1 + 64) % 512)
     pad_len = (one_len + 1) // 8
     padding = array.create(uint8(0), pad_len)
-    padding[0] = uint8(0x80)
+    padding = padding.set(0, uint8(0x80))
     msg_len_bytes = uint64.to_bytes_be(uint64(msg_len_bits))
     # msg_len_array = array.create_type(msg_len_bytes, uint8) # tpye: array[uint8]
     padding = padding.extend(msg_len_bytes)
@@ -66,13 +66,13 @@ def hash(msg: array[uint8]) -> array[uint32]:
     for block in blocks:
         state = array.create(uint32(0), 64)
         for i in range(0, 16):
-            state[i] = uint32.from_u8array(block[i*4:i*4+4])
+            state = state.set(i, uint32.from_u8array(block[i*4:i*4+4]))
         for i in range(16, 64):
             s0 = uint32.rotate_right(
                 state[i-15], 7) ^ uint32.rotate_right(state[i-15], 18) ^ (state[i-15] >> 3)
             s1 = uint32.rotate_right(
                 state[i-2], 17) ^ uint32.rotate_right(state[i-2], 19) ^ (state[i-2] >> 10)
-            state[i] = state[i-16] + s0 + state[i-7] + s1
+            state = state.set(i, state[i-16] + s0 + state[i-7] + s1)
         a = h0
         b = h1
         c = h2

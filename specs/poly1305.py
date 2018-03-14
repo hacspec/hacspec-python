@@ -20,7 +20,7 @@ def fmul(a:felem,b:felem) -> felem:
 
 def encode(block:block_t) -> felem:
     b = array.create(uint8(0),16)
-    b[0:len(block)] = block
+    b = b.set((0, len(block)), block)
     welem = felem(uint128.int_value(bytes.to_uint128_le(b)))
     lelem = felem(2 ** (8 * len(block)))
     return fadd(lelem,welem)

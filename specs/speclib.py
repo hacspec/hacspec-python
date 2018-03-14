@@ -208,11 +208,15 @@ class array(Iterable[T]):
     def __getslice__(self, i: int, j: int) -> 'array[T]':
         return array(self.l[i:j])
 
-    def __setitem__(self, key: Union[int, slice], v) -> None:
-        if isinstance(key, slice):
-            self.l[key.start:key.stop] = v
+    def set(self, key: Union[int, Tuple[int, int]], v) -> 'array[T]':
+        if isinstance(key, Tuple):
+            tmp = self.l.copy()
+            tmp[key[0]:key[1]] = v
+            return array(tmp)
         else:
-            self.l[key] = v
+            tmp = self.l.copy()
+            tmp[key] = v
+            return array(tmp)
 
     # def append(self, x:T) -> None:
     #     self.l = self.l[len(self.l):] = [x]
@@ -318,8 +322,8 @@ class bytes(array[uint8]):
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
         a: array[uint8] = array.create(uint8(0), 8)
-        a[0:4] = bytes.from_uint32_le(x0)
-        a[4:8] = bytes.from_uint32_le(x1)
+        a = a.set((0, 4), bytes.from_uint32_le(x0))
+        a = a.set((4, 8), bytes.from_uint32_le(x1))
         return a
 
     @staticmethod
@@ -335,8 +339,8 @@ class bytes(array[uint8]):
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
         a = array.create(uint8(0), 16)
-        a[0:8] = bytes.from_uint64_le(x0)
-        a[8:16] = bytes.from_uint64_le(x1)
+        a = a.set((0, 8), bytes.from_uint64_le(x0))
+        a = a.set((8, 16), bytes.from_uint64_le(x1))
         return a
 
     @staticmethod

@@ -13,8 +13,8 @@ bytes_t = array[uint8]# length arbitrary
 
 def line(a: index, b: index, d: index, s: shiftval, m: state) -> state:
     m = array.copy(m)
-    m[a] = (m[a] + m[b])
-    m[d] = uint32.rotate_left(m[d] ^ m[a],s)
+    m = m.set(a, m[a] + m[b])
+    m = m.set(d, uint32.rotate_left(m[d] ^ m[a],s))
     return m
 
 def quarter_round(a: index, b: index, c:index, d: index, m: state) -> state :
@@ -42,10 +42,10 @@ constants = array([uint32(0x61707865), uint32(0x3320646e),
 
 def chacha20_init(k: key_t, counter: uint32, nonce: nonce_t) -> state:
     st = array.create(uint32(0),16)
-    st[0:4] = constants
-    st[4:12] = bytes.to_uint32s_le(k)
-    st[12] = counter
-    st[13:16] = bytes.to_uint32s_le(nonce)
+    st = st.set((0, 4), constants)
+    st = st.set((4, 12), bytes.to_uint32s_le(k))
+    st = st.set(12, counter)
+    st = st.set((13, 16), bytes.to_uint32s_le(nonce))
     return st
 
 def chacha20_core(st:state) -> state:
@@ -53,7 +53,7 @@ def chacha20_core(st:state) -> state:
     for x in range(10):
         working_state = double_round(working_state)
     for i in range(16):
-        working_state[i] += st[i]
+        working_state = working_state.set(i, working_state[i] + st[i])
     return working_state
 
 def chacha20(k: key_t, counter: uint32, nonce: nonce_t) -> state:
@@ -82,14 +82,14 @@ blocksize = 64
 def xor_block(block:bytes_t, keyblock:bytes_t) -> bytes_t:
     out = array(list(block))
     for i in range(len(out)):
-        out[i] ^= keyblock[i]
+        out = out.set(i, out[i] ^ keyblock[i])
     return out
 
 def chacha20_counter_mode(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t) -> bytes_t:
     blocks = array.split_blocks(msg,blocksize)
     for i in range(0,len(blocks)):
         keyblock = chacha20_block(key,counter + i,nonce)
-        blocks[i] = xor_block(blocks[i],keyblock)
+        blocks = blocks.set(i, xor_block(blocks[i],keyblock))
     return array.concat_blocks(blocks)
 
 def chacha20_encrypt(key: key_t, counter: int, nonce: nonce_t,msg:bytes_t) -> bytes_t:
