@@ -46,10 +46,10 @@ def pad(msg: array[uint8]) -> array[uint8]:
     padding = array.create(uint8(0), pad_len)
     padding[0] = uint8(0x80)
     msg_len_bytes = uint64.to_bytes_be(uint64(msg_len_bits))
-    msg_len_array = array.create_type(msg_len_bytes, uint8) # tpye: array[uint8]
-    padding.extend(msg_len_array)
+    # msg_len_array = array.create_type(msg_len_bytes, uint8) # tpye: array[uint8]
+    padding = padding.extend(msg_len_bytes)
     padded_msg = array.copy(msg)
-    padded_msg.extend(padding)
+    padded_msg = padded_msg.extend(padding)
     return padded_msg
 
 

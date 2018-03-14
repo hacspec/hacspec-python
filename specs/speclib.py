@@ -66,7 +66,6 @@ class uint8:
     def int_value(x: 'uint8') -> int:
         return x.v
 
-
 class uint32:
     def __init__(self, x: int) -> None:
         if x < 0:
@@ -124,6 +123,9 @@ class uint32:
     def int_value(x: 'uint32') -> int:
         return x.v
 
+    @staticmethod
+    def from_u8array(x:'array[uint8]') -> 'uint32':
+        return uint32(int(x[0].v) << 24 | int(x[1].v) << 16 | int(x[2].v) << 8 | int(x[3].v))
 
 class uint64:
     def __init__(self, x: int) -> None:
@@ -178,7 +180,9 @@ class uint64:
     @staticmethod
     def int_value(x: 'uint64') -> int:
         return x.v
-
+    @staticmethod
+    def to_bytes_be(x:'uint64') -> 'array[uint8]':
+        return array([uint8(b) for b in x.v.to_bytes(8,byteorder='big')])
 
 class uint128:
     def __init__(self, x: int) -> None:
@@ -281,19 +285,22 @@ class array(Iterable[T]):
     def __getslice__(self, i: int, j: int) -> 'array[T]':
         return array(self.l[i:j])
 
+    # This is the only function that changes the array.
     def __setitem__(self, key: Union[int, slice], v) -> None:
         if isinstance(key, slice):
             self.l[key.start:key.stop] = v
         else:
             self.l[key] = v
 
-    def append(self, x: T) -> None:
-        self.l = self.l[len(self.l):] = [x]
-        return None
+    def append(self, x: T) -> 'array[T]':
+        tmp = self.l.copy()
+        tmp.append(x)
+        return array(tmp)
 
-    def extend(self, x: 'array[T]') -> None:
-        self.l[len(self.l):] = x.l
-        return None
+    def extend(self, x: 'array[T]') -> 'array[T]':
+        tmp = self.l.copy()
+        tmp[len(tmp):] = x.l
+        return array(tmp)
 
     def split(self, blocksize: int) -> 'array[array[T]]':
         return array([array(self.l[x:x+blocksize]) for x in range(0, len(self.l), blocksize)])

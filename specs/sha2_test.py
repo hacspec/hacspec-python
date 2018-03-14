@@ -53,7 +53,7 @@ def main(x: int) -> None:
                         uint8(0x69), uint8(0x6f), uint8(0x6e), uint8(0x2e)]))
     digest = hash(padded)
     digest_int = array.to_int(digest)
-    expected_digest = 0x348ef044446d56e05210361af5a258588ad31765f446bf4cb3b67125a187a64a
+    expected_digest = 0x448ef044446d56e05210361af5a258588ad31765f446bf4cb3b67125a187a64a
     assert(expected_digest == digest_int)
     print(hex(digest_int))
 
