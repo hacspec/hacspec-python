@@ -10,8 +10,15 @@ bytes_t = array[uint8] #length: arbitrary
 def padded_aad_msg(aad:bytes_t,msg:bytes_t) -> Tuple[int,bytes_t]:
     laad = len(aad)
     lmsg = len(msg)
-    pad_aad = laad if laad % 16 == 0 else 16 * (laad // 16 + 1)
-    pad_msg = lmsg if lmsg % 16 == 0 else 16 * (lmsg // 16 + 1)
+    pad_aad = 0
+    if laad % 16 == 0:
+        pad_aad = laad
+    else:
+        pad_aad = 16 * (laad // 16 + 1)
+    if lmsg % 16 == 0:
+        pad_msg = lmsg
+    else:
+        pad_msg = 16 * (lmsg // 16 + 1)
     to_mac = array.create(uint8(0),pad_aad + pad_msg + 16);
     to_mac[0:laad] = aad
     to_mac[pad_aad:pad_aad+lmsg] = msg

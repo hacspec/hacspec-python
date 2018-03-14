@@ -1,8 +1,9 @@
+import sys
 from poly1305 import *
-
 from test_vectors.poly1305_test_vectors import poly1305_test_vectors
 
-def main (x: int) -> None :
+
+def main(x: int) -> None:
     # RFC 7539 Test Vectors
     msg = bytes.from_ints([
         0x43, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x67, 0x72,
@@ -17,28 +18,29 @@ def main (x: int) -> None :
         0x4a, 0xbf, 0xf6, 0xaf, 0x41, 0x49, 0xf5, 0x1b])
     expected = bytes.from_ints([
         0xa8, 0x06, 0x1d, 0xc1, 0x30, 0x51, 0x36, 0xc6,
-        0xc2, 0x2b, 0x8b, 0xaf, 0x0c, 0x01, 0x27, 0xa9 ])
-    computed = poly1305_mac(msg,k)
+        0xc2, 0x2b, 0x8b, 0xaf, 0x0c, 0x01, 0x27, 0xa9])
+    computed = poly1305_mac(msg, k)
     if (computed == expected):
         print("Poly1305 Test  0 passed.")
     else:
         print("Poly1305 Test  0 failed:")
-        print("expected mac:",expected)
-        print("computed mac:",computed)
+        print("expected mac:", expected)
+        print("computed mac:", computed)
+        sys.exit(1)
     with open("test_vectors/poly1305_test_vectors.json") as json_data:
         poly1305_test_vectors = json.load(json_data)
         for i in range(len(poly1305_test_vectors)):
             msg = bytes.from_hex(poly1305_test_vectors[i]['input'])
-            k   = bytes.from_hex(poly1305_test_vectors[i]['key'])
+            k = bytes.from_hex(poly1305_test_vectors[i]['key'])
             expected = bytes.from_hex(poly1305_test_vectors[i]['tag'])
-            computed = poly1305_mac(msg,k)
+            computed = poly1305_mac(msg, k)
             if (computed == expected):
-                print("Poly1305 Test ",i+1," passed.")
+                print("Poly1305 Test ", i+1, " passed.")
             else:
-                print("Poly1305 Test ",i+1," failed:")
-                print("expected mac:",expected)
-                print("computed mac:",computed)
-
+                print("Poly1305 Test ", i+1, " failed:")
+                print("expected mac:", expected)
+                print("computed mac:", computed)
+                sys.exit(1)
 
 
 main(0)

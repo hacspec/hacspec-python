@@ -39,16 +39,12 @@ def read(node, indent="", allowed=None, previous=None):
         return
     if isinstance(node, Import):
         print(indent + "Import: " + str(node.names[0].name))
-        for node_name in node.names:
-            for imp in ALLOWED_IMPORTS:
-                if node_name.name.startswith(imp):
-                    return
-        raise ImportError("Use of disallowed import.")
+        return Import
 
     # Normal assignments with types in comments
     if isinstance(node, Assign):
         targets = [read(x, indent + "  ") for x in node.targets]
-        print(indent + "targets: " + ', '.join(targets))
+        print(indent + "targets: " + ', '.join(str(x) for x in targets))
         value = read(node.value, indent + "  ",
                      [Call, BinOp, Num, Subscript, Name, UnaryOp], node)
         print(indent + "value: " + str(value))
@@ -184,6 +180,9 @@ def read(node, indent="", allowed=None, previous=None):
         return read(node.test, indent + "  ", [Compare], node)
         return read(node.body, indent + "  ")
         return read(node.orelse, indent + "  ")
+
+    if isinstance(node, Tuple):
+        return read(node.elts, indent + "  ")
 
     # Explicitly disallowed statements
     if isinstance(node, With):
