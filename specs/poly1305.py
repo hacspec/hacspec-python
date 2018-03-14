@@ -27,7 +27,7 @@ def encode(block:block_t) -> felem:
 
 def encode_r(r:block_t) -> felem:
     ruint = bytes.to_uint128_le(r)
-    ruint &= uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
+    ruint = uint128(ruint & uint128(0x0ffffffc0ffffffc0ffffffc0fffffff))
     return  felem(uint128.int_value(ruint))
 
 # There are many ways of writing the polynomial evaluation function
@@ -55,5 +55,5 @@ def poly1305_mac(text:bytes_t,k:bytes_t) -> bytes_t :
     relem = encode_r(r)
     selem = bytes.to_uint128_le(s)
     a = poly(text,relem)
-    n = uint128(a) + selem
+    n = uint128(uint128(a) + selem)
     return bytes.from_uint128_le(n)

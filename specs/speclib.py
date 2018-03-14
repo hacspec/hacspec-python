@@ -8,174 +8,121 @@ class Error(Exception): pass
 def fail(s):
     raise Error(s)
 
-class uint8:
-    def __init__(self,x:int) -> None:
+class uintn:
+    def __init__(self,x:int,bits:int) -> None:
         if x < 0:
-            fail("cannot convert negative integer to uint8")
+            fail("cannot convert negative integer to uintn")
+        elif bits < 1:
+            fail("cannot create uint of size <= 0 bits")
         else:
-            self.v = x & 0xff
+            self.bits = bits
+            self.max = (1 << bits) - 1
+            self.v = x & self.max
     def __str__(self) -> str:
         return hex(self.v)
     def __repr__(self) -> str:
         return hex(self.v)
-    def __add__(self,other:'uint8') -> 'uint8':
-        return uint8(self.v + other.v)
-    def __sub__(self,other:'uint8') -> 'uint8':
-        return uint8(self.v - other.v)
-    def __or__(self,other:'uint8') -> 'uint8':
-        return uint8(self.v | other.v)
-    def __and__(self,other:'uint8') -> 'uint8':
-        return uint8(self.v & other.v)
-    def __xor__(self,other:'uint8') -> 'uint8':
-        return uint8(self.v ^ other.v)
-    def __lshift__(self,other:int) -> 'uint8':
-        if other < 0 or other >= 8:
-            fail("uint8 cannot be shifted by < 0 or >= 8")
-        return uint8(self.v << other)
-    def __rshift__(self,other:int) -> 'uint8':
-        if other < 0 or other >= 8:
-            fail("uint8 cannot be shifted by < 0 or >= 8")
-        return uint8((self.v & 0xff) >> other)
-    # See https://github.com/python/mypy/issues/2783
-    def __eq__(self,other:Any) -> Any:
-        return self.v == other.v
-
-    @staticmethod
-    def rotate_left(x:'uint8',other:int) -> 'uint8':
-        return (x << other | x >> (8 - other))
-    @staticmethod
-    def rotate_right(x:'uint8',other:int) -> 'uint8':
-        return (x >> other | x << (8 - other))
-    @staticmethod
-    def int_value(x:'uint8') -> int:
-        return x.v
-
-class uint32:
-    def __init__(self,x:int) -> None:
-        if x < 0:
-            fail("cannot convert negative integer to uint32")
+    def __add__(self,other:'uintn') -> 'uintn':
+        if (other.bits == self.bits): 
+           return uintn(self.v + other.v,self.bits)
         else:
-            self.v = x & 0xffffffff
-    def __str__(self) -> str:
-        return hex(self.v)
-    def __repr__(self) -> str:
-        return hex(self.v)
-    def __add__(self,other:'uint32') -> 'uint32':
-        return uint32(self.v + other.v)
-    def __sub__(self,other:'uint32') -> 'uint32':
-        return uint32(self.v - other.v)
-    def __or__(self,other:'uint32') -> 'uint32':
-        return uint32(self.v | other.v)
-    def __and__(self,other:'uint32') -> 'uint32':
-        return uint32(self.v & other.v)
-    def __xor__(self,other:'uint32') -> 'uint32':
-        return uint32(self.v ^ other.v)
-    def __lshift__(self,other:int) -> 'uint32':
-        if other < 0 or other >= 32:
-            fail("uint32 cannot be shifted by < 0 or >= 32")
-        return uint32(self.v << other)
-    def __rshift__(self,other:int) -> 'uint32':
-        if other < 0 or other >= 32:
-            fail("uint32 cannot be shifted by < 0 or >= 32")
-        return uint32((self.v & 0xffffffff) >> other)
-    # See https://github.com/python/mypy/issues/2783
-    def __eq__(self,other:Any) -> Any:
-        return self.v == other.v
-    def __invert__(self) -> 'uint32':
-        return uint32(~self.v & 0xffffffff)
-
-    @staticmethod
-    def rotate_left(x:'uint32',other:int) -> 'uint32':
-        return (x << other | x >> (32 - other))
-    @staticmethod
-    def rotate_right(x:'uint32',other:int) -> 'uint32':
-        return (x >> other | x << (32 - other))
-    @staticmethod
-    def int_value(x:'uint32') -> int:
-        return x.v
-
-class uint64:
-    def __init__(self,x:int) -> None:
-        if x < 0:
-            fail("cannot convert negative integer to uint64")
+           fail("cannot add uintn of different lengths")
+           return uintn(0,self.bits)
+    def __sub__(self,other:'uintn') -> 'uintn':
+        if (other.bits == self.bits): 
+           return uintn(self.v - other.v,self.bits)
         else:
-            self.v = x & 0xffffffffffffffff
-    def __str__(self) -> str:
-        return hex(self.v)
-    def __repr__(self) -> str:
-        return hex(self.v)
-    def __add__(self,other:'uint64') -> 'uint64':
-        return uint64(self.v + other.v)
-    def __sub__(self,other:'uint64') -> 'uint64':
-        return uint64(self.v - other.v)
-    def __or__(self,other:'uint64') -> 'uint64':
-        return uint64(self.v | other.v)
-    def __and__(self,other:'uint64') -> 'uint64':
-        return uint64(self.v & other.v)
-    def __xor__(self,other:'uint64') -> 'uint64':
-        return uint64(self.v ^ other.v)
-    def __lshift__(self,other:int) -> 'uint64':
-        if other < 0 or other >= 64:
-            fail("uint64 cannot be shifted by < 0 or >= 64")
-        return uint64(self.v << other)
-    def __rshift__(self,other:int) -> 'uint64':
-        if other < 0 or other >= 64:
-            fail("uint64 cannot be shifted by < 0 or >= 64")
-        return uint64((self.v & 0xffffffff) >> other)
-    # See https://github.com/python/mypy/issues/2783
-    def __eq__(self,other:Any) -> Any:
-        return self.v == other.v
-    @staticmethod
-    def rotate_left(x:'uint64',other:int) -> 'uint64':
-        return (x << other | x >> (64 - other))
-    @staticmethod
-    def rotate_right(x:'uint64',other:int) -> 'uint64':
-        return (x >> other | x << (64 - other))
-    @staticmethod
-    def int_value(x:'uint64') -> int:
-        return x.v
-
-class uint128:
-    def __init__(self,x:int) -> None:
-        if x < 0:
-            fail("cannot convert negative integer to uint128")
+           fail("cannot sub uintn of different lengths")
+           return uintn(0,self.bits)
+    def __or__(self,other:'uintn') -> 'uintn':
+        if (other.bits == self.bits): 
+           return uintn(self.v | other.v,self.bits)
         else:
-            self.v = x & 0xffffffffffffffffffffffffffffffff
-    def __str__(self) -> str:
-        return hex(self.v)
-    def __repr__(self) -> str:
-        return hex(self.v)
-    def __add__(self,other:'uint128') -> 'uint128':
-        return uint128(self.v + other.v)
-    def __sub__(self,other:'uint128') -> 'uint128':
-        return uint128(self.v - other.v)
-    def __or__(self,other:'uint128') -> 'uint128':
-        return uint128(self.v | other.v)
-    def __and__(self,other:'uint128') -> 'uint128':
-        return uint128(self.v & other.v)
-    def __xor__(self,other:'uint128') -> 'uint128':
-        return uint128(self.v ^ other.v)
-    def __lshift__(self,other:int) -> 'uint128':
-        if other < 0 or other >= 128:
-            fail("uint128 cannot be shifted by < 0 or >= 128")
-        return uint128(self.v << other)
-    def __rshift__(self,other:int) -> 'uint128':
-        if other < 0 or other >= 128:
-            fail("uint128 cannot be shifted by < 0 or >= 128")
-        return uint128((self.v & 0xffffffff) >> other)
+           fail("cannot or uintn of different lengths")
+           return uintn(0,self.bits)
+    def __and__(self,other:'uintn') -> 'uintn':
+        if (other.bits == self.bits):
+           return uintn(self.v & other.v,self.bits)
+        else:
+           fail("cannot and uintn of different lengths")
+           return uintn(0,self.bits)
+    def __xor__(self,other:'uintn') -> 'uintn':
+        if (other.bits == self.bits):
+           return uintn(self.v ^ other.v,self.bits)
+        else:
+           fail("cannot xor uintn of different lengths")
+           return uintn(0,self.bits)
+    def __lshift__(self,other:int) -> 'uintn':
+        if other < 0 or other >= self.max:
+           fail("uintn cannot be shifted by < 0 or >= max")
+           return uintn(0,self.bits,)
+        else:
+           return uintn(self.v << other,self.bits)
+    def __rshift__(self,other:int) -> 'uintn':
+        if other < 0 or other >= self.max:
+           fail("uintn cannot be shifted by < 0 or >= max")
+           return uintn(0,self.bits)
+        else:
+           return uintn(self.v >> other,self.bits)
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
-        return self.v == other.v
+        return (self.bits == other.bits and self.v == other.v)
 
     @staticmethod
-    def rotate_left(x:'uint128',other:int) -> 'uint128':
-        return (x << other | x >> (128 - other))
+    def num_bits(x:'uintn') -> int:
+        return x.bits
     @staticmethod
-    def rotate_right(x:'uint128',other:int) -> 'uint128':
-        return (x >> other | x << (128 - other))
-    @staticmethod
-    def int_value(x:'uint128') -> int:
+    def int_value(x:'uintn') -> int:
         return x.v
+    @staticmethod
+    def rotate_left(x:'uintn',other:int) -> 'uintn':
+        return (x << other | x >> (x.bits - other))
+    @staticmethod
+    def rotate_right(x:'uintn',other:int) -> 'uintn':
+        return (x >> other | x << (x.bits - other))
+
+class bit(uintn):
+    def __init__(self,v:Union[int,uintn]) -> None:
+        if isinstance(v,int):
+            super().__init__(v,1)
+        else:
+            super().__init__(uintn.int_value(v),1)
+
+class uint8(uintn):
+    def __init__(self,v:Union[int,uintn]) -> None:
+        if isinstance(v,int):
+            super().__init__(v,8)
+        else:
+            super().__init__(uintn.int_value(v),8)
+
+class uint16(uintn):
+    def __init__(self,v:Union[int,uintn]) -> None:
+        if isinstance(v,int):
+            super().__init__(v,16)
+        else:
+            super().__init__(uintn.int_value(v),16)
+
+class uint32(uintn):
+    def __init__(self,v:Union[int,uintn]) -> None:
+        if isinstance(v,int):
+            super().__init__(v,32)
+        else:
+            super().__init__(uintn.int_value(v),32)
+            
+class uint64(uintn):
+    def __init__(self,v:Union[int,uintn]) -> None:
+        if isinstance(v,int):
+            super().__init__(v,64)
+        else:
+            super().__init__(uintn.int_value(v),64)
+            
+class uint128(uintn):
+    def __init__(self,v:Union[int,uintn]) -> None:
+        if isinstance(v,int):
+            super().__init__(v,128)
+        else:
+            super().__init__(uintn.int_value(v),128)
+
 
 
 T = TypeVar('T')
@@ -184,7 +131,6 @@ U = TypeVar('U')
 class array(Iterable[T]):
     def __init__(self,x:Sequence[T]) -> None:
         self.l = list(x)
-
     def __len__(self) -> int:
         return len(self.l)
     def __str__(self) -> str:
@@ -227,23 +173,24 @@ class array(Iterable[T]):
         else:
             self.l[key] = v
 
-    def append(self, x:T) -> None:
-        self.l = self.l[len(self.l):] = [x]
-        return None
+    # def append(self, x:T) -> None:
+    #     self.l = self.l[len(self.l):] = [x]
+    #     return None
 
-    def extend(self, x:'array[T]') -> None:
-        self.l[len(self.l):] = x.l
-        return None
+    # def extend(self, x:'array[T]') -> None:
+    #     self.l[len(self.l):] = x.l
+    #     return None
 
-    def split(self,blocksize:int) -> 'array[array[T]]':
-        return array([array(self.l[x:x+blocksize]) for x in range(0,len(self.l),blocksize)])
+    # def split(self,blocksize:int) -> 'array[array[T]]':
+    #     return array([array(self.l[x:x+blocksize]) for x in range(0,len(self.l),blocksize)])
 
-    @staticmethod
-    def to_int(x:'array[uint32]') -> int:
-        result_int = 0
-        for (i, b) in enumerate(x):
-            result_int |= int(b.v) << (i*32)
-        return result_int
+    
+    # @staticmethod
+    # def to_int(x:'array[uint32]') -> int:
+    #     result_int = 0
+    #     for (i, b) in enumerate(x):
+    #         result_int |= int(b.v) << (i*32)
+    #     return result_int
 
     @staticmethod
     def create(default:T, len:int) -> 'array[T]':
@@ -261,6 +208,10 @@ class array(Iterable[T]):
         return array(x.l[:])
 
     @staticmethod
+    def concat(x:'array[T]',y:'array[T]') -> 'array[T]':
+        return array(x.l[:]+y.l[:])
+    
+    @staticmethod
     def zip(x:'array[T]',y:'array[U]') -> 'array[Tuple[T,U]]':
         return array(list(zip(x.l,y.l)))
     
@@ -269,16 +220,26 @@ class array(Iterable[T]):
         return array(list(enumerate(x.l)))
 
     @staticmethod
-    def map(f:Callable[[T],U],a:'array[T]') -> 'array[U]':
-        return array(list(map(f,a)))
-    
-    @staticmethod
     def split_blocks(a:'array[T]',blocksize:int) -> 'array[array[T]]':
         return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
 
     @staticmethod
     def concat_blocks(blocks:'array[array[T]]') -> 'array[T]':
         return (array([b for block in blocks for b in block]))
+
+    @staticmethod
+    def map(f:Callable[[T],U],a:'array[T]') -> 'array[U]':
+        return array(list(map(f,a.l)))
+    
+    @staticmethod
+    def reduce(f:Callable[[T,U],U],a:'array[T]',init:U) -> U:
+        acc = init
+        for i in range(len(a)):
+            acc = f(a[i],acc)
+        return acc
+    
+    
+
     
 class bytes(array[uint8]):
     @staticmethod
@@ -286,7 +247,7 @@ class bytes(array[uint8]):
         return array([uint8(i) for i in x])
 
     @staticmethod
-    def concat(blocks:'array[array[uint8]]') -> 'array[uint8]':
+    def concat_bytes(blocks:'array[array[uint8]]') -> 'array[uint8]':
         concat = [b for block in blocks for b in block]
         return array(concat)
 

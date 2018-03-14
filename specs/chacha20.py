@@ -24,7 +24,7 @@ def quarter_round(a: index, b: index, c:index, d: index, m: state) -> state :
     m = line(c, d, b,  7, m)
     return m
 
-def inner_block(m: state) -> state :
+def double_round(m: state) -> state :
     m = quarter_round(0, 4,  8, 12, m)
     m = quarter_round(1, 5,  9, 13, m)
     m = quarter_round(2, 6, 10, 14, m)
@@ -50,12 +50,10 @@ def chacha20_init(k: key_t, counter: uint32, nonce: nonce_t) -> state:
 
 def chacha20_core(st:state) -> state:
     working_state = array.copy(st)
-    for x in range(1,11):
-        working_state = inner_block(working_state)
+    for x in range(10):
+        working_state = double_round(working_state)
     for i in range(16):
         working_state[i] += st[i]
-    if (len(working_state) != 16):
-        return array([uint32(0), uint32(0), uint32(0), uint32(0)])
     return working_state
 
 def chacha20(k: key_t, counter: uint32, nonce: nonce_t) -> state:
@@ -69,11 +67,11 @@ def chacha20_block(k: key_t, counter:int, nonce: nonce_t) -> bytes_t:
 # Many ways of extending this to CTR
 # First version: use generic higher-order ctr library
 from ctr import counter_mode
-def chacha20_encrypt(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t) -> bytes_t:
+def chacha20_encrypt_(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t) -> bytes_t:
     return counter_mode(64,chacha20_block,
                         key,counter,nonce,msg)
 
-def chacha20_decrypt(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t) -> bytes_t:
+def chacha20_decrypt_(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t) -> bytes_t:
     return counter_mode(64,chacha20_block,
                         key,counter,nonce,msg)
 
@@ -94,8 +92,8 @@ def chacha20_counter_mode(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t)
         blocks[i] = xor_block(blocks[i],keyblock)
     return array.concat_blocks(blocks)
 
-def chacha20_encrypt_(key: key_t, counter: int, nonce: nonce_t,msg:bytes_t) -> bytes_t:
+def chacha20_encrypt(key: key_t, counter: int, nonce: nonce_t,msg:bytes_t) -> bytes_t:
     return chacha20_counter_mode(key,counter,nonce,msg)
 
-def chacha20_decrypt_(key: key_t, counter: int, nonce: nonce_t,msg:bytes_t) -> bytes_t:
+def chacha20_decrypt(key: key_t, counter: int, nonce: nonce_t,msg:bytes_t) -> bytes_t:
     return chacha20_counter_mode(key,counter,nonce,msg)
