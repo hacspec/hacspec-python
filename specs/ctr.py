@@ -10,7 +10,7 @@ bytes_t = array[uint8]     #length arbitrary
 def block_encrypt(block_cipher:Callable[[key_t,int,nonce_t],block_t],
                   key:key_t,counter:int,nonce:nonce_t,msg:block_t) -> block_t:
     keyblock = block_cipher(key,counter,nonce)
-    cipherblock = array([x ^ y for (x,y) in array.zip(keyblock,msg)])
+    cipherblock = array([uint8(x ^ y) for (x,y) in array.zip(keyblock,msg)])
     return (cipherblock)
 
 # First version: using list comprehensions to map encryption

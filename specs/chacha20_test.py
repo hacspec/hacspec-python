@@ -14,11 +14,14 @@ def main(x: int) -> None:
     d = uint32(0x01234567)
     my_state = array([a, b, c, d])
     my_state = quarter_round(0, 1, 2, 3, my_state)
-    exp_state = array([uint32(0xea2a92f4), uint32(0xcb1cf8ce),
-                       uint32(0x4581472e), uint32(0x5881c4bb)])
-    print("computed qround = ", str(my_state[0:4]))
-    print("expected qround = ", str(exp_state))
-    assert(my_state == exp_state)
+    exp_state = array([uint32(0xea2a92f4), uint32(0xcb1cf8ce), uint32(0x4581472e), uint32(0x5881c4bb)])
+    if (my_state == exp_state):
+        print("Quarter round test vector passed.")
+    else:
+        print("Quarter round test vector failed!")
+        print("computed qround = ",str(my_state[0:4]))
+        print("expected qround = ",str(exp_state))
+        sys.exit(1)
 
     # Test vector from RFX 7539 section 2.3.2
     key = bytes.from_ints([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
@@ -37,9 +40,13 @@ def main(x: int) -> None:
         uint32(0xd19c12b5), uint32(0xb94e16de), uint32(
             0xe883d0cb), uint32(0x4e3c50a2)
     ])
-    print("expected state:", expected_state)
-    print("computed state:", result)
-    assert(result == expected_state)
+    if (result == expected_state):
+        print("Chacha20 core test vector passed.")
+    else:
+        print("Chacha20 core test vector failed!")
+        print("expected state:",expected_state)
+        print("computed state:",result)
+        sys.exit(1)
 
     plaintext = bytes.from_ints([0x4c, 0x61, 0x64, 0x69, 0x65, 0x73, 0x20, 0x61,
                                  0x6e, 0x64, 0x20, 0x47, 0x65, 0x6e, 0x74, 0x6c,

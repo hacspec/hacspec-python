@@ -2,15 +2,11 @@ language: python
 python:
   - "3.6"
 
-install:
-  - pip install mypy
-  - pip install mypy_extensions
+# install:
+#   - pip install mypy
+#   - pip install mypy_extensions
 
 script:
-  - mypy specs/aead_chacha20poly1305.py
-  - mypy specs/chacha20.py
-  - mypy specs/poly1305.py
-  - mypy specs/sha2.py
   - python spec-checker/spec-checker.py specs/aead_chacha20poly1305.py
   - python spec-checker/spec-checker.py specs/chacha20.py
   - python spec-checker/spec-checker.py specs/poly1305.py
@@ -19,3 +15,7 @@ script:
   - python specs/chacha20_test.py
   - python specs/poly1305_test.py
   - python specs/sha2_test.py
+#  - mypy specs/aead_chacha20poly1305.py
+#  - mypy specs/chacha20.py
+#  - mypy specs/poly1305.py
+#  - mypy specs/sha2.py

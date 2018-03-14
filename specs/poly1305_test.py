@@ -27,7 +27,7 @@ def main(x: int) -> None:
         print("expected mac:", expected)
         print("computed mac:", computed)
         sys.exit(1)
-    with open("specs/test_vectors/poly1305_test_vectors.json") as json_data:
+    with open("test_vectors/poly1305_test_vectors.json") as json_data:
         poly1305_test_vectors = json.load(json_data)
         for i in range(len(poly1305_test_vectors)):
             msg = bytes.from_hex(poly1305_test_vectors[i]['input'])
