@@ -1,12 +1,16 @@
-from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable
-
-nat = NewType('nat',int)     # Should be a refinement type
-felem = NewType('felem',int) # Should be a refinement type
+from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type
 
 class Error(Exception): pass
 
 def fail(s):
     raise Error(s)
+
+T = TypeVar('T')
+U = TypeVar('U')
+
+def refine(T:Type[T],f:Callable[[T],bool]):
+    return T
+nat = refine(int,lambda x : x >= 0)
 
 class uintn:
     def __init__(self,x:int,bits:int) -> None:
@@ -71,6 +75,10 @@ class uintn:
     @staticmethod
     def num_bits(x:'uintn') -> int:
         return x.bits
+
+    def __int__(self) -> int :
+        return self.v
+    
     @staticmethod
     def int_value(x:'uintn') -> int:
         return x.v
@@ -124,9 +132,94 @@ class uint128(uintn):
             super().__init__(uintn.int_value(v),128)
 
 
+class pfelem:
+    def __init__(self,x:int,p:int) -> None:
+        if x < 0:
+            fail("cannot convert negative integer to pfelem")
+        elif p < 1:
+            fail("cannot use prime < 1")
+        else:
+            self.p = p 
+            self.v = x % p
+    def __str__(self) -> str:
+        return hex(self.v)
+    def __repr__(self) -> str:
+        return hex(self.v)
+    def __add__(self,other:'pfelem') -> 'pfelem':
+        if (other.p == self.p): 
+           return pfelem(self.v + other.v,self.p)
+        else:
+           fail("cannot add pfelem of different fields")
+           return pfelem(0,self.p)
+    def __sub__(self,other:'pfelem') -> 'pfelem':
+        if (other.p == self.p): 
+           return pfelem(self.v - other.v,self.p)
+        else:
+           fail("cannot sub pfelem of different fields")
+           return pfelem(0,self.p)
+    def __mul__(self,other:'pfelem') -> 'pfelem':
+        if (other.p == self.p): 
+           return pfelem(self.v * other.v,self.p)
+        else:
+           fail("cannot sub pfelem of different fields")
+           return pfelem(0,self.p)
+    def __pow__(self,other:int) -> 'pfelem':
+        if (other >= 0): 
+           return pfelem(pow(self.v,other,self.p),self.p)
+        else:
+           fail("cannot exp with negative number")
+           return pfelem(0,self.p)
 
-T = TypeVar('T')
-U = TypeVar('U')
+       
+    # See https://github.com/python/mypy/issues/2783
+    def __eq__(self,other:Any) -> Any:
+        return (self.p == other.p and self.v == other.v)
+
+    @staticmethod
+    def pfadd(x:'pfelem',y:'pfelem') -> 'pfelem':
+        return (x+y)
+    
+
+    @staticmethod
+    def pfmul(x:'pfelem',y:'pfelem') -> 'pfelem':
+        return (x*y)
+
+    @staticmethod
+    def pfsub(x:'pfelem',y:'pfelem') -> 'pfelem':
+        return (x-y)
+
+    
+    @staticmethod
+    def pfinv(x:'pfelem') -> 'pfelem':
+        def egcd(a, b):
+            if a == 0:
+                return (b, 0, 1)
+            else:
+                g, y, x = egcd(b % a, a)
+            return (g, x - (b // a) * y, y)
+
+        def modinv(a, m):
+            g, x, y = egcd(a, m)
+            if g != 1:
+                raise Exception('modular inverse does not exist')
+            else:
+                return x % m
+
+        return pfelem(modinv(x.v,x.p),x.p)
+   
+    @staticmethod
+    def prime(x:'pfelem') -> int:
+        return x.p
+
+    def __int__(self) -> int :
+        return self.v
+
+    @staticmethod
+    def int_value(x:'pfelem') -> int:
+        return x.v
+
+    
+    
 
 class array(Iterable[T]):
     def __init__(self,x:Sequence[T]) -> None:
@@ -172,25 +265,6 @@ class array(Iterable[T]):
             self.l[key.start:key.stop] = v;
         else:
             self.l[key] = v
-
-    # def append(self, x:T) -> None:
-    #     self.l = self.l[len(self.l):] = [x]
-    #     return None
-
-    # def extend(self, x:'array[T]') -> None:
-    #     self.l[len(self.l):] = x.l
-    #     return None
-
-    # def split(self,blocksize:int) -> 'array[array[T]]':
-    #     return array([array(self.l[x:x+blocksize]) for x in range(0,len(self.l),blocksize)])
-
-    
-    # @staticmethod
-    # def to_int(x:'array[uint32]') -> int:
-    #     result_int = 0
-    #     for (i, b) in enumerate(x):
-    #         result_int |= int(b.v) << (i*32)
-    #     return result_int
 
     @staticmethod
     def create(default:T, len:int) -> 'array[T]':
@@ -238,9 +312,7 @@ class array(Iterable[T]):
             acc = f(a[i],acc)
         return acc
     
-    
 
-    
 class bytes(array[uint8]):
     @staticmethod
     def from_ints(x:List[int]) -> array[uint8]:
@@ -315,6 +387,148 @@ class bytes(array[uint8]):
         return(array([bytes.to_uint32_le(i) for i in array.split_blocks(x,4)]))
 
 
+class gfelem:
+    def __init__(self,x:uintn,irred:uintn) -> None:
+        if x.v < 0:
+            fail("cannot convert negative integer to gfelem")
+        elif x.bits < 1:
+            fail("cannot create gfelem with bits < 1")
+        elif x.bits != irred.bits:
+            fail("cannot create gfelem with x.bits <> irred.bits")
+        else:
+            self.bits = x.bits
+            self.irred = irred
+            self.v = x
+    def __str__(self) -> str:
+        return str(self.v)
+    def __repr__(self) -> str:
+        return str(self.v)
+    def __add__(self,other:'gfelem') -> 'gfelem':
+        if (other.bits == self.bits and other.irred == self.irred): 
+           return gfelem(self.v ^ other.v,self.irred)
+        else:
+           fail("cannot add gfelem of different fields")
+           return gfelem(uintn(0,self.bits),self.irred)
+    def __sub__(self,other:'gfelem') -> 'gfelem':
+        if (other.bits == self.bits and other.irred == self.irred): 
+           return gfelem(self.v ^ other.v,self.irred)
+        else:
+           fail("cannot sub gfelem of different fields")
+           return gfelem(uintn(0,self.bits),self.irred)
+
+    def __mul__(self,other:'gfelem') -> 'gfelem':
+        if (other.bits == self.bits and other.irred == self.irred): 
+           bits = self.bits
+           irred = self.irred
+           a = self.v
+           b = other.v
+           p = uintn(0,bits)
+           for i in range(bits):
+               if (uintn.int_value(b) & 1 == 1):
+                   p = p ^ a
+               b = b >> 1
+               c = a >> (bits - 1)
+               a = a << 1
+               if (uintn.int_value(a) == 1):
+                  a = a ^ irred
+           return gfelem(p,irred)
+        else:
+           fail("cannot mul gfelem of different fields")
+           return gfelem(uintn(0,self.bits),self.irred)
+        
+    def __pow__(self,other:int) -> 'gfelem':
+        if (other < 0):
+           fail("cannot exp with negative number")
+           return gfelem(uintn(0,self.bits),self.irred)
+        else:
+           def exp(a,x):
+               if (x == 0):
+                  return gfelem(uintn(1,self.bits),self.irred)
+               elif (x == 1):
+                  return a
+               elif (x == 2):
+                  return a * a
+               else:
+                  r = exp(a, x/2)
+                  r_ = r * r
+                  if (x % 2 == 0):
+                      return r_
+                  else:
+                      return (a * r_)
+           return exp(self,other)
+       
+    # See https://github.com/python/mypy/issues/2783
+    def __eq__(self,other:Any) -> Any:
+        return (self.bits == other.bits and self.v == other.v)
+
+    @staticmethod
+    def gfadd(x:'gfelem',y:'gfelem') -> 'gfelem':
+        return (x + y)
+
+    @staticmethod
+    def gfsub(x:'gfelem',y:'gfelem') -> 'gfelem':
+        return (x - y)
+
+    @staticmethod
+    def gfmul(x:'gfelem',y:'gfelem') -> 'gfelem':
+        return (x * y)
+
+    @staticmethod
+    def gfexp(x:'gfelem',y:int) -> 'gfelem':
+        return (x ** y)
+    
+    @staticmethod
+    def gfinv(x:'gfelem') -> 'gfelem':
+        bits = x.bits
+        irred = x.irred
+        def degree(v:uintn,bits:int):
+            if (v == 0 or bits == 0):
+                return 0
+            elif (uintn.int_value(v >> (bits - 1)) == 1):
+                return (bits - 1)
+            else:
+                return degree(v >> 1, bits - 1)
+        def gfgcd(s,r,v,u):
+            dr = degree(r,bits)
+            ds = degree(s,bits)
+            if (dr == 0):
+                return u
+            elif (ds >= dr):
+                s_ = s ^ (r << (ds - dr))
+                v_ = v ^ (u << (ds - dr))
+                return gfgcd(s_,r,v_,u)
+            else:
+                r_ = s
+                s_ = r
+                v_ = u
+                u_ = v
+                s_ = s_ ^ (r_ << (dr - ds))
+                v_ = v_ ^ (u_ << (dr - ds))
+                return gfgcd(s_,r_,v_,u_)
+        r = x.v
+        s = irred
+        dr = degree(r,bits)
+        ds = degree(s,bits)
+        v = gfelem(uintn(0,bits),irred)
+        u = gfelem(uintn(1,bits),irred)
+        if (dr == 0):
+            return u
+        else:
+            s_ =  s ^ (r << (ds - dr))
+            v_ =  v ^ (r << (ds - dr))
+            return gfelem(gfgcd(s_,r,v_,u),irred)
+
+    def __int__(self) -> int :
+        return uintn.int_value(self.v)
+
+    @staticmethod
+    def int_value(x:'gfelem') -> int:
+        return uintn.int_value(x.v)
+
+
+
+
+    
 def precondition(*types):
     def precondition_decorator(func):
         assert(len(types) == func.__code__.co_argcount)

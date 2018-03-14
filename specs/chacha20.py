@@ -4,6 +4,7 @@
 
 from speclib import *
 
+blocksize = 64
 index = int           # range: (0,16)
 shiftval = int        # range: (0,32)
 state = array[uint32] # length : 32
@@ -65,20 +66,8 @@ def chacha20_block(k: key_t, counter:int, nonce: nonce_t) -> bytes_t:
     return block
 
 # Many ways of extending this to CTR
-# First version: use generic higher-order ctr library
-from ctr import counter_mode
-def chacha20_encrypt_(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t) -> bytes_t:
-    return counter_mode(64,chacha20_block,
-                        key,counter,nonce,msg)
+# This version: use first-order CTR function specific to Chacha20 with a loop
 
-def chacha20_decrypt_(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t) -> bytes_t:
-    return counter_mode(64,chacha20_block,
-                        key,counter,nonce,msg)
-
-
-# Second version: use first-order CTR function specific to Chacha20 with a loop
-
-blocksize = 64
 def xor_block(block:bytes_t, keyblock:bytes_t) -> bytes_t:
     out = array(list(block))
     for i in range(len(out)):
@@ -87,6 +76,7 @@ def xor_block(block:bytes_t, keyblock:bytes_t) -> bytes_t:
 
 def chacha20_counter_mode(key: key_t, counter: int, nonce: nonce_t, msg:bytes_t) -> bytes_t:
     blocks = array.split_blocks(msg,blocksize)
+    keyblock = array.create(uint8(0),blocksize)
     for i in range(0,len(blocks)):
         keyblock = chacha20_block(key,counter + i,nonce)
         blocks[i] = xor_block(blocks[i],keyblock)

@@ -14,17 +14,35 @@ def dump(node, annotate_fields=True, include_attributes=False):
     def _tuple(vs):
         if len(vs) == 0:
             return "()"
+        elif len(vs) == 1:
+            return vs[0]
         else:
             return "("+",".join(vs)+")"
 
+    def _curried(vs):
+        if len(vs) == 0:
+            return ""
+        else:
+            return " ".join(vs)
+
+        
     def _lvalues(node):
         if (isinstance(node, Assign) and
             isinstance(node.value,Call) and
             isinstance(node.value.func,Name) and
             node.value.func.id == 'NewType'):
             return []
+        if (isinstance(node, Assign) and
+            len(node.targets) == 1 and
+            isinstance(node.targets[0],Subscript)):
+            return [_format(node.targets[0].value)]
         elif isinstance(node, Assign):
-            return [_format(x) for x in node.targets]
+            return [x for x in node.targets]
+        elif isinstance(node, Subscript):
+            return [node.value]
+        if (isinstance(node, AugAssign) and
+            isinstance(node.target,Subscript)):
+            return [node.target.value]
         elif isinstance(node, AugAssign):
             return [node.target]
         elif isinstance(node, list):
@@ -54,11 +72,14 @@ def dump(node, annotate_fields=True, include_attributes=False):
 
     def _sep(top): 
         if top:
-            return "; "
+            return " "
         else:
             return " in "
+
+    def _sp(n):
+        return " "*n
         
-    def _format(node,top=False):
+    def _format(node,top=False,ind=0):
        # if isinstance(node, AST):
        #     fields = [(a, _format(b)) for a, b in iter_fields(node)]
        #     rv = '%s(%s' % (node.__class__.__name__, (',\n').join(
@@ -73,9 +94,9 @@ def dump(node, annotate_fields=True, include_attributes=False):
        #     return rv + ')'
        # else:
         if isinstance(node, Module):
-            return _format(node.body,True)
+            return _format(node.body,True,ind)
         if isinstance(node, ImportFrom):
-            return "open "+node.module+";"
+            return "open "+node.module.title()
         if (isinstance(node, Assign) and
             isinstance(node.value,Call) and
             isinstance(node.value.func,Name) and
@@ -84,7 +105,7 @@ def dump(node, annotate_fields=True, include_attributes=False):
             ty = node.value.args[1].id
             nty = vs[0]+"_t"
             return ("type "+nty+" = "+ty+";\n"+
-                    "let "+vs[0]+" (x:"+ty+") : "+nty+" = x")
+                    _sp(ind)+"let "+vs[0]+" (x:"+ty+") : "+nty+" = x")
         if (isinstance(node, Assign) and
             len(node.targets) == 1 and
             isinstance(node.targets[0],Subscript) and
@@ -107,6 +128,15 @@ def dump(node, annotate_fields=True, include_attributes=False):
                 return "let "+vs[0]+" = "+_format(node.value)+sep
             else:
                 return "let "+_tuple(vs)+" = "+_format(node.value)+sep
+
+        if (isinstance(node, AugAssign) and
+            isinstance(node.target,Subscript) and
+            isinstance(node.target.slice,Index)) :
+            sep = _sep(top)
+            arr = _format(node.target.value,top);
+            idx = _format(node.target.slice.value,top);
+            return "let "+arr+" = "+ arr+".["+idx+"] <- "+  arr+".["+idx+"]" + " " + _operator(node.op) + " " + _format(node.value) + sep
+
         if isinstance(node, AugAssign):
             v = _format(node.target,top)
             sep = _sep(top)
@@ -121,20 +151,24 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return "\""+str(node.s)+"\""
         if isinstance(node,FunctionDef):
             vs = [x.arg for x in node.args.args]
-            return "let "+node.name+" "+_tuple(vs)+" =\n  "+_format(node.body)+_sep(top)
+            return "let "+node.name+" "+_curried(vs)+" =\n"+_sp(ind+2)+_format(node.body,not top,ind + 2)+_sep(top)
         if isinstance(node,Return):
             return _format(node.value)
         if isinstance(node,Call):
             vs = [_format(x) for x in node.args]
-            return _format(node.func) + " " + _tuple(vs)
+            return _format(node.func) + " " + _curried(vs)
         if isinstance(node,Expr):
             return _format(node.value)+";"
         if isinstance(node,Assert):
-            return "assert ("+_format(node.test)+");"
+            return _sp(ind)+"assert ("+_format(node.test)+");"
         if isinstance(node,Name):
             return node.id
+        if isinstance(node,Attribute) and _format(node.value) == "array":
+            return node.attr
         if isinstance(node,Attribute):
             return _format(node.value) + "." + node.attr
+        if isinstance(node,Subscript) and _format(node.value) == "array":
+            return "array" + " " + _format(node.slice.value)
         if isinstance(node,Subscript) and isinstance(node.slice,Index):
             return _format(node.value) + ".[" + _format(node.slice.value) +"]"
         if isinstance(node,Subscript) and isinstance(node.slice,Slice):
@@ -142,12 +176,12 @@ def dump(node, annotate_fields=True, include_attributes=False):
         if isinstance(node,For):
             vs = [_format(x) for x in _lvalues(node.body)]
             acc = _tuple(vs)
-            return "repeati (" + _format(node.iter) + ") (fun "+_format(node.target)+" "+acc+" -> " + _format(node.body) + " " + acc + ") " + acc
+            return "let "+acc+" = "+"repeati (" + _format(node.iter) + ") (fun "+_format(node.target)+" "+acc+" -> " + _format(node.body) + " " + acc + ") " + acc + _sep(top)
         if isinstance(node,List):
             return "[ "+ ", ".join(_format(x,top) for x in node.elts)+" ]"
         elif isinstance(node, AST):
-            fields = [(a, _format(b)) for a, b in iter_fields(node)]
-            rv = '%s(%s' % (node.__class__.__name__, (',\n').join(
+            fields = [(a, _format(b,not top,ind)) for a, b in iter_fields(node)]
+            rv = '%s(%s' % (node.__class__.__name__, (',\n'+_sp(ind)).join(
                 ('%s=%s' % field for field in fields)
                 if annotate_fields else
                 (b for a, b in fields)
@@ -158,19 +192,20 @@ def dump(node, annotate_fields=True, include_attributes=False):
                                 for a in node._attributes)
             return rv + ')'
         elif isinstance(node, list):
-            return '\n'.join(_format(x,top) for x in node)
+            return ('\n'+_sp(ind)).join(_format(x,top) for x in node)
         return repr(node)
     if not isinstance(node, AST):
         raise TypeError('expected AST, got %r' % node.__class__.__name__)
     return _format(node)
 
-
+import ntpath
 def main(path):
 #    print("opening file:",path)
     with open(path, 'r', encoding='utf-8') as py_file:
 #        print("opened file:",path)
         code = py_file.read()
         ast = parse(source=code, filename=path)
+        print("module",ntpath.splitext(ntpath.basename(path))[0].title())
         print(dump(ast))
 
 if __name__ == "__main__":
