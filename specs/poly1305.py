@@ -9,23 +9,23 @@ from speclib import *
 import json
 
 blocksize = 16
-block_t = refine(array[uint8],lambda a: len(a) == 16)
+#block_t = refine(array[uint8],lambda a: len(a) == 16)
 # to pass mypy: use the following
-#block_t = array[uint8] #length: blocksize
+block_t = array[uint8] #length: blocksize
 
 bytes_t = array[uint8] #length: arbitrary
 
 p130m5 = (2 ** 130) - 5 # type: int
 
-p130m5_felem = refine(pfelem,lambda x: pfelem.get_prime(x) == p130m5) #Refinement type
+#p130m5_felem = refine(pfelem,lambda x: pfelem.get_prime(x) == p130m5) #Refinement type
 # to pass mypy: use the following
-#p130m5_felem = pfelem #mypy compatible type
+p130m5_felem = pfelem #mypy compatible type
 
 def to_felem(a:int) -> p130m5_felem:
     return pfelem(a,p130m5)
 
 def encode(block:block_t) -> p130m5_felem:
-    b = array.create(uint8(0),16)
+    b = array.create(16,uint8(0))
     b[0:len(block)] = block
     welem = to_felem(int(bytes.to_uint128_le(b)))
     lelem = to_felem(2 ** (8 * len(block)))

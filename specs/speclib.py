@@ -10,7 +10,10 @@ U = TypeVar('U')
 
 def refine(T:Type[T],f:Callable[[T],bool]):
     return T
+
 nat = refine(int,lambda x : x >= 0)
+def range_t(min,max):
+    return refine(int,lambda x : x >= min and x < max)
 
 class uintn:
     def __init__(self,x:int,bits:int) -> None:
@@ -26,48 +29,7 @@ class uintn:
         return hex(self.v)
     def __repr__(self) -> str:
         return hex(self.v)
-    def __add__(self,other:'uintn') -> 'uintn':
-        if (other.bits == self.bits): 
-           return uintn(self.v + other.v,self.bits)
-        else:
-           fail("cannot add uintn of different lengths")
-           return uintn(0,self.bits)
-    def __sub__(self,other:'uintn') -> 'uintn':
-        if (other.bits == self.bits): 
-           return uintn(self.v - other.v,self.bits)
-        else:
-           fail("cannot sub uintn of different lengths")
-           return uintn(0,self.bits)
-    def __or__(self,other:'uintn') -> 'uintn':
-        if (other.bits == self.bits): 
-           return uintn(self.v | other.v,self.bits)
-        else:
-           fail("cannot or uintn of different lengths")
-           return uintn(0,self.bits)
-    def __and__(self,other:'uintn') -> 'uintn':
-        if (other.bits == self.bits):
-           return uintn(self.v & other.v,self.bits)
-        else:
-           fail("cannot and uintn of different lengths")
-           return uintn(0,self.bits)
-    def __xor__(self,other:'uintn') -> 'uintn':
-        if (other.bits == self.bits):
-           return uintn(self.v ^ other.v,self.bits)
-        else:
-           fail("cannot xor uintn of different lengths")
-           return uintn(0,self.bits)
-    def __lshift__(self,other:int) -> 'uintn':
-        if other < 0 or other >= self.max:
-           fail("uintn cannot be shifted by < 0 or >= max")
-           return uintn(0,self.bits,)
-        else:
-           return uintn(self.v << other,self.bits)
-    def __rshift__(self,other:int) -> 'uintn':
-        if other < 0 or other >= self.max:
-           fail("uintn cannot be shifted by < 0 or >= max")
-           return uintn(0,self.bits)
-        else:
-           return uintn(self.v >> other,self.bits)
+
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return (self.bits == other.bits and self.v == other.v)
@@ -80,57 +42,261 @@ class uintn:
         return self.v
     
     @staticmethod
-    def int_value(x:'uintn') -> int:
+    def to_int(x:'uintn') -> int:
         return x.v
-    @staticmethod
-    def rotate_left(x:'uintn',other:int) -> 'uintn':
-        return (x << other | x >> (x.bits - other))
-    @staticmethod
-    def rotate_right(x:'uintn',other:int) -> 'uintn':
-        return (x >> other | x << (x.bits - other))
 
 class bit(uintn):
     def __init__(self,v:Union[int,uintn]) -> None:
         if isinstance(v,int):
             super().__init__(v,1)
         else:
-            super().__init__(uintn.int_value(v),1)
+            super().__init__(uintn.to_int(v),1)
+    def __add__(self,other:'bit') -> 'bit':
+        return bit(self.v + other.v)
+    def __sub__(self,other:'bit') -> 'bit':
+        return bit(self.v - other.v)
+    def __or__(self,other:'bit') -> 'bit':
+        return bit(self.v | other.v)
+    def __and__(self,other:'bit') -> 'bit':
+        return bit(self.v & other.v)
+    def __xor__(self,other:'bit') -> 'bit':
+        return bit(self.v ^ other.v)
+    def __lshift__(self,other:int) -> 'bit':
+        return bit(self.v << other)
+    def __rshift__(self,other:int) -> 'bit':
+        return bit(self.v >> other)
+    @staticmethod
+    def rotate_left(x:'bit',other:int) -> 'bit':
+        return (x << other | x >> (x.bits - other))
+    @staticmethod
+    def rotate_right(x:'bit',other:int) -> 'bit':
+        return (x >> other | x << (x.bits - other))
 
 class uint8(uintn):
     def __init__(self,v:Union[int,uintn]) -> None:
         if isinstance(v,int):
             super().__init__(v,8)
         else:
-            super().__init__(uintn.int_value(v),8)
+            super().__init__(uintn.to_int(v),8)
+    def __add__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v + other.v)
+    def __sub__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v - other.v)
+    def __or__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v | other.v)
+    def __and__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v & other.v)
+    def __xor__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v ^ other.v)
+    def __lshift__(self,other:int) -> 'uint8':
+        return uint8(self.v << other)
+    def __rshift__(self,other:int) -> 'uint8':
+        return uint8(self.v >> other)
+    @staticmethod
+    def rotate_left(x:'uint8',other:int) -> 'uint8':
+        return (x << other | x >> (x.bits - other))
+    @staticmethod
+    def rotate_right(x:'uint8',other:int) -> 'uint8':
+        return (x >> other | x << (x.bits - other))
 
 class uint16(uintn):
     def __init__(self,v:Union[int,uintn]) -> None:
         if isinstance(v,int):
             super().__init__(v,16)
         else:
-            super().__init__(uintn.int_value(v),16)
+            super().__init__(uintn.to_int(v),16)
+    def __add__(self,other:'uint16') -> 'uint16':
+        return uint16(self.v + other.v)
+    def __sub__(self,other:'uint16') -> 'uint16':
+        return uint16(self.v - other.v)
+    def __or__(self,other:'uint16') -> 'uint16':
+        return uint16(self.v | other.v)
+    def __and__(self,other:'uint16') -> 'uint16':
+        return uint16(self.v & other.v)
+    def __xor__(self,other:'uint16') -> 'uint16':
+        return uint16(self.v ^ other.v)
+    def __lshift__(self,other:int) -> 'uint16':
+        return uint16(self.v << other)
+    def __rshift__(self,other:int) -> 'uint16':
+        return uint16(self.v >> other)
+    @staticmethod
+    def rotate_left(x:'uint16',other:int) -> 'uint16':
+        return (x << other | x >> (x.bits - other))
+    @staticmethod
+    def rotate_right(x:'uint16',other:int) -> 'uint16':
+        return (x >> other | x << (x.bits - other))
+
+
 
 class uint32(uintn):
     def __init__(self,v:Union[int,uintn]) -> None:
         if isinstance(v,int):
             super().__init__(v,32)
         else:
-            super().__init__(uintn.int_value(v),32)
-            
+            super().__init__(uintn.to_int(v),32)
+    def __add__(self,other:'uint32') -> 'uint32':
+        return uint32(self.v + other.v)
+    def __sub__(self,other:'uint32') -> 'uint32':
+        return uint32(self.v - other.v)
+    def __or__(self,other:'uint32') -> 'uint32':
+        return uint32(self.v | other.v)
+    def __and__(self,other:'uint32') -> 'uint32':
+        return uint32(self.v & other.v)
+    def __xor__(self,other:'uint32') -> 'uint32':
+        return uint32(self.v ^ other.v)
+    def __lshift__(self,other:int) -> 'uint32':
+        return uint32(self.v << other)
+    def __rshift__(self,other:int) -> 'uint32':
+        return uint32(self.v >> other)
+    @staticmethod
+    def rotate_left(x:'uint32',other:int) -> 'uint32':
+        return (x << other | x >> (x.bits - other))
+    @staticmethod
+    def rotate_right(x:'uint32',other:int) -> 'uint32':
+        return (x >> other | x << (x.bits - other))
+
+
+
 class uint64(uintn):
     def __init__(self,v:Union[int,uintn]) -> None:
         if isinstance(v,int):
             super().__init__(v,64)
         else:
-            super().__init__(uintn.int_value(v),64)
-            
+            super().__init__(uintn.to_int(v),64)
+    def __add__(self,other:'uint64') -> 'uint64':
+        return uint64(self.v + other.v)
+    def __sub__(self,other:'uint64') -> 'uint64':
+        return uint64(self.v - other.v)
+    def __or__(self,other:'uint64') -> 'uint64':
+        return uint64(self.v | other.v)
+    def __and__(self,other:'uint64') -> 'uint64':
+        return uint64(self.v & other.v)
+    def __xor__(self,other:'uint64') -> 'uint64':
+        return uint64(self.v ^ other.v)
+    def __lshift__(self,other:int) -> 'uint64':
+        return uint64(self.v << other)
+    def __rshift__(self,other:int) -> 'uint64':
+        return uint64(self.v >> other)
+    @staticmethod
+    def rotate_left(x:'uint64',other:int) -> 'uint64':
+        return (x << other | x >> (x.bits - other))
+    @staticmethod
+    def rotate_right(x:'uint64',other:int) -> 'uint64':
+        return (x >> other | x << (x.bits - other))
+
+
 class uint128(uintn):
     def __init__(self,v:Union[int,uintn]) -> None:
         if isinstance(v,int):
             super().__init__(v,128)
         else:
-            super().__init__(uintn.int_value(v),128)
+            super().__init__(uintn.to_int(v),128)
+    def __add__(self,other:'uint128') -> 'uint128':
+        return uint128(self.v + other.v)
+    def __sub__(self,other:'uint128') -> 'uint128':
+        return uint128(self.v - other.v)
+    def __or__(self,other:'uint128') -> 'uint128':
+        return uint128(self.v | other.v)
+    def __and__(self,other:'uint128') -> 'uint128':
+        return uint128(self.v & other.v)
+    def __xor__(self,other:'uint128') -> 'uint128':
+        return uint128(self.v ^ other.v)
+    def __lshift__(self,other:int) -> 'uint128':
+        return uint128(self.v << other)
+    def __rshift__(self,other:int) -> 'uint128':
+        return uint128(self.v >> other)
+    @staticmethod
+    def rotate_left(x:'uint128',other:int) -> 'uint128':
+        return (x << other | x >> (x.bits - other))
+    @staticmethod
+    def rotate_right(x:'uint128',other:int) -> 'uint128':
+        return (x >> other | x << (x.bits - other))
 
+
+class bitvector(uintn):
+    def __init__(self,v:Union[int,uintn],bits:int) -> None:
+        if isinstance(v,int):
+            super().__init__(v,bits)
+        else:
+            super().__init__(uintn.to_int(v),bits)
+    def __add__(self,other:'bitvector') -> 'bitvector':
+        if (other.bits == self.bits): 
+           return bitvector(self.v + other.v,self.bits)
+        else:
+           fail("cannot add bitvector of different lengths")
+           return bitvector(0,self.bits)
+    def __sub__(self,other:'bitvector') -> 'bitvector':
+        if (other.bits == self.bits): 
+           return bitvector(self.v - other.v,self.bits)
+        else:
+           fail("cannot sub bitvector of different lengths")
+           return bitvector(0,self.bits)
+    def __or__(self,other:'bitvector') -> 'bitvector':
+        if (other.bits == self.bits): 
+           return bitvector(self.v | other.v,self.bits)
+        else:
+           fail("cannot or bitvector of different lengths")
+           return bitvector(0,self.bits)
+    def __and__(self,other:'bitvector') -> 'bitvector':
+        if (other.bits == self.bits):
+           return bitvector(self.v & other.v,self.bits)
+        else:
+           fail("cannot and bitvector of different lengths")
+           return bitvector(0,self.bits)
+    def __xor__(self,other:'bitvector') -> 'bitvector':
+        if (other.bits == self.bits):
+           return bitvector(self.v ^ other.v,self.bits)
+        else:
+           fail("cannot xor bitvector of different lengths")
+           return bitvector(0,self.bits)
+    def __lshift__(self,other:int) -> 'bitvector':
+        if other < 0 or other >= self.bits:
+           fail("bitvector cannot be shifted by < 0 or >= bits")
+           return bitvector(0,self.bits,)
+        else:
+           return bitvector(self.v << other,self.bits)
+    def __rshift__(self,other:int) -> 'bitvector':
+        if other < 0 or other >= self.bits:
+           fail("bitvector cannot be shifted by < 0 or >= bits")
+           return bitvector(0,self.bits)
+        else:
+           return bitvector(self.v >> other,self.bits)
+    @staticmethod
+    def rotate_left(x:'bitvector',other:int) -> 'bitvector':
+        return (x << other | x >> (x.bits - other))
+    @staticmethod
+    def rotate_right(x:'bitvector',other:int) -> 'bitvector':
+        return (x >> other | x << (x.bits - other))
+
+    def __getitem__(self, key:Union[int, slice]):
+        try:
+            if isinstance(key, slice):
+                return bitvector(self.v >> key.start,
+                                 key.stop - key.start)
+            return bit(self.v)
+        except:
+            print('bitvector content:',self.v)
+            print('bitvector index:',key)
+            fail('bitvector access error')
+
+    def __getslice__(self, i:int, j:int) -> 'bitvector':
+        return bitvector(self.v >> i, j - i)
+
+    def __setitem__(self,key:Union[int,slice],v) -> 'bitvector':
+        if isinstance(key, slice):
+            mask = ((1 << (key.stop - key.start)) - 1) << key.start
+            return bitvector((self.v & (not mask)) |
+                             (v.v << key.start),self.bits)
+        else:
+            return bitvector((self.v & (not (1 << key))) | (v << key), self.bits)
+
+
+uint8_t = uint8
+uint16_t = uint16
+uint32_t = uint32
+uint64_t = uint64
+uint128_t = uint128
+bitvector_t = bitvector
 
 class pfelem:
     def __init__(self,x:int,p:int) -> None:
@@ -215,13 +381,13 @@ class pfelem:
         return self.v
 
     @staticmethod
-    def int_value(x:'pfelem') -> int:
+    def to_int(x:'pfelem') -> int:
         return x.v
 
     
-    
+pfelem_t = pfelem    
 
-class array(Iterable[T]):
+class vlarray(Iterable[T]):
     def __init__(self,x:Sequence[T]) -> None:
         self.l = list(x)
     def __len__(self) -> int:
@@ -249,16 +415,16 @@ class array(Iterable[T]):
     def __getitem__(self, key:Union[int, slice]):
         try:
             if isinstance(key, slice):
-                return array(self.l[key.start:key.stop])
+                return vlarray(self.l[key.start:key.stop])
             return self.l[key]
         except:
-            print('Array access error:')
-            print('array content:',self.l)
-            print('array index:',key)
-            fail('array index error')
+            print('Vlarray access error:')
+            print('vlarray content:',self.l)
+            print('vlarray index:',key)
+            fail('vlarray index error')
 
-    def __getslice__(self, i:int, j:int) -> 'array[T]':
-        return array(self.l[i:j])
+    def __getslice__(self, i:int, j:int) -> 'vlarray[T]':
+        return vlarray(self.l[i:j])
 
     def __setitem__(self,key:Union[int,slice],v) -> None:
         if isinstance(key, slice):
@@ -267,128 +433,138 @@ class array(Iterable[T]):
             self.l[key] = v
 
     @staticmethod
-    def create(default:T, len:int) -> 'array[T]':
-        return array([default] * len)
+    def create(len:int,default) -> 'vlarray[T]':
+        return vlarray([default] * len)
     @staticmethod
-    def create_type(x:Iterable[U], T) -> 'array[T]':
-        return array(list([T(el) for el in x]))
+    def create_type(x:Iterable[U], T) -> 'vlarray[T]':
+        return vlarray(list([T(el) for el in x]))
 
     @staticmethod
-    def len(a:'array[T]') -> int:
+    def len(a:'vlarray[T]') -> int:
         return len(a.l)
 
     @staticmethod
-    def copy(x:'array[T]') -> 'array[T]':
-        return array(x.l[:])
+    def copy(x:'vlarray[T]') -> 'vlarray[T]':
+        return vlarray(x.l[:])
 
     @staticmethod
-    def concat(x:'array[T]',y:'array[T]') -> 'array[T]':
-        return array(x.l[:]+y.l[:])
+    def concat(x:'vlarray[T]',y:'vlarray[T]') -> 'vlarray[T]':
+        return vlarray(x.l[:]+y.l[:])
     
     @staticmethod
-    def zip(x:'array[T]',y:'array[U]') -> 'array[Tuple[T,U]]':
-        return array(list(zip(x.l,y.l)))
+    def zip(x:'vlarray[T]',y:'vlarray[U]') -> 'vlarray[Tuple[T,U]]':
+        return vlarray(list(zip(x.l,y.l)))
     
     @staticmethod
-    def enumerate(x:'array[T]') -> 'array[Tuple[int,T]]':
-        return array(list(enumerate(x.l)))
+    def enumerate(x:'vlarray[T]') -> 'vlarray[Tuple[int,T]]':
+        return vlarray(list(enumerate(x.l)))
 
     @staticmethod
-    def split_blocks(a:'array[T]',blocksize:int) -> 'array[array[T]]':
-        return array([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
+    def split_blocks(a:'vlarray[T]',blocksize:int) -> 'vlarray[vlarray[T]]':
+        return vlarray([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
 
     @staticmethod
-    def concat_blocks(blocks:'array[array[T]]') -> 'array[T]':
-        return (array([b for block in blocks for b in block]))
+    def concat_blocks(blocks:'vlarray[vlarray[T]]') -> 'vlarray[T]':
+        return (vlarray([b for block in blocks for b in block]))
 
     @staticmethod
-    def map(f:Callable[[T],U],a:'array[T]') -> 'array[U]':
-        return array(list(map(f,a.l)))
+    def map(f:Callable[[T],U],a:'vlarray[T]') -> 'vlarray[U]':
+        return vlarray(list(map(f,a.l)))
     
     @staticmethod
-    def reduce(f:Callable[[T,U],U],a:'array[T]',init:U) -> U:
+    def reduce(f:Callable[[T,U],U],a:'vlarray[T]',init:U) -> U:
         acc = init
         for i in range(len(a)):
             acc = f(a[i],acc)
         return acc
     
 
-class bytes(array[uint8]):
+class vlbytes(vlarray[uint8]):
     @staticmethod
-    def from_ints(x:List[int]) -> array[uint8]:
-        return array([uint8(i) for i in x])
+    def from_ints(x:List[int]) -> vlarray[uint8]:
+        return vlarray([uint8(i) for i in x])
 
     @staticmethod
-    def concat_bytes(blocks:'array[array[uint8]]') -> 'array[uint8]':
+    def concat_bytes(blocks:'vlarray[vlarray[uint8]]') -> 'vlarray[uint8]':
         concat = [b for block in blocks for b in block]
-        return array(concat)
+        return vlarray(concat)
 
     @staticmethod
-    def from_hex(x:str) -> array[uint8]:
-        return array([uint8(int(x[i:i+2],16)) for i in range(0,len(x),2)])
+    def from_hex(x:str) -> vlarray[uint8]:
+        return vlarray([uint8(int(x[i:i+2],16)) for i in range(0,len(x),2)])
     
     @staticmethod
-    def from_uint32_le(x:uint32) -> array[uint8]:
-        xv = uint32.int_value(x)
+    def from_uint32_le(x:uint32) -> vlarray[uint8]:
+        xv = uint32.to_int(x)
         x0 = uint8(xv & 255)
         x1 = uint8((xv >> 8) & 255)
         x2 = uint8((xv >> 16) & 255)
         x3 = uint8((xv >> 24) & 255)
-        return array([x0,x1,x2,x3])
+        return vlarray([x0,x1,x2,x3])
 
     @staticmethod
-    def to_uint32_le(x:array[uint8]) -> uint32:
-        x0 = uint8.int_value(x[0])
-        x1 = uint8.int_value(x[1]) << 8
-        x2 = uint8.int_value(x[2]) << 16
-        x3 = uint8.int_value(x[3]) << 24
+    def to_uint32_le(x:vlarray[uint8]) -> uint32:
+        x0 = uint8.to_int(x[0])
+        x1 = uint8.to_int(x[1]) << 8
+        x2 = uint8.to_int(x[2]) << 16
+        x3 = uint8.to_int(x[3]) << 24
         return uint32(x0 + x1 + x2 + x3)
 
     @staticmethod
-    def from_uint64_le(x:uint64) -> array[uint8]:
-        xv = uint64.int_value(x)
+    def from_uint64_le(x:uint64) -> vlarray[uint8]:
+        xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a:array[uint8] = array.create(uint8(0),8)
-        a[0:4] = bytes.from_uint32_le(x0)
-        a[4:8] = bytes.from_uint32_le(x1)
+        a:vlarray[uint8] = vlarray.create(8,uint8(0))
+        a[0:4] = vlbytes.from_uint32_le(x0)
+        a[4:8] = vlbytes.from_uint32_le(x1)
         return a
 
     @staticmethod
-    def to_uint64_le(x:array[uint8]) -> uint64:
-        x0 = bytes.to_uint32_le(x[0:4])
-        x1 = bytes.to_uint32_le(x[4:8])
-        return uint64(uint32.int_value(x0) +
-                      (uint32.int_value(x1) << 32))
+    def to_uint64_le(x:vlarray[uint8]) -> uint64:
+        x0 = vlbytes.to_uint32_le(x[0:4])
+        x1 = vlbytes.to_uint32_le(x[4:8])
+        return uint64(uint32.to_int(x0) +
+                      (uint32.to_int(x1) << 32))
 
     @staticmethod
-    def from_uint128_le(x:uint128) -> array[uint8]:
-        xv = uint128.int_value(x)
+    def from_uint128_le(x:uint128) -> vlarray[uint8]:
+        xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = array.create(uint8(0),16)
-        a[0:8] = bytes.from_uint64_le(x0)
-        a[8:16] = bytes.from_uint64_le(x1)
+        a = vlarray.create(16,uint8(0))
+        a[0:8] = vlbytes.from_uint64_le(x0)
+        a[8:16] = vlbytes.from_uint64_le(x1)
         return a
 
     @staticmethod
-    def to_uint128_le(x:array[uint8]) -> uint128:
-        x0 = bytes.to_uint64_le(x[0:8])
-        x1 = bytes.to_uint64_le(x[8:16])
-        return uint128(uint64.int_value(x0) +
-                      (uint64.int_value(x1) << 64))
+    def to_uint128_le(x:vlarray[uint8]) -> uint128:
+        x0 = vlbytes.to_uint64_le(x[0:8])
+        x1 = vlbytes.to_uint64_le(x[8:16])
+        return uint128(uint64.to_int(x0) +
+                      (uint64.to_int(x1) << 64))
 
     @staticmethod
-    def from_uint32s_le(x:array[uint32]) -> array[uint8]:
-        by = array([bytes.from_uint32_le(i) for i in x])
-        return(array.concat_blocks(by))
+    def from_uint32s_le(x:vlarray[uint32]) -> vlarray[uint8]:
+        by = vlarray([vlbytes.from_uint32_le(i) for i in x])
+        return(vlarray.concat_blocks(by))
     @staticmethod
-    def to_uint32s_le(x:array[uint8]) -> array[uint32]:
-        return(array([bytes.to_uint32_le(i) for i in array.split_blocks(x,4)]))
+    def to_uint32s_le(x:vlarray[uint8]) -> vlarray[uint32]:
+        return(vlarray([vlbytes.to_uint32_le(i) for i in vlarray.split_blocks(x,4)]))
 
-
+def vlarray_t(T):
+    return vlarray[T]
+def array_t(T,len):
+    return vlarray[T]
+def vlbytes_t(T):
+    return vlbytes
+def bytes_t(len):
+    return vlbytes
+array = vlarray
+bytes = vlbytes
+    
 class gfelem:
-    def __init__(self,x:uintn,irred:uintn) -> None:
+    def __init__(self,x:bitvector,irred:bitvector) -> None:
         if x.v < 0:
             fail("cannot convert negative integer to gfelem")
         elif x.bits < 1:
@@ -408,13 +584,13 @@ class gfelem:
            return gfelem(self.v ^ other.v,self.irred)
         else:
            fail("cannot add gfelem of different fields")
-           return gfelem(uintn(0,self.bits),self.irred)
+           return gfelem(bitvector(0,self.bits),self.irred)
     def __sub__(self,other:'gfelem') -> 'gfelem':
         if (other.bits == self.bits and other.irred == self.irred): 
            return gfelem(self.v ^ other.v,self.irred)
         else:
            fail("cannot sub gfelem of different fields")
-           return gfelem(uintn(0,self.bits),self.irred)
+           return gfelem(bitvector(0,self.bits),self.irred)
 
     def __mul__(self,other:'gfelem') -> 'gfelem':
         if (other.bits == self.bits and other.irred == self.irred): 
@@ -422,28 +598,28 @@ class gfelem:
            irred = self.irred
            a = self.v
            b = other.v
-           p = uintn(0,bits)
+           p = bitvector(0,bits)
            for i in range(bits):
-               if (uintn.int_value(b) & 1 == 1):
+               if (bitvector.to_int(b) & 1 == 1):
                    p = p ^ a
                b = b >> 1
                c = a >> (bits - 1)
                a = a << 1
-               if (uintn.int_value(a) == 1):
+               if (bitvector.to_int(a) == 1):
                   a = a ^ irred
            return gfelem(p,irred)
         else:
            fail("cannot mul gfelem of different fields")
-           return gfelem(uintn(0,self.bits),self.irred)
+           return gfelem(bitvector(0,self.bits),self.irred)
         
     def __pow__(self,other:int) -> 'gfelem':
         if (other < 0):
            fail("cannot exp with negative number")
-           return gfelem(uintn(0,self.bits),self.irred)
+           return gfelem(bitvector(0,self.bits),self.irred)
         else:
            def exp(a,x):
                if (x == 0):
-                  return gfelem(uintn(1,self.bits),self.irred)
+                  return gfelem(bitvector(1,self.bits),self.irred)
                elif (x == 1):
                   return a
                elif (x == 2):
@@ -481,10 +657,10 @@ class gfelem:
     def gfinv(x:'gfelem') -> 'gfelem':
         bits = x.bits
         irred = x.irred
-        def degree(v:uintn,bits:int):
+        def degree(v:bitvector,bits:int):
             if (v == 0 or bits == 0):
                 return 0
-            elif (uintn.int_value(v >> (bits - 1)) == 1):
+            elif (bitvector.to_int(v >> (bits - 1)) == 1):
                 return (bits - 1)
             else:
                 return degree(v >> 1, bits - 1)
@@ -509,8 +685,8 @@ class gfelem:
         s = irred
         dr = degree(r,bits)
         ds = degree(s,bits)
-        v = gfelem(uintn(0,bits),irred)
-        u = gfelem(uintn(1,bits),irred)
+        v = gfelem(bitvector(0,bits),irred)
+        u = gfelem(bitvector(1,bits),irred)
         if (dr == 0):
             return u
         else:
@@ -519,11 +695,11 @@ class gfelem:
             return gfelem(gfgcd(s_,r,v_,u),irred)
 
     def __int__(self) -> int :
-        return uintn.int_value(self.v)
+        return bitvector.to_int(self.v)
 
     @staticmethod
-    def int_value(x:'gfelem') -> int:
-        return uintn.int_value(x.v)
+    def to_int(x:'gfelem') -> int:
+        return bitvector.to_int(x.v)
 
 
 
