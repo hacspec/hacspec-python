@@ -80,18 +80,21 @@ def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
 # This version: use first-order CTR function specific to Chacha20 with a loop
 
 def xor_block(block:vlbytes_t, keyblock:block_t) -> vlbytes_t:
-    out = array.copy(block)
-    for i in range(array.length(out)):
+    out = vlbytes.copy(block)
+    for i in range(vlbytes.length(block)):
         out[i] ^= keyblock[i]
     return out
 
 def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
-    blocks = array.split_blocks(msg,blocksize)
+    blocks,last = vlarray.split_blocks(msg,blocksize)
     keyblock = array.create(blocksize,uint8(0))
-    for i in range(0,array.length(blocks)):
+    nblocks = vlarray.length(blocks)
+    for i in range(nblocks):
         keyblock = chacha20_block(key,counter + uint32(i),nonce)
         blocks[i] = xor_block(blocks[i],keyblock)
-    return array.concat_blocks(blocks)
+    keyblock = chacha20_block(key,counter + uint32(nblocks),nonce)
+    last = xor_block(last,keyblock)
+    return array.concat_blocks(blocks,last)
 
 def chacha20_encrypt(key: key_t, counter: uint32_t, nonce: nonce_t,msg:vlbytes_t) -> vlbytes_t:
     return chacha20_counter_mode(key,counter,nonce,msg)

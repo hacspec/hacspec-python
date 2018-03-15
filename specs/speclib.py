@@ -442,7 +442,9 @@ class vlarray(Iterable[T]):
     @staticmethod
     def len(a:'vlarray[T]') -> int:
         return len(a.l)
-
+    @staticmethod
+    def length(a:'vlarray[T]') -> int:
+        return len(a.l)
     @staticmethod
     def copy(x:'vlarray[T]') -> 'vlarray[T]':
         return vlarray(x.l[:])
@@ -460,12 +462,15 @@ class vlarray(Iterable[T]):
         return vlarray(list(enumerate(x.l)))
 
     @staticmethod
-    def split_blocks(a:'vlarray[T]',blocksize:int) -> 'vlarray[vlarray[T]]':
-        return vlarray([a[x:x+blocksize] for x in range(0,len(a),blocksize)])
+    def split_blocks(a:'vlarray[T]',blocksize:int) -> 'Typle[vlarray[vlarray[T]],vlarray[T]]':
+        nblocks = len(a) // blocksize
+        blocks = vlarray([a[x*blocksize:(x+1)*blocksize] for x in range(nblocks)])
+        last = vlarray(a[len(a) - (len(a) % blocksize):len(a)])
+        return (blocks,last)
 
     @staticmethod
-    def concat_blocks(blocks:'vlarray[vlarray[T]]') -> 'vlarray[T]':
-        return (vlarray([b for block in blocks for b in block]))
+    def concat_blocks(blocks:'vlarray[vlarray[T]]',last:'vlarray[T]') -> 'vlarray[T]':
+        return (vlarray.concat(vlarray([b for block in blocks for b in block]),last))
 
     @staticmethod
     def map(f:Callable[[T],U],a:'vlarray[T]') -> 'vlarray[U]':
@@ -547,10 +552,14 @@ class vlbytes(vlarray[uint8]):
     @staticmethod
     def from_uint32s_le(x:vlarray[uint32]) -> vlarray[uint8]:
         by = vlarray([vlbytes.from_uint32_le(i) for i in x])
-        return(vlarray.concat_blocks(by))
+        return(vlarray.concat_blocks(by,vlarray([])))
     @staticmethod
     def to_uint32s_le(x:vlarray[uint8]) -> vlarray[uint32]:
-        return(vlarray([vlbytes.to_uint32_le(i) for i in vlarray.split_blocks(x,4)]))
+        nums,x = vlarray.split_blocks(x,4)
+        if len(x) > 0:
+            fail("array length not a multiple of 4")
+        else:
+            return(vlarray([vlbytes.to_uint32_le(i) for i in nums]))
 
 def vlarray_t(T):
     return vlarray[T]

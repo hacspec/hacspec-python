@@ -51,8 +51,26 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "u128"
         if f == "array":
            return "createL"
-        if f == "array.length":
+        if f == "vlarray.length":
            return "length"
+        if f == "vlbytes.length":
+           return "length"
+        if f == "vlarray.split_blocks":
+           return "split_blocks"
+        if f == "vlbytes.split_blocks":
+           return "split_blocks"
+        if f == "vlarray.concat_blocks":
+           return "concat_blocks"
+        if f == "vlbytes.concat_blocks":
+           return "concat_blocks"
+        if f == "array.copy":
+           return "copy"
+        if f == "bytes.copy":
+           return "copy"
+        if f == "vlbytes.copy":
+           return "vlcopy"
+        if f == "vlarray.copy":
+           return "vlcopy"
         if f == "bytes.to_uint32s_le":
            return "uints_from_bytes_le #U32"
         if f == "bytes.from_uint32s_le":
@@ -171,9 +189,15 @@ def dump(node, annotate_fields=True, include_attributes=False):
             low = _format(node.targets[0].slice.lower,top,ind,paren);
             high = _format(node.targets[0].slice.upper,top,ind,paren);
             return "let "+arr+" = update_slice "+ arr + " " + low +" " + high + " " +_format(node.value,top,ind,True)+_sep(top)
-        if isinstance(node, AnnAssign):
+        if (isinstance(node, Assign) and
+            len(node.targets) == 1 and
+            isinstance(node.targets[0],Tuple)):
+            vs = [_format(x,top,ind,paren) for x in node.targets[0].elts]
             sep = _sep(top)
-            return "let "+_format(node.target,top,ind,paren)+" : "+_format(node.annotation,top,ind,paren)+" = "+_format(node.value,top,ind,paren)+sep
+            if (len(vs) == 1):
+                return "let "+vs[0]+" = "+_format(node.value,top,ind,paren)+sep
+            else:
+                return "let "+_tuple(vs)+" = "+_format(node.value,top,ind,paren)+sep
         if isinstance(node, Assign):
             vs = [_format(x,top,ind,paren) for x in node.targets]
             sep = _sep(top)
@@ -181,6 +205,9 @@ def dump(node, annotate_fields=True, include_attributes=False):
                 return "let "+vs[0]+" = "+_format(node.value,top,ind,paren)+sep
             else:
                 return "let "+_tuple(vs)+" = "+_format(node.value,top,ind,paren)+sep
+        if isinstance(node, AnnAssign):
+            sep = _sep(top)
+            return "let "+_format(node.target,top,ind,paren)+" : "+_format(node.annotation,top,ind,paren)+" = "+_format(node.value,top,ind,paren)+sep
 
         if (isinstance(node, AugAssign) and
             isinstance(node.target,Subscript) and
@@ -273,6 +300,7 @@ def main(path):
         code = py_file.read()
         ast = parse(source=code, filename=path)
         print("module",ntpath.splitext(ntpath.basename(path))[0].title())
+        print('#set-options "--z3rlimit 20 --max_fuel 0"')
         print("open Spec.Lib.IntTypes")
         print("open Spec.Lib.IntSeq")
         print(dump(ast))

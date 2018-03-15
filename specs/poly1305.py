@@ -39,10 +39,12 @@ def encode_r(r:block_t) -> p130m5_felem:
 # There are many ways of writing the polynomial evaluation function
 # This version: use a loop to accumulate the result
 def poly(text:bytes_t,r:p130m5_felem) -> p130m5_felem:
-    blocks = array.split_blocks(text,blocksize)
+    blocks,last = array.split_blocks(text,blocksize)
     acc = to_felem(0)
-    for i in range(len(blocks)):
+    for i in range(array.len(blocks)):
         acc = (acc + encode(blocks[i])) * r
+    if (array.len(last) > 0):
+        acc = (acc + encode(last)) * r
     return acc
 
 def poly1305_mac(text:bytes_t,k:bytes_t) -> bytes_t :
