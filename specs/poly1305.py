@@ -33,11 +33,11 @@ def encode(block:subblock_t) -> felem_t:
     b[0:array.length(block)] = block
     welem = felem(uint128.to_int(bytes.to_uint128_le(b)))
     lelem = felem(2 ** (8 * array.length(block)))
-    return (lelem + welem)
+    return fadd(lelem,welem)
 
 def encode_r(r:block_t) -> felem_t:
     ruint = bytes.to_uint128_le(r)
-    ruint = uint128(ruint & uint128(0x0ffffffc0ffffffc0ffffffc0fffffff))
+    ruint = ruint & uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
     return  felem(uint128.to_int(ruint))
 
 # There are many ways of writing the polynomial evaluation function
