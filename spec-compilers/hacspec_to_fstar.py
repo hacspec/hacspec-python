@@ -134,9 +134,15 @@ def dump(node, annotate_fields=True, include_attributes=False):
         elif isinstance(o,Mod):
             return "%."
         elif isinstance(o,Eq):
-            return "=."
+            return "="
+        elif isinstance(o,Gt):
+            return ">"
+        elif isinstance(o,Lt):
+            return "<"
+        elif isinstance(o,list) and len(o) == 1:
+            return _operator(o[0])
         else:
-            return " <unknown_op> "
+            return " <unknown_op> "+type(o)
 
     def _sep(top): 
         if top:
@@ -267,6 +273,15 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return _format(node.value,top,ind,paren) + ".[" + _format(node.slice.value,top,ind,paren) +"]"
         if isinstance(node,Subscript) and isinstance(node.slice,Slice):
             return "slice " + _format(node.value,top,ind,paren) + " " + _format(node.slice.lower,top,ind,paren) +" " + _format(node.slice.upper,top,ind,paren) 
+        if isinstance(node,If) and node.orelse is None:
+            vs = [_format(x,top,ind,paren) for x in _lvalues(node.body)]
+            acc = _tuple(vs)
+            return "let "+acc+" = "+"if (" + _format(node.test,top,ind,paren) + ") then ("+_format(node.body,top,ind,paren)+acc+" ) else "+acc+_sep(top)
+        if isinstance(node,If):
+            vs = [_format(x,top,ind,paren) for x in _lvalues(node.body)]
+            vs += [_format(x,top,ind,paren) for x in _lvalues(node.orelse)]
+            acc = _tuple(vs)
+            return "let "+acc+" = "+"if (" + _format(node.test,top,ind,paren) + ") then ("+_format(node.body,top,ind,paren)+acc+" ) else ("+_format(node.orelse,top,ind,paren)+acc+")"+_sep(top)
         if isinstance(node,For):
             vs = [_format(x,top,ind,paren) for x in _lvalues(node.body)]
             acc = _tuple(vs)

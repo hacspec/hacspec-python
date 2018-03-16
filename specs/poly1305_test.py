@@ -1,5 +1,5 @@
 from poly1305 import *
-
+import json
 from test_vectors.poly1305_test_vectors import poly1305_test_vectors
 
 def main (x: int) -> None :
