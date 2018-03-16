@@ -16,7 +16,13 @@ subblock_t = refine(vlbytes_t,lambda x: vlbytes.length(x) <= 16)
 #tag_t = array[uint8]
 
 p130m5 = (2 ** 130) - 5 # type: int
-(felem_t,felem,felem_to_int) = prime_field(p130m5)
+felem_t = refine(nat,lambda x: x < p130m5)
+def felem(x:nat) -> felem_t:
+    return (x % p130m5)
+def fadd(x:felem_t,y:felem_t) -> felem_t:
+    return felem(x + y)
+def fmul(x:felem_t,y:felem_t) -> felem_t:
+    return felem(x * y)
 
 # to pass mypy: use the following
 #felem_t = pfelem_t
@@ -40,9 +46,9 @@ def poly(text:vlbytes_t,r:felem_t) -> felem_t:
     blocks,last = array.split_blocks(text,blocksize)
     acc = felem(0)
     for i in range(array.length(blocks)):
-        acc = (acc + encode(blocks[i])) * r
+        acc = fmul(fadd(acc,encode(blocks[i])),r)
     if (array.length(last) > 0):
-        acc = (acc + encode(last)) * r
+        acc = fmul(fadd(acc,encode(last)),r)
     return acc
 
 def poly1305_mac(text:vlbytes_t,k:key_t) -> tag_t :
@@ -51,5 +57,5 @@ def poly1305_mac(text:vlbytes_t,k:key_t) -> tag_t :
     relem = encode_r(r)
     selem = bytes.to_uint128_le(s)
     a = poly(text,relem)
-    n = uint128(uint128(felem_to_int(a)) + selem)
+    n = uint128(uint128(a) + selem)
     return bytes.from_uint128_le(n)
