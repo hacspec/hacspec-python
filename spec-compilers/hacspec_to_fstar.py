@@ -49,6 +49,16 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return 'u64' 
         if f == "uint128":
            return "u128"
+        if f == 'uint8.to_int':
+           return 'uint_to_nat #U8' 
+        if f == 'uint16.to_int':
+           return 'uint_to_nat #U16' 
+        if f == 'uint32.to_int':
+           return 'uint_to_nat #U32' 
+        if f == 'uint64.to_int':
+           return 'uint_to_nat #U64' 
+        if f == "uint128.to_int":
+           return "uint_to_nat #U128"
         if f == "array":
            return "createL"
         if f == "vlarray.length":
@@ -75,7 +85,11 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "uints_from_bytes_le #U32"
         if f == "bytes.from_uint32s_le":
            return "uints_to_bytes_le #U32"
-        else:
+        if f == "bytes.to_uint128_le":
+           return "uint_from_bytes_le #U128"
+        if f == "bytes.from_uint128_le":
+           return "uint_to_bytes_le #U128"
+        else:        
            return f
 
     def _is_uintn(x):
@@ -95,11 +109,6 @@ def dump(node, annotate_fields=True, include_attributes=False):
 
    
     def _lvalues(node):
-        if (isinstance(node, Assign) and
-            isinstance(node.value,Call) and
-            isinstance(node.value.func,Name) and
-            node.value.func.id == 'NewType'):
-            return []
         if (isinstance(node, Assign) and
             len(node.targets) == 1 and
             isinstance(node.targets[0],Subscript)):
@@ -139,6 +148,10 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return ">"
         elif isinstance(o,Lt):
             return "<"
+        elif isinstance(o,GtE):
+            return ">="
+        elif isinstance(o,LtE):
+            return "<="
         elif isinstance(o,list) and len(o) == 1:
             return _operator(o[0])
         else:
@@ -174,12 +187,22 @@ def dump(node, annotate_fields=True, include_attributes=False):
         if (isinstance(node, Assign) and
             isinstance(node.value,Call) and
             isinstance(node.value.func,Name) and
-            node.value.func.id == 'NewType'):
+            node.value.func.id == 'refine'):
             vs = [_format(x,top,ind,paren) for x in node.targets]
-            ty = node.value.args[1].id
-            nty = vs[0]+"_t"
-            return ("type "+nty+" = "+ty+";\n"+
-                    _sp(ind)+"let "+vs[0]+" (x:"+ty+") : "+nty+" = x")
+            ty = node.value.args[0].id
+            nty = vs[0]
+            x = node.value.args[1].args.args[0].arg
+            b = _format(node.value.args[1].body,top,ind,False)
+            return ("type "+nty+" = "+x+":"+ty+"{"+b+"}\n")
+        if (isinstance(node, Assign) and
+            isinstance(node.value,Call) and
+            isinstance(node.value.func,Name) and
+            node.value.func.id == 'prime_field'):
+            nty = node.targets[0].elts[0].id
+            con = node.targets[0].elts[1].id
+            des = node.targets[0].elts[2].id
+            prime = node.value.args[0].id
+            return ("let "+nty+" = assert_norm("+prime+" > 0); pfelem_t "+prime+"\n"+_sp(ind)+"let "+con+" = assert_norm("+prime+" > 0); pfelem "+prime+"\n"+_sp(ind)+"let "+des+" (x:"+nty+") : nat = x"+_sep(top))
         if (isinstance(node, Assign) and
             len(node.targets) == 1 and
             isinstance(node.targets[0],Subscript) and
@@ -191,30 +214,29 @@ def dump(node, annotate_fields=True, include_attributes=False):
             len(node.targets) == 1 and
             isinstance(node.targets[0],Subscript) and
             isinstance(node.targets[0].slice,Slice)) :
-            arr = _format(node.targets[0].value,top,ind,paren);
-            low = _format(node.targets[0].slice.lower,top,ind,paren);
-            high = _format(node.targets[0].slice.upper,top,ind,paren);
+            arr = _format(node.targets[0].value,top,ind,True);
+            low = _format(node.targets[0].slice.lower,top,ind,True);
+            high = _format(node.targets[0].slice.upper,top,ind,True);
             return "let "+arr+" = update_slice "+ arr + " " + low +" " + high + " " +_format(node.value,top,ind,True)+_sep(top)
         if (isinstance(node, Assign) and
             len(node.targets) == 1 and
             isinstance(node.targets[0],Tuple)):
             vs = [_format(x,top,ind,paren) for x in node.targets[0].elts]
             sep = _sep(top)
-            if (len(vs) == 1):
-                return "let "+vs[0]+" = "+_format(node.value,top,ind,paren)+sep
-            else:
-                return "let "+_tuple(vs)+" = "+_format(node.value,top,ind,paren)+sep
+            prefix = "let "+_tuple(vs)+" = "
+            b = _format(node.value,False,ind+len(prefix),paren)
+            return prefix + b + sep
         if isinstance(node, Assign):
             vs = [_format(x,top,ind,paren) for x in node.targets]
             sep = _sep(top)
-            if (len(vs) == 1):
-                return "let "+vs[0]+" = "+_format(node.value,top,ind,paren)+sep
-            else:
-                return "let "+_tuple(vs)+" = "+_format(node.value,top,ind,paren)+sep
+            prefix = "let "+_tuple(vs)+" = "
+            b = _format(node.value,False,ind+len(prefix),paren)
+            return prefix + b + sep
         if isinstance(node, AnnAssign):
             sep = _sep(top)
-            return "let "+_format(node.target,top,ind,paren)+" : "+_format(node.annotation,top,ind,paren)+" = "+_format(node.value,top,ind,paren)+sep
-
+            prefix = "let "+_format(node.target,top,ind,paren)+" : "+_format(node.annotation,top,ind,paren)+" = "
+            b = _format(node.value,False,ind+len(prefix),paren)
+            return prefix + b + sep
         if (isinstance(node, AugAssign) and
             isinstance(node.target,Subscript) and
             isinstance(node.target.slice,Index)) :
@@ -249,6 +271,10 @@ def dump(node, annotate_fields=True, include_attributes=False):
                 return "("+_func(node.func)+" "+ vs[0]+" "+"(u32 "+vs[1]+"))"
             else:
                 return _func(node.func)+" "+ vs[0]+" "+"(u32 "+vs[1]+")"
+        if (isinstance(node,Call) and _func(node.func) == "createL"):
+            l = _format(node.args[0],top,ind,paren)
+            n = len(node.args[0].elts)
+            return "let l_ = "+l+" in \n"+_sp(ind)+"assert_norm(List.Tot.length l_ == "+str(n)+");\n"+_sp(ind)+"createL l_"
         if isinstance(node,Call):
             vs = [_format(x,top,ind,True) for x in node.args]
             if paren == True:

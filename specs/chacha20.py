@@ -21,6 +21,7 @@ state_t  = array_t(uint32_t,16)
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 block_t  = bytes_t(64)
+subblock_t  = refine(vlbytes_t,lambda x: vlbytes.length(x) <= blocksize)
 
 def line(a: index_t, b: index_t, d: index_t, s: rotval_t, m: state_t) -> state_t:
     m : state_t = array.copy(m)
@@ -79,7 +80,7 @@ def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
 # Many ways of extending this to CTR
 # This version: use first-order CTR function specific to Chacha20 with a loop
 
-def xor_block(block:vlbytes_t, keyblock:block_t) -> vlbytes_t:
+def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
     out = vlbytes.copy(block)
     for i in range(vlbytes.length(block)):
         out[i] ^= keyblock[i]

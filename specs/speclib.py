@@ -7,6 +7,13 @@ def fail(s):
 
 T = TypeVar('T')
 U = TypeVar('U')
+V = TypeVar('V')
+
+def tuple2(T,U):
+    return Tuple[T,U]
+
+def tuple3(T,U,V):
+    return Tuple[T,U,V]
 
 def refine(T:Type[T],f:Callable[[T],bool]):
     return T
@@ -298,94 +305,7 @@ uint64_t = uint64
 uint128_t = uint128
 bitvector_t = bitvector
 
-class pfelem:
-    def __init__(self,x:int,p:int) -> None:
-        if x < 0:
-            fail("cannot convert negative integer to pfelem")
-        elif p < 1:
-            fail("cannot use prime < 1")
-        else:
-            self.p = p 
-            self.v = x % p
-    def __str__(self) -> str:
-        return hex(self.v)
-    def __repr__(self) -> str:
-        return hex(self.v)
-    def __add__(self,other:'pfelem') -> 'pfelem':
-        if (other.p == self.p): 
-           return pfelem(self.v + other.v,self.p)
-        else:
-           fail("cannot add pfelem of different fields")
-           return pfelem(0,self.p)
-    def __sub__(self,other:'pfelem') -> 'pfelem':
-        if (other.p == self.p): 
-           return pfelem(self.v - other.v,self.p)
-        else:
-           fail("cannot sub pfelem of different fields")
-           return pfelem(0,self.p)
-    def __mul__(self,other:'pfelem') -> 'pfelem':
-        if (other.p == self.p): 
-           return pfelem(self.v * other.v,self.p)
-        else:
-           fail("cannot sub pfelem of different fields")
-           return pfelem(0,self.p)
-    def __pow__(self,other:int) -> 'pfelem':
-        if (other >= 0): 
-           return pfelem(pow(self.v,other,self.p),self.p)
-        else:
-           fail("cannot exp with negative number")
-           return pfelem(0,self.p)
 
-       
-    # See https://github.com/python/mypy/issues/2783
-    def __eq__(self,other:Any) -> Any:
-        return (self.p == other.p and self.v == other.v)
-
-    @staticmethod
-    def pfadd(x:'pfelem',y:'pfelem') -> 'pfelem':
-        return (x+y)
-    
-
-    @staticmethod
-    def pfmul(x:'pfelem',y:'pfelem') -> 'pfelem':
-        return (x*y)
-
-    @staticmethod
-    def pfsub(x:'pfelem',y:'pfelem') -> 'pfelem':
-        return (x-y)
-
-    
-    @staticmethod
-    def pfinv(x:'pfelem') -> 'pfelem':
-        def egcd(a, b):
-            if a == 0:
-                return (b, 0, 1)
-            else:
-                g, y, x = egcd(b % a, a)
-            return (g, x - (b // a) * y, y)
-
-        def modinv(a, m):
-            g, x, y = egcd(a, m)
-            if g != 1:
-                raise Exception('modular inverse does not exist')
-            else:
-                return x % m
-
-        return pfelem(modinv(x.v,x.p),x.p)
-   
-    @staticmethod
-    def prime(x:'pfelem') -> int:
-        return x.p
-
-    def __int__(self) -> int :
-        return self.v
-
-    @staticmethod
-    def to_int(x:'pfelem') -> int:
-        return x.v
-
-    
-pfelem_t = pfelem    
 
 class vlarray(Iterable[T]):
     def __init__(self,x:Sequence[T]) -> None:
@@ -571,6 +491,96 @@ def bytes_t(len):
     return vlbytes
 array = vlarray
 bytes = vlbytes
+
+class pfelem:
+    def __init__(self,x:int,p:int) -> None:
+        if x < 0:
+            fail("cannot convert negative integer to pfelem")
+        elif p < 1:
+            fail("cannot use prime < 1")
+        else:
+            self.p = p
+            self.v = x % p
+    def __str__(self) -> str:
+        return hex(self.v)
+    def __repr__(self) -> str:
+        return hex(self.v)
+    def __add__(self,other:'pfelem') -> 'pfelem':
+        if (other.p == self.p): 
+           return pfelem(self.v + other.v,self.p)
+        else:
+           fail("cannot add pfelem of different fields")
+           return pfelem(0,self.p)
+    def __sub__(self,other:'pfelem') -> 'pfelem':
+        if (other.p == self.p): 
+           return pfelem(self.v - other.v,self.p)
+        else:
+           fail("cannot sub pfelem of different fields")
+           return pfelem(0,self.p)
+    def __mul__(self,other:'pfelem') -> 'pfelem':
+        if (other.p == self.p): 
+           return pfelem(self.v * other.v,self.p)
+        else:
+           fail("cannot sub pfelem of different fields")
+           return pfelem(0,self.p)
+    def __pow__(self,other:int) -> 'pfelem':
+        if (other >= 0): 
+           return pfelem(pow(self.v,other,self.p),self.p)
+        else:
+           fail("cannot exp with negative number")
+           return pfelem(0,self.p)
+
+       
+    # See https://github.com/python/mypy/issues/2783
+    def __eq__(self,other:Any) -> Any:
+        return (self.p == other.p and self.v == other.v)
+
+    @staticmethod
+    def pfadd(x:'pfelem',y:'pfelem') -> 'pfelem':
+        return (x+y)
+    
+
+    @staticmethod
+    def pfmul(x:'pfelem',y:'pfelem') -> 'pfelem':
+        return (x*y)
+
+    @staticmethod
+    def pfsub(x:'pfelem',y:'pfelem') -> 'pfelem':
+        return (x-y)
+
+    
+    @staticmethod
+    def pfinv(x:'pfelem') -> 'pfelem':
+        def egcd(a, b):
+            if a == 0:
+                return (b, 0, 1)
+            else:
+                g, y, x = egcd(b % a, a)
+            return (g, x - (b // a) * y, y)
+
+        def modinv(a, m):
+            g, x, y = egcd(a, m)
+            if g != 1:
+                raise Exception('modular inverse does not exist')
+            else:
+                return x % m
+
+        return pfelem(modinv(x.v,x.p),x.p)
+   
+    @staticmethod
+    def prime(x:'pfelem') -> int:
+        return x.p
+
+    def __int__(self) -> int :
+        return self.v
+
+    @staticmethod
+    def to_int(x:'pfelem') -> int:
+        return x.v
+
+pfelem_t = pfelem
+def prime_field(prime:nat):
+    return pfelem_t, (lambda x: pfelem(x,prime)), pfelem.to_int
     
 class gfelem:
     def __init__(self,x:bitvector,irred:bitvector) -> None:
