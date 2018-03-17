@@ -3,57 +3,57 @@ There's a library `speclib.py` that provides common functionality that can be us
 
 ```
 Types t ::= int | bool | str
-      	  | bit_t | uint8_t | uint16_t | uint32_t | uint64_t | uint128_t
+          | bit_t | uint8_t | uint16_t | uint32_t | uint64_t | uint128_t
           | tuple2_t(t1,t2) | tuple3_t(t1,t2,t3) | ...
-	  | vlarray_t(t)
-	  | refine_t(t,pred)
-	  | bitvector_t(len)
-	  
+          | vlarray_t(t)
+          | refine(t,pred)
+          | bitvector_t(len)
+
 Derived Types:
-	  nat			:= refine_t(int,lambda x: x >= 0)
-	  array_t(t,len) 	:= refine_t(vlarray_t(t),lambda x: length(x) == len)
-	  vlbytes_t 		:= vlarray_t(uint8_t)
-	  bytes_t(len) 		:= array_t(uint8_t,len)
-	  pfelem_t(prime) 	:= refine_t(nat,lambda x: x < prime)
-	  gfelem_t(len,irred) 	:= bitvector_t(len)
+      nat                  := refine(int,lambda x: x >= 0)
+      array_t(t,len)       := refine(vlarray_t(t),lambda x: length(x) == len)
+      vlbytes_t            := vlarray_t(uint8_t)
+      bytes_t(len)         := array_t(uint8_t,len)
+      pfelem_t(prime)      := refine(nat,lambda x: x < prime)
+      gfelem_t(len,irred)  := bitvector_t(len)
 
 ```
 
 ```
 Expressions e ::=
-	    | x		               (variables)
-	    | n			       (integer constants in hex or decimal)
-	    | f(e1,...en)      	       (call builtin or user-defined function)
-            | e1 binop e2              (operators on int and uintN, overloaded)
-	      	      		       (binop includes arithmetic: +,-,*,//,%,**
-				       	      	       bit manipulations: <<,>>,&,|
-						       comparison: ==, !=, <, >, <=, >= )
-	    | uintN(e)		       (convert int to uintN)
-            | (e1,...,en)	       (make tuple)
-	    | array([e1,...,en])       (make array)
-            | e[e0]                    (array access)
-            | e[e0:e1]                 (array slice)
-	    | fail("...")              (stop execution with error)
+      | x                   (variables)
+      | n                   (integer constants in hex or decimal)
+      | f(e1,...en)         (call builtin or user-defined function)
+            | e1 binop e2   (operators on int and uintN, overloaded)
+                            (binop includes arithmetic: +, -, *, //, %, **
+                             bit manipulations: <<, >>, &, |
+                             comparison: ==, !=, <, >, <=, >= )
+      | uintN(e)            (convert int to uintN)
+            | (e1,...,en)   (make tuple)
+      | array([e1,...,en])  (make array)
+            | e[e0]         (array access)
+            | e[e0:e1]      (array slice)
+      | fail("...")         (stop execution with error)
 ```
 
 ```
 Statements s ::=
- 	   | x : t = e			(variable declaration)
-           | def f(x1:t1,...,xn:tn) -> t :
-	     	 s		        (function declaration)
-	   | x = e                      (assignment)
-	   | (x1,..,xn) = e             (tuple assignment)
-           | x[i] = e             	(array update)
-           | x[i:j] = e           	(array slice update)
-           | return e             	(return)
-           | if e:
-	     	s
-	     else:
-		s		    	(conditional)
-           | for i in range(e):
-	     	s		  	(for loop)
+      | x : t = e           (variable declaration)
+            | def f(x1:t1,...,xn:tn) -> t :
+              s             (function declaration)
+      | x : t = e           (assignment)
+      | (x1,..,xn) = e      (tuple assignment)
+            | x[i] = e      (array update)
+            | x[i:j] = e    (array slice update)
+            | return e      (return)
+            | if e:
+                s
+              else:
+                s           (conditional)
+            | for i in range(e):
+                s           (for loop)
            | s
-	     s		             	(sequential composition)
+              s             (sequential composition)
            | from x import x1,x2,...,xn (import from external module)
 ```
 
