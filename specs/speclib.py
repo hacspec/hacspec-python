@@ -62,6 +62,10 @@ class bit(uintn):
         return bit(self.v + other.v)
     def __sub__(self,other:'bit') -> 'bit':
         return bit(self.v - other.v)
+    def __mul__(self,other:'bit') -> 'bit':
+        return bit(self.v * other.v)
+    def __inv__(self) -> 'bit':
+        return bit(~ self.v)
     def __or__(self,other:'bit') -> 'bit':
         return bit(self.v | other.v)
     def __and__(self,other:'bit') -> 'bit':
@@ -89,6 +93,10 @@ class uint8(uintn):
         return uint8(self.v + other.v)
     def __sub__(self,other:'uint8') -> 'uint8':
         return uint8(self.v - other.v)
+    def __mul__(self,other:'uint8') -> 'uint8':
+        return uint8(self.v * other.v)
+    def __inv__(self) -> 'uint8':
+        return uint8(~ self.v)
     def __or__(self,other:'uint8') -> 'uint8':
         return uint8(self.v | other.v)
     def __and__(self,other:'uint8') -> 'uint8':
@@ -116,6 +124,10 @@ class uint16(uintn):
         return uint16(self.v + other.v)
     def __sub__(self,other:'uint16') -> 'uint16':
         return uint16(self.v - other.v)
+    def __mul__(self,other:'uint16') -> 'uint16':
+        return uint16(self.v * other.v)
+    def __inv__(self) -> 'uint16':
+        return uint16(~ self.v)
     def __or__(self,other:'uint16') -> 'uint16':
         return uint16(self.v | other.v)
     def __and__(self,other:'uint16') -> 'uint16':
@@ -145,6 +157,12 @@ class uint32(uintn):
         return uint32(self.v + other.v)
     def __sub__(self,other:'uint32') -> 'uint32':
         return uint32(self.v - other.v)
+    def __mul__(self,other:'uint32') -> 'uint32':
+        return uint32(self.v * other.v)
+    def __inv__(self) -> 'uint32':
+        return uint32(~ self.v)
+    def __invert__(self) -> 'uint32':
+        return uint32(~ self.v & self.max)
     def __or__(self,other:'uint32') -> 'uint32':
         return uint32(self.v | other.v)
     def __and__(self,other:'uint32') -> 'uint32':
@@ -174,6 +192,10 @@ class uint64(uintn):
         return uint64(self.v + other.v)
     def __sub__(self,other:'uint64') -> 'uint64':
         return uint64(self.v - other.v)
+    def __mul__(self,other:'uint64') -> 'uint64':
+        return uint64(self.v * other.v)
+    def __inv__(self) -> 'uint64':
+        return uint64(~ self.v)
     def __or__(self,other:'uint64') -> 'uint64':
         return uint64(self.v | other.v)
     def __and__(self,other:'uint64') -> 'uint64':
@@ -202,6 +224,10 @@ class uint128(uintn):
         return uint128(self.v + other.v)
     def __sub__(self,other:'uint128') -> 'uint128':
         return uint128(self.v - other.v)
+    def __mul__(self,other:'uint128') -> 'uint128':
+        return uint128(self.v * other.v)
+    def __inv__(self) -> 'uint128':
+        return uint128(~ self.v)
     def __or__(self,other:'uint128') -> 'uint128':
         return uint128(self.v | other.v)
     def __and__(self,other:'uint128') -> 'uint128':
@@ -238,6 +264,8 @@ class bitvector(uintn):
         else:
            fail("cannot sub bitvector of different lengths")
            return bitvector(0,self.bits)
+    def __inv__(self) -> 'bitvector':
+        return bitvector(~self.v,self.bits)
     def __or__(self,other:'bitvector') -> 'bitvector':
         if (other.bits == self.bits): 
            return bitvector(self.v | other.v,self.bits)
@@ -417,6 +445,10 @@ class vlbytes(vlarray[uint8]):
     @staticmethod
     def from_hex(x:str) -> vlarray[uint8]:
         return vlarray([uint8(int(x[i:i+2],16)) for i in range(0,len(x),2)])
+
+    @staticmethod
+    def to_hex(a:vlarray[uint8]) -> str:
+        return "".join(['{:02x}'.format(uint8.to_int(x)) for x in a])
     
     @staticmethod
     def from_uint32_le(x:uint32) -> vlarray[uint8]:
@@ -468,6 +500,56 @@ class vlbytes(vlarray[uint8]):
         x1 = vlbytes.to_uint64_le(x[8:16])
         return uint128(uint64.to_int(x0) +
                       (uint64.to_int(x1) << 64))
+    @staticmethod
+    def from_uint32_be(x:uint32) -> vlarray[uint8]:
+        xv = uint32.to_int(x)
+        x0 = uint8(xv & 255)
+        x1 = uint8((xv >> 8) & 255)
+        x2 = uint8((xv >> 16) & 255)
+        x3 = uint8((xv >> 24) & 255)
+        return vlarray([x3,x2,x1,x0])
+
+    @staticmethod
+    def to_uint32_be(x:vlarray[uint8]) -> uint32:
+        x0 = uint8.to_int(x[0])
+        x1 = uint8.to_int(x[1]) << 8
+        x2 = uint8.to_int(x[2]) << 16
+        x3 = uint8.to_int(x[3]) << 24
+        return uint32(x3 + x2 + x1 + x0)
+
+    @staticmethod
+    def from_uint64_be(x:uint64) -> vlarray[uint8]:
+        xv = uint64.to_int(x)
+        x0 = uint32(xv & 0xffffffff)
+        x1 = uint32((xv >> 32) & 0xffffffff)
+        a:vlarray[uint8] = vlarray.create(8,uint8(0))
+        a[0:4] = vlbytes.from_uint32_be(x1)
+        a[4:8] = vlbytes.from_uint32_be(x0)
+        return a
+
+    @staticmethod
+    def to_uint64_be(x:vlarray[uint8]) -> uint64:
+        x0 = vlbytes.to_uint32_be(x[0:4])
+        x1 = vlbytes.to_uint32_be(x[4:8])
+        return uint64(uint32.to_int(x1) +
+                      (uint32.to_int(x0) << 32))
+
+    @staticmethod
+    def from_uint128_be(x:uint128) -> vlarray[uint8]:
+        xv = uint128.to_int(x)
+        x0 = uint64(xv & 0xffffffffffffffff)
+        x1 = uint64((xv >> 64) & 0xffffffffffffffff)
+        a = vlarray.create(16,uint8(0))
+        a[0:8] = vlbytes.from_uint64_be(x1)
+        a[8:16] = vlbytes.from_uint64_be(x0)
+        return a
+
+    @staticmethod
+    def to_uint128_be(x:vlarray[uint8]) -> uint128:
+        x0 = vlbytes.to_uint64_be(x[0:8])
+        x1 = vlbytes.to_uint64_be(x[8:16])
+        return uint128(uint64.to_int(x1) +
+                      (uint64.to_int(x0) << 64))
 
     @staticmethod
     def from_uint32s_le(x:vlarray[uint32]) -> vlarray[uint8]:
@@ -481,6 +563,30 @@ class vlbytes(vlarray[uint8]):
         else:
             return(vlarray([vlbytes.to_uint32_le(i) for i in nums]))
 
+    @staticmethod
+    def from_uint32s_be(x:vlarray[uint32]) -> vlarray[uint8]:
+        by = vlarray([vlbytes.from_uint32_be(i) for i in x])
+        return(vlarray.concat_blocks(by,vlarray([])))
+    @staticmethod
+    def to_uint32s_be(x:vlarray[uint8]) -> vlarray[uint32]:
+        nums,x = vlarray.split_blocks(x,4)
+        if len(x) > 0:
+            fail("array length not a multiple of 4")
+        else:
+            return(vlarray([vlbytes.to_uint32_be(i) for i in nums]))
+
+    @staticmethod
+    def from_uint64s_be(x:vlarray[uint64]) -> vlarray[uint8]:
+        by = vlarray([vlbytes.from_uint64_be(i) for i in x])
+        return(vlarray.concat_blocks(by,vlarray([])))
+    @staticmethod
+    def to_uint64s_be(x:vlarray[uint8]) -> vlarray[uint64]:
+        nums,x = vlarray.split_blocks(x,8)
+        if len(x) > 0:
+            fail("array length not a multple of 8")
+        else:
+            return(vlarray([vlbytes.to_uint64_be(i) for i in nums]))
+        
 def vlarray_t(T):
     return vlarray[T]
 def array_t(T,len):
