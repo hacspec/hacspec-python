@@ -94,15 +94,20 @@ def SHA2(v:variant):
 
     hashSize = v // 8
     hash_t = array_t(word_t,8)
+    digest_t = bytes_t(hashSize)
 
     def Ch(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((~ x) & z)
     def Maj(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((x & z) ^ (y & z))
-    def Sigma(x:word_t,i:range_t(0,4)) -> word_t:
+    def Sigma(x:word_t,i:range_t(0,4),op:range_t(0,1)) -> word_t:
+        if op == 0:
+            tmp = x >> opTable[3*i+2]
+        else:
+            tmp = word_t.rotate_right(x,opTable[3*i+2])
         return (word_t.rotate_right(x,opTable[3*i]) ^
                 word_t.rotate_right(x,opTable[3*i+1]) ^
-                word_t.rotate_right(x,opTable[3*i+2]))
+                tmp)
     def schedule(block:block_t) -> k_t:
         b = bytes_to_words(block)
         s = array.create(kSize,word_t(0))
@@ -113,45 +118,51 @@ def SHA2(v:variant):
             t15 = s[i-15]
             t7  = s[i-7]
             t2  = s[i-2]
-            s1  = Sigma(t2,3)
-            s0  = Sigma(t15,2)
+            s1  = Sigma(t2,3,0)
+            s0  = Sigma(t15,2,0)
             s[i] = s1 + t7 + s0 + t16
         return s
-    
+
     def shuffle(ws:k_t,hashi:hash_t) -> hash_t:
-        hash = array.copy(hashi)
+        h = array.copy(hashi)
         for i in range(kSize):
-            a0 = hash[0]
-            b0 = hash[1]
-            c0 = hash[2] 
-            d0 = hash[3] 
-            e0 = hash[4]
-            f0 = hash[5]
-            g0 = hash[6]
-            h0 = hash[7]
+            a0 = h[0]
+            b0 = h[1]
+            c0 = h[2]
+            d0 = h[3]
+            e0 = h[4]
+            f0 = h[5]
+            g0 = h[6]
+            h0 = h[7]
 
-            t1 = h0 + Sigma(e0,1) + Ch(e0,f0,g0) + kTable[i] + ws[i]
-            t2 = Sigma(a0,0) + Maj(a0,b0,c0)
-            
-            hash[0] = t1 + t2
-            hash[1] = a0
-            hash[2] = b0 
-            hash[3] = c0 
-            hash[4] = d0 + t1
-            hash[5] = e0 
-            hash[6] = f0 
-            hash[7] = g0 
-        return hash
+            t1 = h0 + Sigma(e0,1,1) + Ch(e0,f0,g0) + kTable[i] + ws[i]
+            t2 = Sigma(a0,0,1) + Maj(a0,b0,c0)
 
-    def compress(block:block_t,hash:hash_t) -> hash_t:
-        s = schedule(block)
-        h = shuffle(s,hash)
-        for i in range(8):
-            h[i] += hash[i]
+            h[0] = t1 + t2
+            h[1] = a0
+            h[2] = b0
+            h[3] = c0
+            h[4] = d0 + t1
+            h[5] = e0
+            h[6] = f0
+            h[7] = g0
         return h
 
-    def hash(msg:vlbytes_t) -> bytes_t(hashSize):
-        (blocks,last) = vlarray.split_blocks(msg,blockSize)
+    def compress(block:block_t,hIn:hash_t) -> hash_t:
+        s = schedule(block)
+        h = shuffle(s,hIn)
+        for i in range(8):
+            h[i] += hIn[i]
+        return h
+
+    def truncate(b:bytes_t(v)) -> digest_t:
+        result = array.create(hashSize, uint8(0))
+        for i in range(0, hashSize):
+            result[i] = b[i]
+        return result
+
+    def hash(msg:vlbytes_t) -> digest_t:
+        blocks,last = vlarray.split_blocks(msg, blockSize)
         nblocks = vlarray.length(blocks)
         h = h0
         for i in range(nblocks):
@@ -168,10 +179,11 @@ def SHA2(v:variant):
             pad[(2*blockSize)-lenSize:2*blockSize] = len_to_bytes(len_t(len_bits))
             h = compress(pad[0:blockSize],h)
             h = compress(pad[blockSize:2*blockSize],h)
-        return (words_to_bytes(h))
+        result = (words_to_bytes(h))
+        return truncate(result)
     return hash
 
+sha224 = SHA2(224)
 sha256 = SHA2(256)
-
-
-
+sha384 = SHA2(384)
+sha512 = SHA2(512)

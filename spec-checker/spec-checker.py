@@ -91,7 +91,7 @@ def read(node, allowed=None, prev=[]):
 
     if isinstance(node, BinOp):
         left = read(node.left,
-                    [Num, BinOp, Call, Name, Subscript], previous)
+                    [Num, BinOp, Call, Name, Subscript, UnaryOp], previous)
         op = read(node.op, [Add, Sub, Mult, Div,
                             Mod, Pow, LShift, RShift, BitOr,
                             BitXor, BitAnd, FloorDiv],
@@ -156,6 +156,12 @@ def read(node, allowed=None, prev=[]):
         print(indent + "Compare: " + str(node))
         return Compare
 
+    if isinstance(node, BoolOp):
+        print(indent + "BoolOp: " + str(node.op))
+        for ex in node.values:
+            read(ex, prev=previous)
+        return BoolOp
+
     if isinstance(node, Subscript):
         return read(node.value, prev=previous)
 
@@ -193,7 +199,7 @@ def read(node, allowed=None, prev=[]):
         return read(node.value, prev=previous)
 
     if isinstance(node, If):
-        return read(node.test, [Compare], previous)
+        return read(node.test, [Compare, BoolOp], previous)
         return read(node.body, prev=previous)
         return read(node.orelse, prev=previous)
 

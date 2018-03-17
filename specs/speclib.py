@@ -47,7 +47,7 @@ class uintn:
 
     def __int__(self) -> int :
         return self.v
-    
+
     @staticmethod
     def to_int(x:'uintn') -> int:
         return x.v
@@ -196,6 +196,8 @@ class uint64(uintn):
         return uint64(self.v * other.v)
     def __inv__(self) -> 'uint64':
         return uint64(~ self.v)
+    def __invert__(self) -> 'uint64':
+        return uint64(~ self.v & self.max)
     def __or__(self,other:'uint64') -> 'uint64':
         return uint64(self.v | other.v)
     def __and__(self,other:'uint64') -> 'uint64':
@@ -253,13 +255,13 @@ class bitvector(uintn):
         else:
             super().__init__(uintn.to_int(v),bits)
     def __add__(self,other:'bitvector') -> 'bitvector':
-        if (other.bits == self.bits): 
+        if (other.bits == self.bits):
            return bitvector(self.v + other.v,self.bits)
         else:
            fail("cannot add bitvector of different lengths")
            return bitvector(0,self.bits)
     def __sub__(self,other:'bitvector') -> 'bitvector':
-        if (other.bits == self.bits): 
+        if (other.bits == self.bits):
            return bitvector(self.v - other.v,self.bits)
         else:
            fail("cannot sub bitvector of different lengths")
@@ -267,7 +269,7 @@ class bitvector(uintn):
     def __inv__(self) -> 'bitvector':
         return bitvector(~self.v,self.bits)
     def __or__(self,other:'bitvector') -> 'bitvector':
-        if (other.bits == self.bits): 
+        if (other.bits == self.bits):
            return bitvector(self.v | other.v,self.bits)
         else:
            fail("cannot or bitvector of different lengths")
@@ -400,11 +402,11 @@ class vlarray(Iterable[T]):
     @staticmethod
     def concat(x:'vlarray[T]',y:'vlarray[T]') -> 'vlarray[T]':
         return vlarray(x.l[:]+y.l[:])
-    
+
     @staticmethod
     def zip(x:'vlarray[T]',y:'vlarray[U]') -> 'vlarray[Tuple[T,U]]':
         return vlarray(list(zip(x.l,y.l)))
-    
+
     @staticmethod
     def enumerate(x:'vlarray[T]') -> 'vlarray[Tuple[int,T]]':
         return vlarray(list(enumerate(x.l)))
@@ -423,14 +425,14 @@ class vlarray(Iterable[T]):
     @staticmethod
     def map(f:Callable[[T],U],a:'vlarray[T]') -> 'vlarray[U]':
         return vlarray(list(map(f,a.l)))
-    
+
     @staticmethod
     def reduce(f:Callable[[T,U],U],a:'vlarray[T]',init:U) -> U:
         acc = init
         for i in range(len(a)):
             acc = f(a[i],acc)
         return acc
-    
+
 
 class vlbytes(vlarray[uint8]):
     @staticmethod
@@ -449,7 +451,7 @@ class vlbytes(vlarray[uint8]):
     @staticmethod
     def to_hex(a:vlarray[uint8]) -> str:
         return "".join(['{:02x}'.format(uint8.to_int(x)) for x in a])
-    
+
     @staticmethod
     def from_uint32_le(x:uint32) -> vlarray[uint8]:
         xv = uint32.to_int(x)
@@ -511,10 +513,10 @@ class vlbytes(vlarray[uint8]):
 
     @staticmethod
     def to_uint32_be(x:vlarray[uint8]) -> uint32:
-        x0 = uint8.to_int(x[0])
-        x1 = uint8.to_int(x[1]) << 8
-        x2 = uint8.to_int(x[2]) << 16
-        x3 = uint8.to_int(x[3]) << 24
+        x0 = uint8.to_int(x[0]) << 24
+        x1 = uint8.to_int(x[1]) << 16
+        x2 = uint8.to_int(x[2]) << 8
+        x3 = uint8.to_int(x[3])
         return uint32(x3 + x2 + x1 + x0)
 
     @staticmethod
@@ -586,7 +588,7 @@ class vlbytes(vlarray[uint8]):
             fail("array length not a multple of 8")
         else:
             return(vlarray([vlbytes.to_uint64_be(i) for i in nums]))
-        
+
 def vlarray_t(T):
     return vlarray[T]
 def array_t(T,len):
@@ -612,31 +614,31 @@ class pfelem:
     def __repr__(self) -> str:
         return hex(self.v)
     def __add__(self,other:'pfelem') -> 'pfelem':
-        if (other.p == self.p): 
+        if (other.p == self.p):
            return pfelem(self.v + other.v,self.p)
         else:
            fail("cannot add pfelem of different fields")
            return pfelem(0,self.p)
     def __sub__(self,other:'pfelem') -> 'pfelem':
-        if (other.p == self.p): 
+        if (other.p == self.p):
            return pfelem(self.v - other.v,self.p)
         else:
            fail("cannot sub pfelem of different fields")
            return pfelem(0,self.p)
     def __mul__(self,other:'pfelem') -> 'pfelem':
-        if (other.p == self.p): 
+        if (other.p == self.p):
            return pfelem(self.v * other.v,self.p)
         else:
            fail("cannot sub pfelem of different fields")
            return pfelem(0,self.p)
     def __pow__(self,other:int) -> 'pfelem':
-        if (other >= 0): 
+        if (other >= 0):
            return pfelem(pow(self.v,other,self.p),self.p)
         else:
            fail("cannot exp with negative number")
            return pfelem(0,self.p)
 
-       
+
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return (self.p == other.p and self.v == other.v)
@@ -644,7 +646,7 @@ class pfelem:
     @staticmethod
     def pfadd(x:'pfelem',y:'pfelem') -> 'pfelem':
         return (x+y)
-    
+
 
     @staticmethod
     def pfmul(x:'pfelem',y:'pfelem') -> 'pfelem':
@@ -654,7 +656,7 @@ class pfelem:
     def pfsub(x:'pfelem',y:'pfelem') -> 'pfelem':
         return (x-y)
 
-    
+
     @staticmethod
     def pfinv(x:'pfelem') -> 'pfelem':
         def egcd(a, b):
@@ -672,7 +674,7 @@ class pfelem:
                 return x % m
 
         return pfelem(modinv(x.v,x.p),x.p)
-   
+
     @staticmethod
     def prime(x:'pfelem') -> int:
         return x.p
@@ -687,7 +689,7 @@ class pfelem:
 pfelem_t = pfelem
 def prime_field(prime:nat):
     return pfelem_t, (lambda x: pfelem(x,prime)), pfelem.to_int
-    
+
 class gfelem:
     def __init__(self,x:bitvector,irred:bitvector) -> None:
         if x.v < 0:
@@ -705,20 +707,20 @@ class gfelem:
     def __repr__(self) -> str:
         return str(self.v)
     def __add__(self,other:'gfelem') -> 'gfelem':
-        if (other.bits == self.bits and other.irred == self.irred): 
+        if (other.bits == self.bits and other.irred == self.irred):
            return gfelem(self.v ^ other.v,self.irred)
         else:
            fail("cannot add gfelem of different fields")
            return gfelem(bitvector(0,self.bits),self.irred)
     def __sub__(self,other:'gfelem') -> 'gfelem':
-        if (other.bits == self.bits and other.irred == self.irred): 
+        if (other.bits == self.bits and other.irred == self.irred):
            return gfelem(self.v ^ other.v,self.irred)
         else:
            fail("cannot sub gfelem of different fields")
            return gfelem(bitvector(0,self.bits),self.irred)
 
     def __mul__(self,other:'gfelem') -> 'gfelem':
-        if (other.bits == self.bits and other.irred == self.irred): 
+        if (other.bits == self.bits and other.irred == self.irred):
            bits = self.bits
            irred = self.irred
            a = self.v
@@ -736,7 +738,7 @@ class gfelem:
         else:
            fail("cannot mul gfelem of different fields")
            return gfelem(bitvector(0,self.bits),self.irred)
-        
+
     def __pow__(self,other:int) -> 'gfelem':
         if (other < 0):
            fail("cannot exp with negative number")
@@ -757,7 +759,7 @@ class gfelem:
                   else:
                       return (a * r_)
            return exp(self,other)
-       
+
     # See https://github.com/python/mypy/issues/2783
     def __eq__(self,other:Any) -> Any:
         return (self.bits == other.bits and self.v == other.v)
@@ -777,7 +779,7 @@ class gfelem:
     @staticmethod
     def gfexp(x:'gfelem',y:int) -> 'gfelem':
         return (x ** y)
-    
+
     @staticmethod
     def gfinv(x:'gfelem') -> 'gfelem':
         bits = x.bits
@@ -829,7 +831,7 @@ class gfelem:
 
 
 
-    
+
 def precondition(*types):
     def precondition_decorator(func):
         assert(len(types) == func.__code__.co_argcount)
@@ -848,4 +850,3 @@ def precondition(*types):
         wrapper.func_name = func.__name__
         return wrapper
     return precondition_decorator
-
