@@ -1,6 +1,7 @@
 module Chacha20
 #set-options "--z3rlimit 20 --max_fuel 0"
 open Spec.Lib.IntTypes
+open Spec.Lib.RawIntTypes
 open Spec.Lib.IntSeq
 open Speclib
 let blocksize = 0x40 
@@ -46,8 +47,16 @@ let chacha20_init (k:key_t) (counter:uint32_t) (nonce:nonce_t) : state_t =
   st 
 let chacha20_core (st:state_t) : state_t =
   let working_state = copy st in 
-  let working_state = repeati (range 0xa) (fun x working_state -> let working_state = double_round working_state in  working_state) working_state in 
-  let working_state = repeati (range 0x10) (fun i working_state -> let working_state = working_state.[i] <- working_state.[i] +. st.[i] in  working_state) working_state in 
+  let working_state = repeati (range 0xa)
+    (fun x working_state ->
+      let working_state = double_round working_state in 
+      working_state)
+    working_state in 
+  let working_state = repeati (range 0x10)
+    (fun i working_state ->
+      let working_state = working_state.[i] <- working_state.[i] +. st.[i] in 
+      working_state)
+    working_state in 
   working_state 
 let chacha20 (k:key_t) (counter:uint32_t) (nonce:nonce_t) : state_t =
   chacha20_core (chacha20_init k counter nonce) 
@@ -57,17 +66,25 @@ let chacha20_block (k:key_t) (counter:uint32_t) (nonce:nonce_t) : block_t =
   block 
 let xor_block (block:subblock_t) (keyblock:block_t) : subblock_t =
   let out = vlcopy block in 
-  let out = repeati (range (length block)) (fun i out -> let out = out.[i] <- out.[i] ^. keyblock.[i] in  out) out in 
+  let out = repeati (range (length block))
+    (fun i out ->
+      let out = out.[i] <- out.[i] ^. keyblock.[i] in 
+      out)
+    out in 
   out 
 let chacha20_counter_mode (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =
   let (blocks,last) = split_blocks msg blocksize in 
   let keyblock = create blocksize (u8 0x0) in 
   let nblocks = length blocks in 
-  let (keyblock,blocks) = repeati (range nblocks) (fun i (keyblock,blocks) -> let keyblock = chacha20_block key (counter +. (u32 i)) nonce in 
-  let blocks = blocks.[i] <- xor_block blocks.[i] keyblock in  (keyblock,blocks)) (keyblock,blocks) in 
+  let (keyblock,blocks) = repeati (range nblocks)
+    (fun i (keyblock,blocks) ->
+      let keyblock = chacha20_block key (counter +. (u32 i)) nonce in 
+      let blocks = blocks.[i] <- xor_block blocks.[i] keyblock in 
+      (keyblock,blocks))
+    (keyblock,blocks) in 
   let keyblock = chacha20_block key (counter +. (u32 nblocks)) nonce in 
   let last = xor_block last keyblock in 
-  concat_blocks blocks last 
+  array.concat_blocks blocks last 
 let chacha20_encrypt (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =
   chacha20_counter_mode key counter nonce msg 
 let chacha20_decrypt (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =

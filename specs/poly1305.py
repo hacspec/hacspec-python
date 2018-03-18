@@ -30,9 +30,9 @@ def fmul(x:felem_t,y:felem_t) -> felem_t:
 
 def encode(block:subblock_t) -> felem_t:
     b = array.create(16,uint8(0))
-    b[0:array.length(block)] = block
+    b[0:vlarray.length(block)] = block
     welem = felem(uint128.to_int(bytes.to_uint128_le(b)))
-    lelem = felem(2 ** (8 * array.length(block)))
+    lelem = felem(2 ** (8 * vlarray.length(block)))
     return fadd(lelem,welem)
 
 def encode_r(r:block_t) -> felem_t:
@@ -43,11 +43,11 @@ def encode_r(r:block_t) -> felem_t:
 # There are many ways of writing the polynomial evaluation function
 # This version: use a loop to accumulate the result
 def poly(text:vlbytes_t,r:felem_t) -> felem_t:
-    blocks,last = array.split_blocks(text,blocksize)
+    blocks,last = vlarray.split_blocks(text,blocksize)
     acc = felem(0)
-    for i in range(array.length(blocks)):
+    for i in range(vlarray.length(blocks)):
         acc = fmul(fadd(acc,encode(blocks[i])),r)
-    if (array.length(last) > 0):
+    if (vlarray.length(last) > 0):
         acc = fmul(fadd(acc,encode(last)),r)
     return acc
 

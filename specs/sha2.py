@@ -2,7 +2,7 @@ from speclib import *
 
 variant = refine(nat,lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 
-def SHA2(v:variant):
+def sha2(v:variant):
     if v == 224 or v == 256:
         word_t = uint32
         rotval_t = range_t(0,32)
@@ -51,7 +51,7 @@ def SHA2(v:variant):
             14, 18, 41,
             1,   8,  7,
             19, 61,  6])
-        kTable = k_384_512 = array([
+        kTable = array([
             uint64(0x428a2f98d728ae22), uint64(0x7137449123ef65cd), uint64(0xb5c0fbcfec4d3b2f), uint64(0xe9b5dba58189dbbc),
             uint64(0x3956c25bf348b538), uint64(0x59f111f1b605d019), uint64(0x923f82a4af194f9b), uint64(0xab1c5ed5da6d8118),
             uint64(0xd807aa98a3030242), uint64(0x12835b0145706fbe), uint64(0x243185be4ee4b28c), uint64(0x550c7dc3d5ffb4e2),
@@ -96,11 +96,11 @@ def SHA2(v:variant):
     hash_t = array_t(word_t,8)
     digest_t = bytes_t(hashSize)
 
-    def Ch(x:word_t,y:word_t,z:word_t) -> word_t:
+    def ch(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((~ x) & z)
-    def Maj(x:word_t,y:word_t,z:word_t) -> word_t:
+    def maj(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((x & z) ^ (y & z))
-    def Sigma(x:word_t,i:range_t(0,4),op:range_t(0,1)) -> word_t:
+    def sigma(x:word_t,i:range_t(0,4),op:range_t(0,1)) -> word_t:
         if op == 0:
             tmp = x >> opTable[3*i+2]
         else:
@@ -118,8 +118,8 @@ def SHA2(v:variant):
             t15 = s[i-15]
             t7  = s[i-7]
             t2  = s[i-2]
-            s1  = Sigma(t2,3,0)
-            s0  = Sigma(t15,2,0)
+            s1  = sigma(t2,3,0)
+            s0  = sigma(t15,2,0)
             s[i] = s1 + t7 + s0 + t16
         return s
 
@@ -135,8 +135,8 @@ def SHA2(v:variant):
             g0 = h[6]
             h0 = h[7]
 
-            t1 = h0 + Sigma(e0,1,1) + Ch(e0,f0,g0) + kTable[i] + ws[i]
-            t2 = Sigma(a0,0,1) + Maj(a0,b0,c0)
+            t1 = h0 + sigma(e0,1,1) + ch(e0,f0,g0) + kTable[i] + ws[i]
+            t2 = sigma(a0,0,1) + maj(a0,b0,c0)
 
             h[0] = t1 + t2
             h[1] = a0
@@ -183,7 +183,7 @@ def SHA2(v:variant):
         return truncate(result)
     return hash
 
-sha224 = SHA2(224)
-sha256 = SHA2(256)
-sha384 = SHA2(384)
-sha512 = SHA2(512)
+sha224 = sha2(224)
+sha256 = sha2(256)
+sha384 = sha2(384)
+sha512 = sha2(512)

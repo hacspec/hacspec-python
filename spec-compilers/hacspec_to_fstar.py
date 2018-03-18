@@ -35,12 +35,10 @@ def dump(node, annotate_fields=True, include_attributes=False):
                 else:
                     return "("+v[0] +":"+_format(v[1])+")"
             return " ".join([ty_annot(v) for v in vs])
-
-
-    def _func(x):
-        f = _format(x)
+    
+    def _trans(f):
         if f == 'uint8':
-           return 'u8' 
+            return 'u8' 
         if f == 'uint16':
            return 'u16' 
         if f == 'uint32':
@@ -61,6 +59,8 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "uint_to_nat #U128"
         if f == "array":
            return "createL"
+        if f == "array.create":
+           return "create"
         if f == "vlarray.length":
            return "length"
         if f == "vlbytes.length":
@@ -85,13 +85,39 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "uints_from_bytes_le #U32"
         if f == "bytes.from_uint32s_le":
            return "uints_to_bytes_le #U32"
+        if f == "bytes.to_uint32s_be":
+           return "uints_from_bytes_be #U32"
+        if f == "bytes.from_uint32s_be":
+           return "uints_to_bytes_be #U32"
+        if f == "bytes.to_uint64s_be":
+           return "uints_from_bytes_be #U64"
+        if f == "bytes.from_uint64s_be":
+           return "uints_to_bytes_be #U64"
+        if f == "bytes.from_uint64_be":
+           return "uint_to_bytes_be #U64"
         if f == "bytes.to_uint128_le":
            return "uint_from_bytes_le #U128"
         if f == "bytes.from_uint128_le":
            return "uint_to_bytes_le #U128"
-        else:        
-           return f
+        if f == "bytes.from_uint128_be":
+           return "uint_to_bytes_be #U128"
+        if f == "uint32.rotate_left":
+           return "rotate_left"
+        if f == "uint32.rotate_right":
+           return "rotate_right"
+        else:
+            return _var(f)
 
+    def _var(f):
+        if f.istitle():
+            return "_"+f
+        else:
+            return f
+        
+    def _func(x):
+        f = _format(x)
+        return _trans(f)
+    
     def _is_uintn(x):
         f = _format(x)
         return (f in ['bit','uint8','uint16','uint32','uint64','uint128'])
@@ -112,21 +138,21 @@ def dump(node, annotate_fields=True, include_attributes=False):
         if (isinstance(node, Assign) and
             len(node.targets) == 1 and
             isinstance(node.targets[0],Subscript)):
-            return [node.targets[0].value]
+            return {node.targets[0].value.id}
         elif isinstance(node, Assign):
-            return [x for x in node.targets]
+            return {x.id for x in node.targets}
         elif isinstance(node, Subscript):
-            return [node.value]
+            return {node.value.id}
         if (isinstance(node, AugAssign) and
             isinstance(node.target,Subscript)):
-            return [node.target.value]
+            return {node.target.value.id}
         elif isinstance(node, AugAssign):
-            return [node.target]
+            return {node.target.id}
         elif isinstance(node, list):
-            return [x for y in node for x in _lvalues(y)]
+            return {x for y in node for x in _lvalues(y)}
         else:
-            return []
-        
+            return set()
+    
     def _operator(o):
         if isinstance(o,Pow):
             return "**."
@@ -134,12 +160,20 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return "-."
         elif isinstance(o,Add):
             return "+."
+        elif isinstance(o,FloorDiv):
+            return "/."
         elif isinstance(o,Mult):
             return "*."
+        elif isinstance(o,Invert):
+            return "~."
         elif isinstance(o,BitAnd):
             return "&."
         elif isinstance(o,BitXor):
             return "^."
+        elif isinstance(o,RShift):
+            return ">>."
+        elif isinstance(o,LShift):
+            return "<<."
         elif isinstance(o,Mod):
             return "%."
         elif isinstance(o,Eq):
@@ -152,10 +186,14 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return ">="
         elif isinstance(o,LtE):
             return "<="
+        elif isinstance(o,And):
+            return "&&"
+        elif isinstance(o,Or):
+            return "||"
         elif isinstance(o,list) and len(o) == 1:
             return _operator(o[0])
         else:
-            return " <unknown_op> "+type(o)
+            return "unknown op: "+str(o)
 
     def _sep(top): 
         if top:
@@ -188,11 +226,11 @@ def dump(node, annotate_fields=True, include_attributes=False):
             isinstance(node.value,Call) and
             isinstance(node.value.func,Name) and
             node.value.func.id == 'refine'):
-            vs = [_format(x,top,ind,paren) for x in node.targets]
+            vs = [_format(x,False,ind,paren) for x in node.targets]
             ty = node.value.args[0].id
             nty = vs[0]
             x = node.value.args[1].args.args[0].arg
-            b = _format(node.value.args[1].body,top,ind,False)
+            b = _format(node.value.args[1].body,False,ind,False)
             return ("type "+nty+" = "+x+":"+ty+"{"+b+"}\n")
         if (isinstance(node, Assign) and
             isinstance(node.value,Call) and
@@ -207,113 +245,128 @@ def dump(node, annotate_fields=True, include_attributes=False):
             len(node.targets) == 1 and
             isinstance(node.targets[0],Subscript) and
             isinstance(node.targets[0].slice,Index)) :
-            arr = _format(node.targets[0].value,top,ind,paren);
-            idx = _format(node.targets[0].slice.value,top,ind,paren);
-            return "let "+arr+" = "+ arr+".["+idx+"] <- "+_format(node.value,top,ind,paren)+_sep(top)
+            arr = _format(node.targets[0].value,False,ind,paren);
+            idx = _format(node.targets[0].slice.value,False,ind,paren);
+            return "let "+arr+" = "+ arr+".["+idx+"] <- "+_format(node.value,False,ind,paren)+_sep(top)
         if (isinstance(node, Assign) and
             len(node.targets) == 1 and
             isinstance(node.targets[0],Subscript) and
             isinstance(node.targets[0].slice,Slice)) :
-            arr = _format(node.targets[0].value,top,ind,True);
-            low = _format(node.targets[0].slice.lower,top,ind,True);
-            high = _format(node.targets[0].slice.upper,top,ind,True);
-            return "let "+arr+" = update_slice "+ arr + " " + low +" " + high + " " +_format(node.value,top,ind,True)+_sep(top)
+            arr = _format(node.targets[0].value,False,ind,True);
+            low = _format(node.targets[0].slice.lower,False,ind,True);
+            high = _format(node.targets[0].slice.upper,False,ind,True);
+            return "let "+arr+" = update_slice "+ arr + " " + low +" " + high + " " +_format(node.value,False,ind,True)+_sep(top)
         if (isinstance(node, Assign) and
             len(node.targets) == 1 and
             isinstance(node.targets[0],Tuple)):
-            vs = [_format(x,top,ind,paren) for x in node.targets[0].elts]
+            vs = [_format(x,False,ind,paren) for x in node.targets[0].elts]
             sep = _sep(top)
             prefix = "let "+_tuple(vs)+" = "
-            b = _format(node.value,False,ind+len(prefix),paren)
-            return prefix + b + sep
+            if (len(prefix) >= 40):
+                b = _format(node.value,False,ind+2,paren)
+                return prefix + "\n" + _sp(ind) + b + sep
+            else:
+                b = _format(node.value,False,ind+len(prefix),paren)
+                return prefix + b + sep
         if isinstance(node, Assign):
-            vs = [_format(x,top,ind,paren) for x in node.targets]
+            vs = [_format(x,False,ind,paren) for x in node.targets]
             sep = _sep(top)
             prefix = "let "+_tuple(vs)+" = "
-            b = _format(node.value,False,ind+len(prefix),paren)
-            return prefix + b + sep
+            if (len(prefix) >= 40):
+                b = _format(node.value,False,ind+2,paren)
+                return prefix + "\n" + _sp(ind) + b + sep
+            else:
+                b = _format(node.value,False,ind+len(prefix),paren)
+                return prefix + b + sep
         if isinstance(node, AnnAssign):
             sep = _sep(top)
-            prefix = "let "+_format(node.target,top,ind,paren)+" : "+_format(node.annotation,top,ind,paren)+" = "
+            prefix = "let "+_format(node.target,False,ind,paren)+" : "+_format(node.annotation,False,ind,paren)+" = "
             b = _format(node.value,False,ind+len(prefix),paren)
             return prefix + b + sep
         if (isinstance(node, AugAssign) and
             isinstance(node.target,Subscript) and
             isinstance(node.target.slice,Index)) :
             sep = _sep(top)
-            arr = _format(node.target.value,top,ind,paren);
-            idx = _format(node.target.slice.value,top,ind,paren);
+            arr = _format(node.target.value,False,ind,paren);
+            idx = _format(node.target.slice.value,False,ind,paren);
             return "let "+arr+" = "+ arr+".["+idx+"] <- "+  arr+".["+idx+"]" + " " + _operator(node.op) + " " + _format(node.value,ind,paren) + sep
 
         if isinstance(node, AugAssign):
-            v = _format(node.target,top,ind,paren)
+            v = _format(node.target,False,ind,paren)
             sep = _sep(top)
-            return "let "+v+" = "+v+" " + _operator(node.op) + " " + _format(node.value,top,ind,paren)+sep
+            return "let "+v+" = "+v+" " + _operator(node.op) + " " + _format(node.value,False,ind,paren)+sep
         if (isinstance(node, BinOp) and
             _operator(node.op) in ["<<",">>"]):
-            return "(" + _format(node.left,top,ind,paren) + " " + _operator(node.op) + " " + "(u32 "+_format(node.right,top,ind,paren) + "))"
+            return "(" + _format(node.left,False,ind,paren) + " " + _operator(node.op) + " " + "(u32 "+_format(node.right,False,ind,paren) + "))"
+        if isinstance(node, UnaryOp):
+            return "(" + _operator(node.op) + " " + _format(node.operand,False,ind,paren) + ")"
         if isinstance(node, BinOp):
-            return "(" + _format(node.left,top,ind,paren) + " " + _operator(node.op) + " " + _format(node.right,top,ind,paren) + ")"
+            return "(" + _format(node.left,False,ind,paren) + " " + _operator(node.op) + " " + _format(node.right,False,ind,paren) + ")"
+        if isinstance(node, BoolOp):
+            return (" "+_operator(node.op)+" ").join([_format(x,False,ind,paren) for x in node.values])
         if isinstance(node, Compare):           
-            return "(" + _format(node.left,top,ind,paren) + " " + _operator(node.ops) + " " + _format(node.comparators,top,ind,paren) + ")"
+            return "(" + _format(node.left,False,ind,paren) + " " + _operator(node.ops) + " " + _format(node.comparators,False,ind,paren) + ")"
         if isinstance(node, Num):
             return hex(node.n)
         if isinstance(node, Str):
             return "\""+str(node.s)+"\""
         if isinstance(node,FunctionDef):
             vs = [(x.arg,x.annotation) for x in node.args.args]
-            return "let "+node.name+" "+_curried_args(vs)+" : "+_format(node.returns,top,ind,paren)+" =\n"+_sp(ind+2)+_format(node.body,not top,ind + 2,paren)+_sep(top)
+            return "let "+_var(node.name)+" "+_curried_args(vs)+" : "+_format(node.returns,False,ind,paren)+" =\n"+_sp(ind+2)+_format(node.body,False,ind + 2,paren)+_sep(top)
         if isinstance(node,Return):
-            return _format(node.value,top,ind,paren)
+            return _format(node.value,False,ind,paren)
         if (isinstance(node,Call) and _func(node.func) in ["rotate_left","rotate_right"]):
-            vs = [_format(x,top,ind,True) for x in node.args]
+            vs = [_format(x,False,ind,True) for x in node.args]
             if paren == True:
                 return "("+_func(node.func)+" "+ vs[0]+" "+"(u32 "+vs[1]+"))"
             else:
                 return _func(node.func)+" "+ vs[0]+" "+"(u32 "+vs[1]+")"
         if (isinstance(node,Call) and _func(node.func) == "createL"):
-            l = _format(node.args[0],top,ind,paren)
+            l = _format(node.args[0],False,ind,paren)
             n = len(node.args[0].elts)
             return "let l_ = "+l+" in \n"+_sp(ind)+"assert_norm(List.Tot.length l_ == "+str(n)+");\n"+_sp(ind)+"createL l_"
         if isinstance(node,Call):
-            vs = [_format(x,top,ind,True) for x in node.args]
+            vs = [_format(x,False,ind,True) for x in node.args]
             if paren == True:
                 return "("+_func(node.func) + " " + _curried(vs)+")"
             else:
                 return _func(node.func) + " " + _curried(vs)
         if isinstance(node,Expr):
-            return _format(node.value,top,ind,paren)+";"
+            return _format(node.value,False,ind,paren)+";"
         if isinstance(node,Assert):
-            return _sp(ind)+"assert ("+_format(node.test,top,ind,paren)+");"
+            return _sp(ind)+"assert ("+_format(node.test,False,ind,paren)+");"
         if isinstance(node,Name):
             return node.id
-        if isinstance(node,Attribute) and _format(node.value,top,ind,paren) == "uint32":
-            return node.attr
-        if isinstance(node,Attribute) and _format(node.value,top,ind,paren) == "array":
-            return node.attr
         if isinstance(node,Attribute):
-            return _format(node.value,top,ind,paren) + "." + node.attr
-        if isinstance(node,Subscript) and _format(node.value,top,ind,paren) == "array":
-            return "array" + " " + _format(node.slice.value,top,ind,paren)
+            return _trans(_format(node.value,False,ind,paren) + "." + node.attr)
+        if isinstance(node,Attribute) and _format(node.value,False,ind,paren) == "array":
+            return node.attr
+        if isinstance(node,Subscript) and _format(node.value,False,ind,paren) == "array":
+            return "array" + " " + _format(node.slice.value,False,ind,paren)
         if isinstance(node,Subscript) and isinstance(node.slice,Index):
-            return _format(node.value,top,ind,paren) + ".[" + _format(node.slice.value,top,ind,paren) +"]"
+            return _format(node.value,False,ind,paren) + ".[" + _format(node.slice.value,False,ind,paren) +"]"
         if isinstance(node,Subscript) and isinstance(node.slice,Slice):
-            return "slice " + _format(node.value,top,ind,paren) + " " + _format(node.slice.lower,top,ind,paren) +" " + _format(node.slice.upper,top,ind,paren) 
+            return "slice " + _format(node.value,False,ind,paren) + " " + _format(node.slice.lower,False,ind,paren) +" " + _format(node.slice.upper,False,ind,paren) 
         if isinstance(node,If) and node.orelse is None:
-            vs = [_format(x,top,ind,paren) for x in _lvalues(node.body)]
+            vs = list(_lvalues(node.body))
             acc = _tuple(vs)
-            return "let "+acc+" = "+"if (" + _format(node.test,top,ind,paren) + ") then ("+_format(node.body,top,ind,paren)+acc+" ) else "+acc+_sep(top)
+            if (len(acc) >= 40):
+                return "let "+acc+" = \n"+_sp(ind)+"if (" + _format(node.test,False,ind+2,paren) + ") \n"+_sp(ind)+"then ("+_format(node.body,False,ind+2,paren)+"\n"+_sp(ind+2)+acc+" )\n"+_sp(ind)+"else "+acc+_sep(top)
+            else:
+                return "let "+acc+" = "+"if (" + _format(node.test,False,ind,paren) + ") then ("+_format(node.body,False,ind,paren)+acc+" ) else "+acc+_sep(top)
         if isinstance(node,If):
-            vs = [_format(x,top,ind,paren) for x in _lvalues(node.body)]
-            vs += [_format(x,top,ind,paren) for x in _lvalues(node.orelse)]
+            vs = list(_lvalues(node.body) | _lvalues(node.orelse))
             acc = _tuple(vs)
-            return "let "+acc+" = "+"if (" + _format(node.test,top,ind,paren) + ") then ("+_format(node.body,top,ind,paren)+acc+" ) else ("+_format(node.orelse,top,ind,paren)+acc+")"+_sep(top)
+            if (len(acc) >= 40):
+                return "let "+acc+" = \n"+_sp(ind)+"if (" + _format(node.test,False,ind+2,paren) + ") \n"+_sp(ind)+"then ("+_format(node.body,False,ind+2,paren)+"\n"+_sp(ind+2)+acc+" )\n"+_sp(ind)+"else ("+_format(node.orelse,False,ind+2,paren)+"\n"+_sp(ind+2)+acc+" )"+_sep(top)
+            else:
+                return "let "+acc+" = "+"if (" + _format(node.test,False,ind+2,paren) + ") "+"then ("+_format(node.body,False,ind+2,paren)+acc+" )"+"else ("+_format(node.orelse,False,ind+2,paren)+acc+")"+_sep(top)
         if isinstance(node,For):
-            vs = [_format(x,top,ind,paren) for x in _lvalues(node.body)]
+            vs = list(_lvalues(node.body))
             acc = _tuple(vs)
-            return "let "+acc+" = "+"repeati (" + _format(node.iter,top,ind,paren) + ") (fun "+_format(node.target,top,ind,paren)+" "+acc+" -> " + _format(node.body,top,ind,paren) + " " + acc + ") " + acc + _sep(top)
+            return "let "+acc+" = "+"repeati (" + _format(node.iter,False,ind+2,paren) + ")\n"+_sp(ind+2)+"(fun "+_format(node.target,False,ind+4,paren)+" "+acc+" ->\n"+_sp(ind+4)+ _format(node.body,False,ind+4,paren) + "\n"+_sp(ind+4) + acc + ")\n"+_sp(ind+2) + acc + _sep(top)
         if isinstance(node,List):
-            return "[ "+ "; ".join(_format(x,top,ind,paren) for x in node.elts)+" ]"
+            return "[ "+ "; ".join(_format(x,False,ind,paren) for x in node.elts)+" ]"
         elif isinstance(node, AST):
             fields = [(a, _format(b,not top,ind,paren)) for a, b in iter_fields(node)]
             rv = '%s(%s' % (node.__class__.__name__, (',\n'+_sp(ind)).join(
@@ -343,6 +396,7 @@ def main(path):
         print("module",ntpath.splitext(ntpath.basename(path))[0].title())
         print('#set-options "--z3rlimit 20 --max_fuel 0"')
         print("open Spec.Lib.IntTypes")
+        print("open Spec.Lib.RawIntTypes")
         print("open Spec.Lib.IntSeq")
         print(dump(ast))
 
