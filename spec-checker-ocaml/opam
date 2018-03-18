@@ -1,0 +1,19 @@
+opam-version: "1.2"
+maintainer: "pierre-yves@strub.nu"
+homepage: "https://github.com/HACS-workshop/hacspec"
+bug-reports: "https://github.com/HACS-workshop/hacspec/issues"
+license: "CeCILL-C"
+authors: [
+  "Pierre-Yves Strub"
+]
+build: [
+  [make "build"]
+  [make "DESTDIR=%{prefix}%" "install"]
+]
+remove: [
+  [make "DESTDIR=%{prefix}%" "uninstall"]
+]
+depends: [
+  "batteries" {>= "2.8"}
+  "menhir" {= "20171222"}
+]
