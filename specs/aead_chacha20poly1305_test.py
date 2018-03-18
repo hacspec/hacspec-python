@@ -1,6 +1,5 @@
 from aead_chacha20poly1305 import *
 
-
 from test_vectors.aead_chacha20poly1305_test_vectors import *
 
 def main(x: int) -> None :

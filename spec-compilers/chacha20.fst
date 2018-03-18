@@ -14,7 +14,7 @@ let block_t = bytes_t 0x40
 type subblock_t = x:vlbytes_t{(length x <= blocksize)}
 
 let line (a:index_t) (b:index_t) (d:index_t) (s:rotval_t) (m:state_t) : state_t =
-  let m : state_t = copy m in 
+  let m = copy m in 
   let m = m.[a] <- (m.[a] +. m.[b]) in 
   let m = m.[d] <- (m.[d] ^. m.[a]) in 
   let m = m.[d] <- rotate_left m.[d] (u32 s) in 
@@ -75,14 +75,15 @@ let xor_block (block:subblock_t) (keyblock:block_t) : subblock_t =
 let chacha20_counter_mode (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =
   let (blocks,last) = split_blocks msg blocksize in 
   let keyblock = create blocksize (u8 0x0) in 
-  let nblocks = length blocks in 
-  let (keyblock,blocks) = repeati (range nblocks)
-    (fun i (keyblock,blocks) ->
-      let keyblock = chacha20_block key (counter +. (u32 i)) nonce in 
+  let ctr = counter in 
+  let (ctr,blocks,keyblock) = repeati (range (length blocks))
+    (fun i (ctr,blocks,keyblock) ->
+      let keyblock = chacha20_block key ctr nonce in 
       let blocks = blocks.[i] <- xor_block blocks.[i] keyblock in 
-      (keyblock,blocks))
-    (keyblock,blocks) in 
-  let keyblock = chacha20_block key (counter +. (u32 nblocks)) nonce in 
+      let ctr = ctr +. u32 0x1 in 
+      (ctr,blocks,keyblock))
+    (ctr,blocks,keyblock) in 
+  let keyblock = chacha20_block key ctr nonce in 
   let last = xor_block last keyblock in 
   array.concat_blocks blocks last 
 let chacha20_encrypt (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =

@@ -1,20 +1,8 @@
 #!/usr/bin/python3
 
-# Run mypy chacha20.py to type check.
-
 from speclib import *
 
 blocksize = 64
-
-#for mypy use the following
-# index_t = int           # range: (0,16)
-# rotval_t = int        # range: (0,32)
-# state_t = array[uint32] # length : 32
-# key_t = array[uint8]  # length: 32
-# nonce_t = array[uint8]# length: 12
-# block_t = array[uint8]# length arbitrary
-
-#for fstar use the following
 index_t  = range_t(0,16)
 rotval_t = range_t(1,32)
 state_t  = array_t(uint32_t,16)
@@ -24,7 +12,7 @@ block_t  = bytes_t(64)
 subblock_t  = refine(vlbytes_t,lambda x: vlbytes.length(x) <= blocksize)
 
 def line(a: index_t, b: index_t, d: index_t, s: rotval_t, m: state_t) -> state_t:
-    m : state_t = array.copy(m)
+    m    = array.copy(m)
     m[a] = m[a] + m[b]
     m[d] = m[d] ^ m[a]
     m[d] = uint32.rotate_left(m[d],s)
@@ -89,11 +77,12 @@ def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
 def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
     blocks,last = vlarray.split_blocks(msg,blocksize)
     keyblock = array.create(blocksize,uint8(0))
-    nblocks = vlarray.length(blocks)
-    for i in range(nblocks):
-        keyblock = chacha20_block(key,counter + uint32(i),nonce)
+    ctr = counter
+    for i in range(vlarray.length(blocks)):
+        keyblock = chacha20_block(key,ctr,nonce)
         blocks[i] = xor_block(blocks[i],keyblock)
-    keyblock = chacha20_block(key,counter + uint32(nblocks),nonce)
+        ctr += uint32(1)
+    keyblock = chacha20_block(key,ctr,nonce)
     last = xor_block(last,keyblock)
     return array.concat_blocks(blocks,last)
 

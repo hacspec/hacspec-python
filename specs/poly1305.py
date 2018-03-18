@@ -3,18 +3,12 @@
 from speclib import *
 
 blocksize = 16
-
-#for fstar: use the following
 block_t = bytes_t(16)
 key_t = bytes_t(32)
 tag_t = bytes_t(16)
 subblock_t = refine(vlbytes_t,lambda x: vlbytes.length(x) <= 16)
 
-#to pass mypy: use the following
-#block_t = array[uint8] 
-#key_t = array[uint8]
-#tag_t = array[uint8]
-
+# Define prime field
 p130m5 = (2 ** 130) - 5 # type: int
 felem_t = refine(nat,lambda x: x < p130m5)
 def felem(x:nat) -> felem_t:
@@ -23,10 +17,6 @@ def fadd(x:felem_t,y:felem_t) -> felem_t:
     return felem(x + y)
 def fmul(x:felem_t,y:felem_t) -> felem_t:
     return felem(x * y)
-
-# to pass mypy: use the following
-#felem_t = pfelem_t
-#felem = pfelem
 
 def encode(block:subblock_t) -> felem_t:
     b = array.create(16,uint8(0))
