@@ -280,7 +280,7 @@ def dump(node, annotate_fields=True, include_attributes=False):
                 return prefix + b + sep
         if isinstance(node, AnnAssign):
             sep = _sep(top)
-            prefix = "let "+_format(node.target,False,ind,paren)+" : "+_format(node.annotation,False,ind,paren)+" = "
+            prefix = "let "+_format(node.target,False,ind,paren)+" : "+ _format(node.annotation,False,ind,paren)+" = "
             b = _format(node.value,False,ind+len(prefix),paren)
             return prefix + b + sep
         if (isinstance(node, AugAssign) and

@@ -1,23 +1,31 @@
 from speclib import *
 
+# Four variants of SHA-2
+
 variant = refine(nat,lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 
+# Generic SHA-2 spec parameterized by variant
+
 def sha2(v:variant):
+    # Initializing types and constants for different variants 
     if v == 224 or v == 256:
-        word_t = uint32
-        rotval_t = range_t(0,32)
-        kSize = 64
-        k_t = array_t(word_t,kSize)
         blockSize = 64
         block_t = bytes_t(blockSize)
+        lenSize = 8
+        len_t = uint64_t
+        len_to_bytes = bytes.from_uint64_be
+        word_t = uint32_t  
+        to_word = uint32
         bytes_to_words = bytes.to_uint32s_be
         words_to_bytes = bytes.from_uint32s_be
-        opTable = array([
+        kSize = 64
+        k_t = array_t(word_t,kSize)
+        opTable : array_t(range(0,32),12) = array([
             2, 13, 22,
             6, 11, 25,
             7, 18, 3,
             17, 19, 10])
-        kTable = array([
+        kTable : k_t = array([
             uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf), uint32(0xe9b5dba5),
             uint32(0x3956c25b), uint32(0x59f111f1), uint32(0x923f82a4), uint32(0xab1c5ed5),
             uint32(0xd807aa98), uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3),
@@ -34,24 +42,24 @@ def sha2(v:variant):
             uint32(0x391c0cb3), uint32(0x4ed8aa4a), uint32(0x5b9cca4f), uint32(0x682e6ff3),
             uint32(0x748f82ee), uint32(0x78a5636f), uint32(0x84c87814), uint32(0x8cc70208),
             uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7), uint32(0xc67178f2)])
-        len_t = uint64
-        lenSize = 8
-        len_to_bytes = bytes.from_uint64_be
     else:
-        word_t = uint64
-        rotval_t = range_t(0,64)
-        kSize = 80
-        k_t = array_t(word_t,kSize)
         blockSize = 128
         block_t = bytes_t(blockSize)
+        lenSize = 16
+        len_t = uint128_t
+        len_to_bytes = bytes.from_uint128_be
+        word_t = uint64_t
+        to_word = uint64
         bytes_to_words = bytes.to_uint64s_be
         words_to_bytes = bytes.from_uint64s_be
-        opTable = array([
+        kSize = 80
+        k_t = array_t(word_t,kSize)
+        opTable : array_t(range(0,64),12) = array([
             28, 34, 39,
             14, 18, 41,
             1,   8,  7,
             19, 61,  6])
-        kTable = array([
+        kTable : k_t = array([
             uint64(0x428a2f98d728ae22), uint64(0x7137449123ef65cd), uint64(0xb5c0fbcfec4d3b2f), uint64(0xe9b5dba58189dbbc),
             uint64(0x3956c25bf348b538), uint64(0x59f111f1b605d019), uint64(0x923f82a4af194f9b), uint64(0xab1c5ed5da6d8118),
             uint64(0xd807aa98a3030242), uint64(0x12835b0145706fbe), uint64(0x243185be4ee4b28c), uint64(0x550c7dc3d5ffb4e2),
@@ -72,9 +80,11 @@ def sha2(v:variant):
             uint64(0x06f067aa72176fba), uint64(0x0a637dc5a2c898a6), uint64(0x113f9804bef90dae), uint64(0x1b710b35131c471b),
             uint64(0x28db77f523047d84), uint64(0x32caab7b40c72493), uint64(0x3c9ebe0a15c9bebc), uint64(0x431d67c49c100d4c),
             uint64(0x4cc5d4becb3e42b6), uint64(0x597f299cfc657e2a), uint64(0x5fcb6fab3ad6faec), uint64(0x6c44198c4a475817)])
-        len_t = uint128
-        lenSize = 16
-        len_to_bytes = bytes.from_uint128_be
+
+    hashSize = v // 8
+    hash_t = array_t(word_t,8)
+    digest_t = bytes_t(hashSize)
+    h0 : hash_t = array.create(8,to_word(0))
     if v == 224:
         h0 = array([
             uint32(0xc1059ed8), uint32(0x367cd507), uint32(0x3070dd17), uint32(0xf70e5939),
@@ -92,9 +102,7 @@ def sha2(v:variant):
             uint64(0x6a09e667f3bcc908), uint64(0xbb67ae8584caa73b), uint64(0x3c6ef372fe94f82b), uint64(0xa54ff53a5f1d36f1),
             uint64(0x510e527fade682d1), uint64(0x9b05688c2b3e6c1f), uint64(0x1f83d9abfb41bd6b), uint64(0x5be0cd19137e2179)])
 
-    hashSize = v // 8
-    hash_t = array_t(word_t,8)
-    digest_t = bytes_t(hashSize)
+    # Initialization complete: SHA-2 spec begins 
 
     def ch(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((~ x) & z)
@@ -110,7 +118,7 @@ def sha2(v:variant):
                 tmp)
     def schedule(block:block_t) -> k_t:
         b = bytes_to_words(block)
-        s = array.create(kSize,word_t(0))
+        s = array.create(kSize,to_word(0))
         for i in range(16):
             s[i] = b[i]
         for i in range(16,kSize):
@@ -182,6 +190,8 @@ def sha2(v:variant):
         result = (words_to_bytes(h))
         return truncate(result)
     return hash
+
+# Specific instances of SHA-2 
 
 sha224 = sha2(224)
 sha256 = sha2(256)
