@@ -76,13 +76,13 @@ let chacha20_counter_mode (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vl
   let (blocks,last) = split_blocks msg blocksize in 
   let keyblock = create blocksize (u8 0x0) in 
   let ctr = counter in 
-  let (ctr,blocks,keyblock) = repeati (range (length blocks))
-    (fun i (ctr,blocks,keyblock) ->
+  let (blocks,keyblock,ctr) = repeati (range (length blocks))
+    (fun i (blocks,keyblock,ctr) ->
       let keyblock = chacha20_block key ctr nonce in 
       let blocks = blocks.[i] <- xor_block blocks.[i] keyblock in 
       let ctr = ctr +. u32 0x1 in 
-      (ctr,blocks,keyblock))
-    (ctr,blocks,keyblock) in 
+      (blocks,keyblock,ctr))
+    (blocks,keyblock,ctr) in 
   let keyblock = chacha20_block key ctr nonce in 
   let last = xor_block last keyblock in 
   array.concat_blocks blocks last 
