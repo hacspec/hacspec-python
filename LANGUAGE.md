@@ -24,37 +24,37 @@ Expressions e ::=
       | x                   (variables)
       | n                   (integer constants in hex or decimal)
       | f(e1,...en)         (call builtin or user-defined function)
-            | e1 binop e2   (operators on int and uintN, overloaded)
+      | e1 binop e2   	    (operators on int and uintN, overloaded)
                             (binop includes arithmetic: +, -, *, //, %, **
                              bit manipulations: <<, >>, &, |
                              comparison: ==, !=, <, >, <=, >= )
       | uintN(e)            (convert int to uintN)
-            | (e1,...,en)   (make tuple)
+      | (e1,...,en)   	    (make tuple)
       | array([e1,...,en])  (make array)
-            | e[e0]         (array access)
-            | e[e0:e1]      (array slice)
+      | e[e0]         	    (array access)
+      | e[e0:e1]      	    (array slice)
       | fail("...")         (stop execution with error)
 ```
 
 ```
 Statements s ::=
       | x : t = e           (variable declaration)
-            | def f(x1:t1,...,xn:tn) -> t :
+      | def f(x1:t1,...,xn:tn) -> t :
               s             (function declaration)
-      | x : t = e           (assignment)
+      | x = e 		    (assignment)
       | (x1,..,xn) = e      (tuple assignment)
-            | x[i] = e      (array update)
-            | x[i:j] = e    (array slice update)
-            | return e      (return)
-            | if e:
-                s
-              else:
-                s           (conditional)
-            | for i in range(e):
-                s           (for loop)
-           | s
-              s             (sequential composition)
-           | from x import x1,x2,...,xn (import from external module)
+      | x[i] = e      	    (array update)
+      | x[i:j] = e    	    (array slice update)
+      | return e      	    (return)
+      | if e:
+           s
+        else:
+           s		    (conditional)
+      | for i in range(e):
+            s		    (for loop)
+      | s
+        s		    (sequential composition)
+      | from x import x1,x2,...,xn (import from external module)
 ```
 
 ## Library functions

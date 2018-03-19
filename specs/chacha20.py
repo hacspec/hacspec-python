@@ -38,8 +38,9 @@ def double_round(m: state_t) -> state_t :
     return m
 
 
-constants : array_t(uint32,4) = array([uint32(0x61707865), uint32(0x3320646e),
-                   uint32(0x79622d32), uint32(0x6b206574)])
+constants : array_t(uint32,4) =array(
+    [uint32(0x61707865), uint32(0x3320646e),
+     uint32(0x79622d32), uint32(0x6b206574)])
 
 def chacha20_init(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
     st = array.create(16,uint32(0))
