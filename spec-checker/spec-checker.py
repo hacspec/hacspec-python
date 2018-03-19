@@ -20,63 +20,84 @@ def isTypeAllowed(node, typeList):
     return False
 
 
-def read(node, indent="", allowed=None, previous=None):
+def read(node, allowed=None, prev=[]):
+    indent = ''.join(["  " for _ in prev])
+    # builtins.print(str(len(prev)) + " " + str(type(node)))
+    # indent = "  "
     print(indent + "processing: " + str(type(node)) + " ...")
-    indent += "  "
 
     # If we have allowed types, check them.
     if not allowed is None and not isTypeAllowed(node, allowed):
         raise SyntaxError("Operation " + str(node) +
-                          " is not allowed in " + str(previous) + ".")
+                          " is not allowed in " + str(prev[-1]) + ".")
+
+    # add node to list of previous nodes
+    previous = prev.copy()
+    previous.append(node)
 
     # Read a module.
     if isinstance(node, Module):
-        return read(node.body, indent + "  ")
+        return read(node.body, prev=previous)
 
     # Check that imports are only from a known list of imports (see ALLOWED_IMPORTS)
     if isinstance(node, ImportFrom):
         print(indent + "ImportFrom: " + node.module)
         return
-    if isinstance(node, Import):
-        print(indent + "Import: " + str(node.names[0].name))
-        return Import
+
+    if isinstance(node, Tuple):
+        names = [read(x, allowed=[Name]) for x in node.elts]
+        print(indent + "Tuple: " + ', '.join(names))
+        return Tuple
 
     # Normal assignments with types in comments
     if isinstance(node, Assign):
-        targets = [read(x, indent + "  ") for x in node.targets]
-        print(indent + "targets: " + ', '.join(str(x) for x in targets))
-        value = read(node.value, indent + "  ",
-                     [Call, BinOp, Num, Subscript, Name, UnaryOp], node)
+        targets = [str(read(x, [Name, Subscript, Tuple], previous))
+                   for x in node.targets]
+        print(indent + "targets: " + ', '.join(targets))
+        value = read(node.value,
+                     [Call, BinOp, Num, Subscript, Name, UnaryOp], previous)
         print(indent + "value: " + str(value))
         type_comment = node.type_comment
         if type_comment:
             print(indent + "type_comment: " + type_comment)
         return
     if isinstance(node, AugAssign):
-        read(node.target, indent + "  ")
-        value = read(node.value, indent + "  ",
-                     [Call, BinOp, Num, Subscript, Name], node)
+        read(node.target, prev=previous)
+        value = read(node.value,
+                     [Call, BinOp, Num, Subscript, Name], previous)
         print(indent + "value: " + str(value))
-        return read(node.op, indent + "  ")
+        return read(node.op, prev=previous)
+    if isinstance(node, AnnAssign):
+        target = read(node.target, prev=previous)
+        print(indent + "target: " + target)
+        if node.value:
+            value = read(node.value,
+                         [Call, BinOp, Num, Subscript, Name, UnaryOp], previous)
+            print(indent + "value: " + str(value))
+        annotation = read(node.annotation, prev=previous)
+        print(indent + "type: " + str(annotation))
+        return AnnAssign
     if isinstance(node, List):
         for elt in node.elts:
-            read(elt, indent + "  ")
+            read(elt, prev=previous)
         return List
     if isinstance(node, Attribute):
         print(indent + "Attribute: " + node.attr)
-        read(node.value, indent + "  ")
+        read(node.value, prev=previous)
         return Attribute
     # Assignments with types as annotations
     if isinstance(node, AnnAssign):
         raise SyntaxError("AnnAssign is not allowed yet.")
 
     if isinstance(node, BinOp):
-        left = read(node.left, indent + "  ",
-                    [Num, BinOp, Call, Name, Subscript], node)
-        op = read(node.op, indent + "  ", [Add, Sub, Mult, Div,
-                                           Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd, FloorDiv], node)
-        right = read(node.right, indent + "  ",
-                     [Num, BinOp, Call, Name, Subscript], node)
+        left = read(node.left,
+                    [Num, BinOp, Call, Name, Subscript, UnaryOp], previous)
+        op = read(node.op, [Add, Sub, Mult, Div,
+                            Mod, Pow, LShift, RShift, BitOr,
+                            BitXor, BitAnd, FloorDiv],
+                  previous)
+        right = read(node.right,
+                     [Num, BinOp, Call, Name, Subscript], previous)
         if left is Num and right is Num:
             return Num
         return BinOp
@@ -91,13 +112,13 @@ def read(node, indent="", allowed=None, previous=None):
 
     # Loops
     if isinstance(node, For):
-        read(node.target, indent + "  ", previous=node)
+        read(node.target, prev=previous)
         if node.body:
-            read(node.body, indent + "  ", previous=node)
+            read(node.body,  prev=previous)
         if node.orelse:
-            read(node.orelse, indent + "  ", previous=node)
+            read(node.orelse,  prev=previous)
         if node.iter:
-            read(node.iter, indent + "  ", previous=node)
+            read(node.iter, prev=previous)
         return For
 
     # Operators
@@ -135,8 +156,14 @@ def read(node, indent="", allowed=None, previous=None):
         print(indent + "Compare: " + str(node))
         return Compare
 
+    if isinstance(node, BoolOp):
+        print(indent + "BoolOp: " + str(node.op))
+        for ex in node.values:
+            read(ex, prev=previous)
+        return BoolOp
+
     if isinstance(node, Subscript):
-        return read(node.value, indent + "  ")
+        return read(node.value, prev=previous)
 
     # Functions
     if isinstance(node, FunctionDef):
@@ -158,31 +185,42 @@ def read(node, indent="", allowed=None, previous=None):
             raise SyntaxError("keyword args are not allowed in hacspec")
 
         # Read function body.
-        return read(node.body, indent + "  ")
+        return read(node.body, prev=previous)
     if isinstance(node, Return):
-        return read(node.value, indent)
+        return read(node.value, prev=previous)
 
     if isinstance(node, Call):
-        read(node.func, indent + "  ")
+        read(node.func, prev=previous)
         if node.args:
-            read(node.args, indent + "  ")
+            read(node.args, prev=previous)
         return Call
 
     if isinstance(node, Expr):
-        return read(node.value, indent + "  ")
+        return read(node.value, prev=previous)
 
     if isinstance(node, If):
-        return read(node.test, indent + "  ", [Compare], node)
-        return read(node.body, indent + "  ")
-        return read(node.orelse, indent + "  ")
+        return read(node.test, [Compare, BoolOp], previous)
+        return read(node.body, prev=previous)
+        return read(node.orelse, prev=previous)
 
     if isinstance(node, While):
-        return read(node.test, indent + "  ", [Compare], node)
-        return read(node.body, indent + "  ")
-        return read(node.orelse, indent + "  ")
+        return read(node.test, [Compare], previous)
+        return read(node.body, prev=previous)
+        return read(node.orelse, prev=previous)
 
-    if isinstance(node, Tuple):
-        return read(node.elts, indent + "  ")
+    # lambdas are only allowed in refine_t statements
+    if isinstance(node, Lambda):
+        if len(previous) < 4:
+            raise SyntaxError(
+                "Lambdas are only allowed in `refine` (too short)")
+        called_function = previous[-3]
+        if isinstance(called_function, Call):
+            if isinstance(called_function.func, Name):
+                if called_function.func.id == "refine":
+                    print(indent + "Refine " + str(previous[-2][0].id))
+                    return Lambda
+        raise SyntaxError(
+            "Lambdas are only allowed in `refine` (you didn't call refine)")
 
     # Explicitly disallowed statements
     if isinstance(node, With):
@@ -215,15 +253,13 @@ def read(node, indent="", allowed=None, previous=None):
     # Disallowed expressions
     if isinstance(node, ListComp):
         raise SyntaxError("List comprehensions are not allowed in hacspec.")
-    if isinstance(node, Lambda):
-        raise SyntaxError("Lambdas are not allowed in hacspec.")
     if isinstance(node, IfExp):
         raise SyntaxError("If expressions are not allowed in hacspec.")
 
     # List of nodes, read all of them.
     if isinstance(node, list):
         for x in node:
-            read(x, indent + "  ")
+            read(x, prev=previous)
         return
 
     # If we get here, it's not valid.
