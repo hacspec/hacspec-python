@@ -41,7 +41,7 @@ Statements s ::=
       | x : t = e           (variable declaration)
       | def f(x1:t1,...,xn:tn) -> t :
               s             (function declaration)
-      | x : t = e           (assignment)
+      | x = e 		    (assignment)
       | (x1,..,xn) = e      (tuple assignment)
       | x[i] = e      	    (array update)
       | x[i:j] = e    	    (array slice update)
