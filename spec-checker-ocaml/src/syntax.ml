@@ -39,6 +39,7 @@ type pinstr_r =
   | SFail
   | SPass
   | SReturn of pexpr option
+  | SExpr   of pexpr
   | SAssign of (plvalue * passop * pexpr)
   | SIf     of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
   | SWhile  of (pexpr * pstmt) * pstmt option

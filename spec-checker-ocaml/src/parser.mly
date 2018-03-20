@@ -42,6 +42,7 @@
 %token MINUSEQ
 %token PLUS
 %token PLUSEQ
+%token SEMICOLON
 %token SLASH
 %token SLASHEQ
 %token STAR
@@ -151,11 +152,11 @@ expr_r:
     { EGet (e, i) }
 
 (* -------------------------------------------------------------------- *)
-expr:
+%inline expr:
 | e=loc(expr_r) { e }
 
 (* -------------------------------------------------------------------- *)
-instr_r:
+sinstr_r:
 | FAIL
     { SFail }
 
@@ -167,6 +168,18 @@ instr_r:
 
 | lv=expr o=assop e=expr
     { SAssign (lv, o, e) }
+
+| e=expr
+    { SExpr e }
+
+(* -------------------------------------------------------------------- *)
+%inline sinstr:
+| i=loc(sinstr_r) { i }
+
+(* -------------------------------------------------------------------- *)
+instr_r:
+| i=sinstr_r NEWLINE
+    { i }
 
 | FOR x=ident IN e=expr COLON b=block
     be=option(ELSE COLON b=block { b })
@@ -180,17 +193,20 @@ instr_r:
     { SIf ((e, b), bie, bse) }
 
 (* -------------------------------------------------------------------- *)
-instr:
-| i=loc(instr_r) eol { i }
+%inline instr:
+| i=loc(instr_r) { i }
 
 (* -------------------------------------------------------------------- *)
 block:
 | NEWLINE INDENT b=instr+ DEINDENT
     { b }
 
+| b=plist1(sinstr, SEMICOLON) NEWLINE
+    { b }
+
 (* -------------------------------------------------------------------- *)
 topdecl_r:
-| x=ident EQ e=expr eol
+| x=ident EQ e=expr NEWLINE
     { TVar (x, e) }
 
 | DEF f=ident args=parens(plist0(ident, COMMA)) COLON b=block
@@ -198,10 +214,7 @@ topdecl_r:
 
 (* -------------------------------------------------------------------- *)
 topdecl:
-| NEWLINE? xs=list(topdecl_r) { xs }
-
-(* -------------------------------------------------------------------- *)
-%inline eol: NEWLINE | EOF { }
+| xs=list(topdecl_r) { xs }
 
 (* -------------------------------------------------------------------- *)
 %inline loc(X):

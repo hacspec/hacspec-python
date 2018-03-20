@@ -33,7 +33,7 @@
 
     val create : unit -> state
     val offset : state -> int
-    val set    : state -> int -> [`Up | `Down] option
+    val set    : state -> int -> [`Up | `Down of int] option
   end = struct
     type rstate = {
       offset  : int;
@@ -64,13 +64,13 @@
       if i >= s.offset then
         if i = s.offset then (s, None) else (rpush s i, Some `Up)
       else
-        let s =
-          let rec doit (s : rstate) =
-            if i < s.offset then doit (rpop s) else s
-          in doit s in
+        let lvl, s =
+          let rec doit acc (s : rstate) =
+            if i < s.offset then doit (1+acc) (rpop s) else (acc, s)
+          in doit 0 s in
             
         if i <> s.offset then raise InvalidDeindent;
-        (s, Some `Down)
+        (s, Some (`Down lvl))
 
     let create () : state =
       ref empty
@@ -108,28 +108,40 @@
     List.iter (curry (Hashtbl.add table)) _keywords; table
 }
 
-let empty   = ""
-let blank   = [' ' '\t']
-let newline = '\r'? '\n'
-let upper   = ['A'-'Z']
-let lower   = ['a'-'z']
-let letter  = upper | lower
-let digit   = ['0'-'9']
-let xdigit  = ['0'-'9' 'a'-'f' 'A'-'F']
-let ident   = (letter | '_') (letter | digit | '_')*
-let uint    = digit+
-let uhexint = xdigit+
-let comment = '#' [^'\n']*
+let empty    = ""
+let blank    = [' ' '\t']
+let newline  = '\r'? '\n'
+let upper    = ['A'-'Z']
+let lower    = ['a'-'z']
+let letter   = upper | lower
+let digit    = ['0'-'9']
+let xdigit   = ['0'-'9' 'a'-'f' 'A'-'F']
+let ident    = (letter | '_') (letter | digit | '_')*
+let uint     = digit+
+let uhexint  = xdigit+
+let comment  = '#' [^'\n']*
 
 (* -------------------------------------------------------------------- *)
 rule main stt = parse
-  | eof
-      { match State.set stt 0 with Some _ -> DEINDENT | _ -> EOF }
+  | eof {
+      let pos = lexbuf.lex_start_p in
+      let off = pos.pos_cnum - pos.pos_bol in
+      let all = ref [] in
 
-  | ((blank* comment? newline)* blank* comment? (newline | eof) as e) as s {
-      for i = 1 to (String.count ((=) '\n') s) do
-        Lexing.new_line lexbuf
-      done; NEWLINE
+      if off <> 0 then all := NEWLINE :: !all;
+      begin match State.set stt 0 with
+      | Some (`Down i) -> all := List.make i DEINDENT @ !all
+      | _ -> () end;
+      List.rev (EOF :: !all)
+    }
+
+  | blank* comment? (newline as s | eof) {
+      Lexing.new_line lexbuf;
+
+      let pos = lexbuf.lex_start_p in
+      let off = pos.pos_cnum - pos.pos_bol in
+
+      if off = 0 then main stt lexbuf else [NEWLINE]
     }
 
   | empty {
@@ -137,9 +149,9 @@ rule main stt = parse
       let off = pos.pos_cnum - pos.pos_bol in
       if off = 0 then
         match offset stt lexbuf with
-        | Some `Down -> DEINDENT
-        | Some `Up   -> INDENT
-        | None       -> token lexbuf
+        | Some (`Down i) -> List.make i DEINDENT
+        | Some `Up       -> [INDENT]
+        | None           -> token lexbuf
       else token lexbuf
     }
 
@@ -152,34 +164,35 @@ and token = parse
       { token lexbuf }
 
   | ident as id {
-      Hashtbl.find_default keywords id (IDENT id)
+      [Hashtbl.find_default keywords id (IDENT id)]
     }
 
   | (uint | ("0x" uhexint)) as i {
-      UINT (Big_int.big_int_of_string i)
+      [UINT (Big_int.big_int_of_string i)]
     }
 
-  | '(' { LPAREN   }
-  | ')' { RPAREN   }
-  | '[' { LBRACKET }
-  | ']' { RBRACKET }
-  | ':' { COLON    }
-  | ',' { COMMA    }
+  | '(' { [LPAREN   ] }
+  | ')' { [RPAREN   ] }
+  | '[' { [LBRACKET ] }
+  | ']' { [RBRACKET ] }
+  | ':' { [COLON    ] }
+  | ';' { [SEMICOLON] }
+  | ',' { [COMMA    ] }
 
-  | "+"  { PLUS    }
-  | "-"  { MINUS   }
-  | "*"  { STAR    }
-  | "/"  { SLASH   }
-  | "="  { EQ      }
-  | "+=" { PLUSEQ  }
-  | "-=" { MINUSEQ }
-  | "*=" { STAREQ  }
-  | "/=" { SLASHEQ }
-  | "==" { EQEQ    }
-  | "!=" { BANGEQ  }
-  | "<"  { LT      }
-  | ">"  { GT      }
-  | "<=" { LTEQ    }
-  | ">=" { GTEQ    }
+  | "+"  { [PLUS   ] }
+  | "-"  { [MINUS  ] }
+  | "*"  { [STAR   ] }
+  | "/"  { [SLASH  ] }
+  | "="  { [EQ     ] }
+  | "+=" { [PLUSEQ ] }
+  | "-=" { [MINUSEQ] }
+  | "*=" { [STAREQ ] }
+  | "/=" { [SLASHEQ] }
+  | "==" { [EQEQ   ] }
+  | "!=" { [BANGEQ ] }
+  | "<"  { [LT     ] }
+  | ">"  { [GT     ] }
+  | "<=" { [LTEQ   ] }
+  | ">=" { [GTEQ   ] }
 
   |  _ as c { lex_error lexbuf (Printf.sprintf "illegal character: %c" c) }

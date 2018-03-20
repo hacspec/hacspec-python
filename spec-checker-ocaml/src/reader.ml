@@ -20,25 +20,31 @@ let parserfun_spec =
     MenhirLib.Convert.Simplified.traditional2revised P.spec
 
 (* -------------------------------------------------------------------- *)
-type reader = (Lexer.State.state * Lexing.lexbuf) Disposable.t
+type reader_r = {
+  (* - *) r_lexbuf : Lexing.lexbuf;
+  (* - *) r_lexstt : Lexer.State.state;
+  mutable r_tokens : Parser.token list;
+}
 
-let lexbuf (reader : reader) =
-  Disposable.get reader
+type reader = reader_r Disposable.t
+
+(* -------------------------------------------------------------------- *)
+let create lexbuf =
+  let state = Lexer.State.create () in
+  { r_lexbuf = lexbuf; r_lexstt = state; r_tokens = []; }
 
 (* -------------------------------------------------------------------- *)
 let from_channel ~name channel =
-  let state  = Lexer.State.create () in
   let lexbuf = lexbuf_from_channel name channel in
-  Disposable.create (state, lexbuf)
+  Disposable.create (create lexbuf)
 
 (* -------------------------------------------------------------------- *)
 let from_file filename =
   let channel = open_in filename in
 
   try
-    let state  = Lexer.State.create () in
     let lexbuf = lexbuf_from_channel filename channel in
-    Disposable.create ~cb:(fun _ -> close_in channel) (state, lexbuf)
+    Disposable.create ~cb:(fun _ -> close_in channel) (create lexbuf)
 
   with
     | e ->
@@ -47,18 +53,29 @@ let from_file filename =
 
 (* -------------------------------------------------------------------- *)
 let from_string data =
-  let state = Lexer.State.create () in
-  Disposable.create (state, Lexing.from_string data)
+  Disposable.create (create (Lexing.from_string data))
 
 (* -------------------------------------------------------------------- *)
 let finalize (reader : reader) =
   Disposable.dispose reader
 
 (* -------------------------------------------------------------------- *)
-let lexer (state, lexbuf) =
-  let token = Lexer.main state lexbuf in
-  (token, L.lexeme_start_p lexbuf, L.lexeme_end_p lexbuf)
+let lexer = fun reader ->
+  let state  = reader.r_lexstt in
+  let lexbuf = reader.r_lexbuf in
+
+  if reader.r_tokens = [] then
+    reader.r_tokens <- Lexer.main state lexbuf;
+
+  match reader.r_tokens with
+  | [] ->
+      failwith "short-read-from-lexer"
+
+  | token :: queue -> begin
+      reader.r_tokens  <- queue;
+      (token, Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf)
+  end
 
 (* -------------------------------------------------------------------- *)
 let parse_spec (reader : reader) =
-  parserfun_spec (fun () -> lexer (lexbuf reader))
+  parserfun_spec (fun () -> lexer (Disposable.get reader))
