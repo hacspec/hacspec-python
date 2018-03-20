@@ -247,6 +247,19 @@ class _uint128(_uintn):
         return (x >> other | x << (x.bits - other))
 
 
+bit_t = _bit
+bit = _bit
+uint8_t = _uint8
+uint8 = _uint8
+uint16_t = _uint16
+uint16 = _uint16
+uint32_t = _uint32
+uint32 = _uint32
+uint64_t = _uint64
+uint64 = _uint64
+uint128_t = _uint128
+uint128 = _uint128
+
 class _bitvector(_uintn):
     def __init__(self,v:Union[int,_uintn],bits:int) -> None:
         if isinstance(v,int):
@@ -309,7 +322,8 @@ class _bitvector(_uintn):
             if isinstance(key, slice):
                 return _bitvector(self.v >> key.start,
                                  key.stop - key.start)
-            return bit(self.v)
+            else:
+                return bit(self.v >> key)
         except:
             print('_bitvector content:',self.v)
             print('_bitvector index:',key)
@@ -318,13 +332,11 @@ class _bitvector(_uintn):
     def __getslice__(self, i:int, j:int) -> '_bitvector':
         return _bitvector(self.v >> i, j - i)
 
-    def __setitem__(self,key:Union[int,slice],v) -> '_bitvector':
-        if isinstance(key, slice):
-            mask = ((1 << (key.stop - key.start)) - 1) << key.start
-            return _bitvector((self.v & (not mask)) |
-                             (v.v << key.start),self.bits)
-        else:
-            return _bitvector((self.v & (not (1 << key))) | (v << key), self.bits)
+
+def bitvector_t(len:nat):
+    return _bitvector
+bitvector = _bitvector
+
 
 class _vlarray(Iterable[T]):
     def __init__(self,x:Sequence[T]) -> None:
@@ -423,19 +435,6 @@ class _vlarray(Iterable[T]):
         return acc
 
 
-uint8_t = _uint8
-uint8 = _uint8
-uint16_t = _uint16
-uint16 = _uint16
-uint32_t = _uint32
-uint32 = _uint32
-uint64_t = _uint64
-uint64 = _uint64
-uint128_t = _uint128
-uint128 = _uint128
-bitvector_t = _bitvector
-bitvector = _bitvector
-
 def vlarray_t(T):
     return _vlarray[T]
 vlarray = _vlarray
@@ -448,7 +447,7 @@ class _vlbytes(vlarray[uint8]):
     @staticmethod
     def from_ints(x:List[int]) -> '_vlbytes':
         return vlarray([uint8(i) for i in x])
-
+    
     @staticmethod
     def concat_bytes(blocks:'vlarray[_vlbytes]') -> '_vlbytes':
         concat = [b for block in blocks for b in block]
@@ -462,6 +461,26 @@ class _vlbytes(vlarray[uint8]):
     def to_hex(a:vlarray[uint8]) -> str:
         return "".join(['{:02x}'.format(uint8.to_int(x)) for x in a])
 
+    @staticmethod
+    def from_nat_le(x:nat) -> '_vlbytes':
+        b = x.to_bytes((x.bit_length() + 7) // 8, 'little') or b'\0'
+        return vlarray([uint8(i) for i in b])
+
+    @staticmethod
+    def to_nat_le(x:vlarray[uint8]) -> nat:
+        b = bytes([uint8.to_int(u) for u in x])
+        return int.from_bytes(b,'little')
+
+    @staticmethod
+    def from_nat_be(x:nat) -> '_vlbytes':
+        b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
+        return vlarray([uint8(i) for i in b])
+
+    @staticmethod
+    def to_nat_be(x:vlarray[uint8]) -> nat:
+        b = bytes([uint8.to_int(u) for u in x])
+        return int.from_bytes(b,'big')
+    
     @staticmethod
     def from_uint32_le(x:uint32) -> vlarray[uint8]:
         xv = uint32.to_int(x)
