@@ -1,6 +1,20 @@
 (* -------------------------------------------------------------------- *)
-module Map    = BatMap
-module Option = BatOption
+module Option  = BatOption
+module Hashtbl = BatHashtbl
+module Map     = BatMap
+
+(* -------------------------------------------------------------------- *)
+module String : sig
+  include module type of BatString
+
+  val count : (char -> bool) -> string -> int
+end = struct
+  include BatString
+
+  let count (f : char -> bool) (s : string) =
+    let aout = ref 0 in
+    String.iter (fun c -> if f c then incr aout) s; !aout
+end
 
 (* -------------------------------------------------------------------- *)
 module List : sig

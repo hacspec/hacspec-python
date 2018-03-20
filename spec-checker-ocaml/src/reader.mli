@@ -8,4 +8,4 @@ val from_string  : string -> reader
 val finalize     : reader -> unit
 
 (* -------------------------------------------------------------------- *)
-val parse_spec : reader -> Syntax.spec
+val parse_spec : reader -> Syntax.pspec

@@ -20,23 +20,25 @@ let parserfun_spec =
     MenhirLib.Convert.Simplified.traditional2revised P.spec
 
 (* -------------------------------------------------------------------- *)
-type reader = Lexing.lexbuf Disposable.t
+type reader = (Lexer.State.state * Lexing.lexbuf) Disposable.t
 
 let lexbuf (reader : reader) =
   Disposable.get reader
 
 (* -------------------------------------------------------------------- *)
 let from_channel ~name channel =
+  let state  = Lexer.State.create () in
   let lexbuf = lexbuf_from_channel name channel in
-  Disposable.create lexbuf
+  Disposable.create (state, lexbuf)
 
 (* -------------------------------------------------------------------- *)
 let from_file filename =
   let channel = open_in filename in
 
   try
+    let state  = Lexer.State.create () in
     let lexbuf = lexbuf_from_channel filename channel in
-    Disposable.create ~cb:(fun _ -> close_in channel) lexbuf
+    Disposable.create ~cb:(fun _ -> close_in channel) (state, lexbuf)
 
   with
     | e ->
@@ -45,15 +47,16 @@ let from_file filename =
 
 (* -------------------------------------------------------------------- *)
 let from_string data =
-  Disposable.create (Lexing.from_string data)
+  let state = Lexer.State.create () in
+  Disposable.create (state, Lexing.from_string data)
 
 (* -------------------------------------------------------------------- *)
 let finalize (reader : reader) =
   Disposable.dispose reader
 
 (* -------------------------------------------------------------------- *)
-let lexer (lexbuf : L.lexbuf) =
-  let token = Lexer.main lexbuf in
+let lexer (state, lexbuf) =
+  let token = Lexer.main state lexbuf in
   (token, L.lexeme_start_p lexbuf, L.lexeme_end_p lexbuf)
 
 (* -------------------------------------------------------------------- *)
