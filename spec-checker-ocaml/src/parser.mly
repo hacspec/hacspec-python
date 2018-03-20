@@ -190,7 +190,7 @@ block:
 
 (* -------------------------------------------------------------------- *)
 topdecl_r:
-| x=ident EQ e=expr
+| x=ident EQ e=expr eol
     { TVar (x, e) }
 
 | DEF f=ident args=parens(plist0(ident, COMMA)) COLON b=block
@@ -198,7 +198,7 @@ topdecl_r:
 
 (* -------------------------------------------------------------------- *)
 topdecl:
-| NEWLINE? xs=list(x=topdecl_r eol { x }) { xs }
+| NEWLINE? xs=list(topdecl_r) { xs }
 
 (* -------------------------------------------------------------------- *)
 %inline eol: NEWLINE | EOF { }

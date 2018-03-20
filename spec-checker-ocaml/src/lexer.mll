@@ -119,18 +119,18 @@ let xdigit  = ['0'-'9' 'a'-'f' 'A'-'F']
 let ident   = (letter | '_') (letter | digit | '_')*
 let uint    = digit+
 let uhexint = xdigit+
-let comment = '#' _*
+let comment = '#' [^'\n']*
 
 (* -------------------------------------------------------------------- *)
 rule main stt = parse
-  | ((blank* comment? newline)* blank* comment? (newline | eof)) as s {
+  | eof
+      { match State.set stt 0 with Some _ -> DEINDENT | _ -> EOF }
+
+  | ((blank* comment? newline)* blank* comment? (newline | eof) as e) as s {
       for i = 1 to (String.count ((=) '\n') s) do
         Lexing.new_line lexbuf
       done; NEWLINE
     }
-
-  | eof
-      { EOF }
 
   | empty {
       let pos = lexbuf.lex_curr_p in
