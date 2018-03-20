@@ -9,6 +9,16 @@
 %token DEINDENT
 %token NEWLINE
 
+%token INT
+%token BOOL
+%token STRING
+%token BIT_T
+%token UINT8_T
+%token UINT16_T
+%token UINT32_T
+%token UINT64_T
+%token UINT128_T
+
 %token TRUE
 %token FALSE
 
@@ -36,6 +46,7 @@
 %token EQEQ
 %token GT
 %token GTEQ
+%token DASHGT
 %token LT
 %token LTEQ
 %token MINUS
@@ -78,14 +89,16 @@ ident:
 | x=loc(IDENT) { x }
 
 (* -------------------------------------------------------------------- *)
+tyident:
+| x=ident COLON ty=type_ { (x, ty) }
+
+(* -------------------------------------------------------------------- *)
 %inline uniop:
 | NOT   { (`Not :> puniop) }
 | MINUS { (`Neg :> puniop) }
 
 (* -------------------------------------------------------------------- *)
 %inline binop:
-| EQEQ   { (`Eq  :> pbinop) }
-| BANGEQ { (`NEq :> pbinop) }
 | PLUS   { (`Add :> pbinop) }
 | MINUS  { (`Sub :> pbinop) }
 | STAR   { (`Mul :> pbinop) }
@@ -106,6 +119,37 @@ ident:
 | SLASHEQ { (`Div   :> passop) }
 
 (* -------------------------------------------------------------------- *)
+stype_r:
+| parens(empty) { PTUnit }
+| BOOL          { PTBool   }
+| INT           { PTInt    }
+| STRING        { PTString }
+| BIT_T         { PTBit    }
+| UINT8_T       { PTWord `U8 }
+| UINT16_T      { PTWord `U8 }
+| UINT32_T      { PTWord `U8 }
+| UINT64_T      { PTWord `U8 }
+| UINT128_T     { PTWord `U8 }
+
+type_r:
+| ty=stype_r
+   { ty }
+
+| tys=plist2(stype, STAR)
+   { PTTuple tys }
+
+| ty=stype brackets(empty)
+   { PTArray ty }
+
+(* -------------------------------------------------------------------- *)
+%inline stype:
+| ty=loc(stype_r) { ty }
+
+(* -------------------------------------------------------------------- *)
+%inline type_:
+| ty=loc(type_r) { ty }
+
+(* -------------------------------------------------------------------- *)
 slice:
 | e=expr
     { (`One e :> pslice) }
@@ -116,40 +160,46 @@ slice:
 (* -------------------------------------------------------------------- *)
 expr_r:
 | x=ident
-    { EVar x }
+    { PEVar x }
 
 | TRUE
-    { EBool true }
+    { PEBool true }
 
 | FALSE
-    { EBool false }
+    { PEBool false }
 
 | i=UINT
-    { EUInt i }
+    { PEUInt i }
 
 | RANGE e=parens(expr)
-    { ERange e }
+    { PERange e }
 
 | o=uniop e=expr %prec NOT
-    { EUniOp (o, e) }
+    { PEUniOp (o, e) }
 
 | e1=expr o=binop e2=expr
-    { EBinOp (o, (e1, e2)) }
+    { PEBinOp (o, (e1, e2)) }
+
+| e1=expr EQEQ e2=expr
+    { PEEq (false, (e1, e2)) }
+
+| e1=expr BANGEQ e2=expr
+    { PEEq (true, (e1, e2)) }
 
 | f=ident args=parens(plist0(expr, COMMA))
-    { ECall (f, args) }
+    { PECall (f, args) }
 
 | es=parens(empty)
-    { ETuple ([], false) }
+    { PETuple ([], false) }
 
 | esb=parens(es=rlist1(expr, COMMA) b=iboption(COMMA) { (es, b) })
-    { let (es, b) = esb in ETuple (es, b) }
+    { let (es, b) = esb in PETuple (es, b) }
 
 | es=brackets(es=rlist1(expr, COMMA) COMMA? { es })
-    { EArray es }
+    { PEArray es }
 
 | e=expr i=brackets(slice)
-    { EGet (e, i) }
+    { PEGet (e, i) }
 
 (* -------------------------------------------------------------------- *)
 %inline expr:
@@ -158,19 +208,22 @@ expr_r:
 (* -------------------------------------------------------------------- *)
 sinstr_r:
 | FAIL
-    { SFail }
+    { PSFail }
 
 | PASS
-    { SPass }
+    { PSPass }
+
+| x=tyident EQ e=expr
+    { PSDecl (x, e) }
 
 | RETURN e=expr?
-    { SReturn e }
+    { PSReturn e }
 
 | lv=expr o=assop e=expr
-    { SAssign (lv, o, e) }
+    { PSAssign (lv, o, e) }
 
 | e=expr
-    { SExpr e }
+    { PSExpr e }
 
 (* -------------------------------------------------------------------- *)
 %inline sinstr:
@@ -184,13 +237,13 @@ instr_r:
 | FOR x=ident IN e=expr COLON b=block
     be=option(ELSE COLON b=block { b })
 
-    { SFor ((x, e, b), be) }
+    { PSFor ((x, e, b), be) }
 
 | IF e=expr COLON b=block
     bie=list  (ELIF e=expr COLON b=block { (e, b) })
     bse=option(ELSE COLON b=block { b })
 
-    { SIf ((e, b), bie, bse) }
+    { PSIf ((e, b), bie, bse) }
 
 (* -------------------------------------------------------------------- *)
 %inline instr:
@@ -206,11 +259,11 @@ block:
 
 (* -------------------------------------------------------------------- *)
 topdecl_r:
-| x=ident EQ e=expr NEWLINE
-    { TVar (x, e) }
+| x=tyident EQ e=expr NEWLINE
+    { PTVar (x, e) }
 
-| DEF f=ident args=parens(plist0(ident, COMMA)) COLON b=block
-    { TDef (f, args, b) }
+| DEF f=ident args=parens(plist0(tyident, COMMA)) DASHGT ty=type_ COLON b=block
+    { PTDef ((f, ty), args, b) }
 
 (* -------------------------------------------------------------------- *)
 topdecl:
@@ -237,6 +290,10 @@ iplist1_r(X, S):
 %inline plist1(X, S):
 | aout=separated_nonempty_list(S, X) { aout }
 
+%inline plist2(X, S):
+| x=X S xs=plist1(X, S) { x :: xs }
+
+(* -------------------------------------------------------------------- *)
 %inline empty:
 | /**/ { () }
 

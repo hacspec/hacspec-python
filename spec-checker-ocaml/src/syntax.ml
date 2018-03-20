@@ -9,10 +9,28 @@ exception ParseError of Location.t * string option
 type pident = string located
 
 (* -------------------------------------------------------------------- *)
+type pwsize = [ `U8 | `U16 | `U32 | `U64 | `U128 ]
+
+type ptype_r =
+  | PTUnit
+  | PTBool
+  | PTInt
+  | PTString
+  | PTBit
+  | PTWord  of pwsize
+  | PTTuple of ptype list
+  | PTArray of ptype
+
+and ptype = ptype_r located
+
+(* -------------------------------------------------------------------- *)
+type ptyident = pident * ptype
+
+(* -------------------------------------------------------------------- *)
 type puniop = [ `Not | `Neg ]
 
 type pbinop = [
-  | `Eq  | `NEq | `Add | `Sub | `Mul | `Div
+  | `Add | `Sub | `Mul | `Div
   | `And | `Or  | `Lt  | `Le  | `Gt  | `Ge
 ]
 
@@ -20,30 +38,32 @@ type passop = [ `Plain | `Add | `Sub | `Mul | `Div ]
 
 (* -------------------------------------------------------------------- *)
 type pexpr_r =
-  | EVar   of pident
-  | EBool  of bool
-  | EUInt  of Big_int.big_int
-  | ETuple of pexpr list * bool
-  | EArray of pexpr list
-  | ERange of pexpr
-  | EUniOp of puniop * pexpr
-  | EBinOp of pbinop * (pexpr * pexpr)
-  | ECall  of pident * pexpr list
-  | EGet   of pexpr * pslice
+  | PEVar   of pident
+  | PEBool  of bool
+  | PEUInt  of Big_int.big_int
+  | PETuple of pexpr list * bool
+  | PEArray of pexpr list
+  | PERange of pexpr
+  | PEEq    of bool * (pexpr * pexpr)
+  | PEUniOp of puniop * pexpr
+  | PEBinOp of pbinop * (pexpr * pexpr)
+  | PECall  of pident * pexpr list
+  | PEGet   of pexpr * pslice
 
 and pexpr  = pexpr_r located
 and pslice = [ `One of pexpr | `Slice of (pexpr * pexpr) ]
 
 (* -------------------------------------------------------------------- *)
 type pinstr_r =
-  | SFail
-  | SPass
-  | SReturn of pexpr option
-  | SExpr   of pexpr
-  | SAssign of (plvalue * passop * pexpr)
-  | SIf     of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
-  | SWhile  of (pexpr * pstmt) * pstmt option
-  | SFor    of (pident * pexpr * pstmt) * pstmt option
+  | PSFail
+  | PSPass
+  | PSReturn of pexpr option
+  | PSDecl   of ptyident * pexpr
+  | PSExpr   of pexpr
+  | PSAssign of (plvalue * passop * pexpr)
+  | PSIf     of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
+  | PSWhile  of (pexpr * pstmt) * pstmt option
+  | PSFor    of (pident * pexpr * pstmt) * pstmt option
 
 and pstmt   = pinstr list
 and pinstr  = pinstr_r located
@@ -51,8 +71,8 @@ and plvalue = pexpr
 
 (* -------------------------------------------------------------------- *)
 type ptopdecl =
-  | TVar of pident * pexpr
-  | TDef of pident * pident list * pstmt
+  | PTVar of ptyident * pexpr
+  | PTDef of ptyident * ptyident list * pstmt
 
 (* -------------------------------------------------------------------- *)
 type pspec = ptopdecl list

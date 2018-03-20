@@ -87,6 +87,16 @@
     ("True"  , TRUE );
     ("False" , FALSE);
 
+    ("int"      , INT      );
+    ("bool"     , BOOL     );
+    ("string"   , STRING   );
+    ("bit_t"    , BIT_T    );
+    ("uint8_t"  , UINT8_T  );
+    ("uint16_t" , UINT16_T );
+    ("uint32_t" , UINT32_T );
+    ("uint64_t" , UINT64_T );
+    ("uint128_t", UINT128_T);
+
     ("and"   , AND  );
     ("def"   , DEF  );
     ("else"  , ELSE );
@@ -194,5 +204,6 @@ and token = parse
   | ">"  { [GT     ] }
   | "<=" { [LTEQ   ] }
   | ">=" { [GTEQ   ] }
+  | "->" { [DASHGT ] }
 
   |  _ as c { lex_error lexbuf (Printf.sprintf "illegal character: %c" c) }
