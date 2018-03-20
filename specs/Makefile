@@ -10,4 +10,5 @@ test:
 	$(PYTHON) chacha20_test.py
 	$(PYTHON) aead_chacha20poly1305_test.py
 	$(PYTHON) sha2_test.py
+	$(PYTHON) curve25519_test.py
 

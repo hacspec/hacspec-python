@@ -7,12 +7,20 @@ def fail(s):
 T = TypeVar('T')
 U = TypeVar('U')
 V = TypeVar('V')
+W = TypeVar('W')
+X = TypeVar('X')
 
 def tuple2(T,U):
     return Tuple[T,U]
 
 def tuple3(T,U,V):
     return Tuple[T,U,V]
+
+def tuple4(T,U,V,W):
+    return Tuple[T,U,V,W]
+
+def tuple5(T,U,V,W,X):
+    return Tuple[T,U,V,W,X]
 
 def refine(T:Type[T],f:Callable[[T],bool]):
     return T
