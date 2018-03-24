@@ -1,22 +1,22 @@
+.PHONY: all fstar
+
+HACL_HOME?=../../hacl-star
+PYTHON?=python3.6
+
+FSPECS=chacha20.fst poly1305.fst sha2.fst
+SPECS=$(FSPECS)
+
 all: fstar
 
-FSTAR_HOME=../../FStar
-HACL_HOME=../../hacl-star
+fstar: $(SPECS)
 
-fstar: chacha20.fst poly1305.fst sha2.fst
-typecheck: chacha20.fst-verify poly1305.fst-verify
+%.fst: ../specs/%.py
+	$(PYTHON) hacspec_to_fstar.py $< > fstar/$@
 
-chacha20.fst: ../specs/chacha20.py
-	python3.6 hacspec_to_fstar.py ../specs/chacha20.py > chacha20.fst
-
-poly1305.fst: ../specs/poly1305.py
-	python3.6 hacspec_to_fstar.py ../specs/poly1305.py > poly1305.fst
-
-sha2.fst: ../specs/poly1305.py
-	python3.6 hacspec_to_fstar.py ../specs/sha2.py > sha2.fst
+typecheck: $(addsuffix -verify, $(addprefix fstar/, $(SPECS)))
 
 %-verify: %
-	$(FSTAR_HOME)/bin/fstar.exe --include $(HACL_HOME)/specs/lib $<
+	fstar.exe --include $(HACL_HOME)/specs/lib $<
 
 clean:
-	rm -f chacha20.fst poly1305.fst sha2.fst *~ *.hints *.checked
+	rm -f $(addprefix fstar/, $(SPECS)) *~ *.hints *.checked

@@ -9,3 +9,4 @@ install:
 script:
   - make -C specs
   - make -C specs check-specs
+  - make -C spec-compilers
