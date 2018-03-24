@@ -1,4 +1,33 @@
-# hacspec
+---
+title: High Assurance Crypto Specification Language
+abbrev: hacspec
+docname: draft-hacspec-latest
+category: info
+
+ipr: trust200902
+area: IRTF
+keyword: Internet-Draft
+
+stand_alone: yes
+pi:
+
+author:
+ -  ins: K. Bhargavan
+    name: Karthikeyan Bhargavan
+    organization: Inria
+    email: karthik.bhargavan@gmail.com
+ -
+    ins: F. Kiefer
+    name: Franziskus Kiefer
+    email: franziskuskiefer@gmail.com
+
+normative:
+  RFC2119:
+
+informative:
+        
+
+--- abstract
 
 hacspec is a proposal for a new specification language for crypto primitives that is succinct, that is easy to read and implement, and that lends itself to formal verification.
 
@@ -6,16 +35,16 @@ hacspec aims to formalize the pseudocode used in crypto standards by proposing a
 
 hacspec specifications can also be compiled to cryptol, coq, F\*, easycrypt, and hence can be used as the basis for formal proofs of functional correctness, cryptographic security, and side-channel resistance.
 
-# status
+--- middle
 
-[![Build Status](https://travis-ci.org/HACS-workshop/hacspec.svg?branch=master)](https://travis-ci.org/HACS-workshop/hacspec)
+# Security Considerations
 
-This project is still in the early stages. We invite submissions of crypto specs in various formal languages and comments and suggestions for the specification syntax. This repository currently holds some preliminary examples collected at the HACS workshop in January 2018.
 
-## compiler
+# IANA Considerations
 
-See [spec-compilers](spec-compilers/) for details.
+This document makes no requests of IANA.
 
-# contact
+# Acknowledgements
 
-Discussions are happening on the [mailing list](https://moderncrypto.org/mailman/listinfo/hacspec).
+
+--- back
