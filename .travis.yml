@@ -5,7 +5,6 @@ python:
 install:
   - pip install mypy
   - pip install mypy_extensions
-  - make
 
 script:
   - make -C specs
