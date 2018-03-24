@@ -12,8 +12,12 @@ tag_t    = bytes_t(16)
 def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> Tuple[int,vlbytes_t]:
     laad = len(aad)
     lmsg = len(msg)
-    pad_aad = laad if laad % 16 == 0 else 16 * (laad // 16 + 1)
-    pad_msg = lmsg if lmsg % 16 == 0 else 16 * (lmsg // 16 + 1)
+    pad_aad = 16 * (laad // 16 + 1)
+    if laad % 16 == 0:
+        pad_aad = laad
+    pad_msg = 16 * (lmsg // 16 + 1)
+    if lmsg % 16 == 0:
+        pad_msg = lmsg
     to_mac = array.create(pad_aad + pad_msg + 16,uint8(0));
     to_mac[0:laad] = aad
     to_mac[pad_aad:pad_aad+lmsg] = msg

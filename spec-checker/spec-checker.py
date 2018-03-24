@@ -28,8 +28,9 @@ def read(node, allowed=None, prev=[]):
 
     # If we have allowed types, check them.
     if not allowed is None and not isTypeAllowed(node, allowed):
+        prevNode = str(prev[-1]) if len(prev) > 0 else "start node"
         raise SyntaxError("Operation " + str(node) +
-                          " is not allowed in " + str(prev[-1]) + ".")
+                          " is not allowed in " + prevNode + ".")
 
     # add node to list of previous nodes
     previous = prev.copy()
@@ -45,8 +46,8 @@ def read(node, allowed=None, prev=[]):
         return
 
     if isinstance(node, Tuple):
-        names = [read(x, allowed=[Name]) for x in node.elts]
-        print(indent + "Tuple: " + ', '.join(names))
+        names = [read(x, [Name, BinOp, Num, Tuple], previous) for x in node.elts]
+        print(indent + "Tuple: " + ', '.join(str(names)))
         return Tuple
 
     # Normal assignments with types in comments
@@ -72,7 +73,7 @@ def read(node, allowed=None, prev=[]):
         print(indent + "target: " + target)
         if node.value:
             value = read(node.value,
-                         [Call, BinOp, Num, Subscript, Name, UnaryOp], previous)
+                         [Call, BinOp, Num, Subscript, Name, UnaryOp, Tuple], previous)
             print(indent + "value: " + str(value))
         annotation = read(node.annotation, prev=previous)
         print(indent + "type: " + str(annotation))
@@ -149,12 +150,18 @@ def read(node, allowed=None, prev=[]):
     if isinstance(node, BitAnd):
         print(indent + "BitAnd: " + str(node))
         return BitAnd
+    if isinstance(node, BitOr):
+        print(indent + "BitOr: " + str(node))
+        return BitOr
     if isinstance(node, UnaryOp):
         print(indent + "UnaryOp: " + str(node))
         return UnaryOp
     if isinstance(node, Compare):
         print(indent + "Compare: " + str(node))
         return Compare
+    if isinstance(node, LShift):
+        print(indent + "LShift: " + str(node))
+        return LShift
 
     if isinstance(node, BoolOp):
         print(indent + "BoolOp: " + str(node.op))
@@ -199,7 +206,7 @@ def read(node, allowed=None, prev=[]):
         return read(node.value, prev=previous)
 
     if isinstance(node, If):
-        return read(node.test, [Compare, BoolOp], previous)
+        return read(node.test, [Compare, BoolOp, Call], previous)
         return read(node.body, prev=previous)
         return read(node.orelse, prev=previous)
 

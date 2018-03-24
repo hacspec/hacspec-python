@@ -12,3 +12,9 @@ test:
 	$(PYTHON) sha2_test.py
 	$(PYTHON) curve25519_test.py
 
+check-specs:
+	$(PYTHON) ../spec-checker/spec-checker.py chacha20.py
+	$(PYTHON) ../spec-checker/spec-checker.py poly1305.py
+	$(PYTHON) ../spec-checker/spec-checker.py aead_chacha20poly1305.py
+	$(PYTHON) ../spec-checker/spec-checker.py sha2.py
+	$(PYTHON) ../spec-checker/spec-checker.py curve25519.py
