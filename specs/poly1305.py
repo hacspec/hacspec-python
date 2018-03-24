@@ -1,54 +1,52 @@
 #!/usr/bin/python3
 
-# To run and check this file, you need Python 3 + mypy
-# See install instructions at: http://mypy.readthedocs.io/en/latest/getting_started.html
-# To typecheck this file: mypy poly1305.py
-# To run this file: python3 poly1305.py
-
 from speclib import *
-import json
 
-p130m5 = (2 ** 130) - 5 # type: int
+blocksize = 16
+block_t = bytes_t(16)
+key_t = bytes_t(32)
+tag_t = bytes_t(16)
+subblock_t = refine(vlbytes_t,lambda x: vlbytes.length(x) <= 16)
 
-def fadd(a:felem,b:felem) -> felem:
-    return felem((a + b) % p130m5)
-def fmul(a:felem,b:felem) -> felem:
-    return felem((a * b) % p130m5)
+# Define prime field
 
-def encode(block:bytes) -> felem:
-    welem = felem(uint128.int_value(uint128.from_bytes_le(block)))
-    lelem = felem(2 ** (8 * len(block)))
+p130m5 = (2 ** 130) - 5
+felem_t = refine(nat,lambda x: x < p130m5)
+def felem(x:nat) -> felem_t:
+    return (x % p130m5)
+def fadd(x:felem_t,y:felem_t) -> felem_t:
+    return felem(x + y)
+def fmul(x:felem_t,y:felem_t) -> felem_t:
+    return felem(x * y)
+
+def encode(block:subblock_t) -> felem_t:
+    b = array.create(16,uint8(0))
+    b[0:vlarray.length(block)] = block
+    welem = felem(uint128.to_int(bytes.to_uint128_le(b)))
+    lelem = felem(2 ** (8 * vlarray.length(block)))
     return fadd(lelem,welem)
 
-def encode_r(r:bytes) -> felem:
-    ruint = uint128.from_bytes_le(r)
-    ruint &= uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
-    return  felem(uint128.int_value(ruint))
+def encode_r(r:block_t) -> felem_t:
+    ruint = bytes.to_uint128_le(r)
+    ruint = ruint & uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
+    return  felem(uint128.to_int(ruint))
 
 # There are many ways of writing the polynomial evaluation function
-# First version: use a loop to accumulate the result
-blocksize = 16
-def poly(text:bytes,r:felem) -> felem:
-    blocks = array.split_bytes(text,blocksize)
+# This version: use a loop to accumulate the result
+def poly(text:vlbytes_t,r:felem_t) -> felem_t:
+    blocks,last = vlarray.split_blocks(text,blocksize)
     acc = felem(0)
-    for i in range(len(blocks)):
+    for i in range(vlarray.length(blocks)):
         acc = fmul(fadd(acc,encode(blocks[i])),r)
+    if (vlarray.length(last) > 0):
+        acc = fmul(fadd(acc,encode(last)),r)
     return acc
 
-# Second version: use higher-order reduce
-from functools import reduce
-def poly_reduce(tlen:int,text:bytes,r:felem) -> felem:
-    def accumulate(acc:felem,block:bytes) -> felem:
-        return (fmul(fadd(acc,encode(block)),r))
-    blocks = array.split_bytes(text,blocksize)
-    acc = reduce(accumulate, blocks, felem(0))
-    return acc
-
-def poly1305_mac(text:bytes,k:bytes) -> bytes :
+def poly1305_mac(text:vlbytes_t,k:key_t) -> tag_t :
     r = k[0:blocksize]
     s = k[blocksize:2*blocksize]
     relem = encode_r(r)
-    selem = uint128.from_bytes_le(s)
+    selem = bytes.to_uint128_le(s)
     a = poly(text,relem)
-    n = uint128(a) + selem
-    return uint128.to_bytes_le(n)
+    n = uint128(uint128(a) + selem)
+    return bytes.from_uint128_le(n)
