@@ -1,4 +1,4 @@
-from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type, GenericMeta
+from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type
 from random import SystemRandom as rand
 import builtins
 
@@ -468,8 +468,6 @@ def array_t(T,len):
 array = _vlarray
 
 class _vlbytes(vlarray[uint8]):
-    def __init__(self,x:Sequence[T]) -> None:
-        super(_vlbytes, self).__init__(x, uint8_t)
     @staticmethod
     def from_ints(x:List[int]) -> '_vlbytes':
         return vlarray([uint8(i) for i in x])
@@ -562,10 +560,10 @@ class _vlbytes(vlarray[uint8]):
     @staticmethod
     def from_uint32_be(x:uint32) -> vlarray[uint8]:
         xv = uint32.to_int(x)
-        x0 = uint8((xv >> 24) & 255)
-        x1 = uint8((xv >> 16) & 255)
-        x2 = uint8((xv >> 8) & 255)
-        x3 = uint8(xv & 255)
+        x0 = uint8(xv & 255)
+        x1 = uint8((xv >> 8) & 255)
+        x2 = uint8((xv >> 16) & 255)
+        x3 = uint8((xv >> 24) & 255)
         return vlarray([x3,x2,x1,x0])
 
     @staticmethod
@@ -889,14 +887,3 @@ class gfelem:
     @staticmethod
     def to_int(x:'gfelem') -> int:
         return bitvector.to_int(x.v)
-
-    @staticmethod
-    def uint32s_to_uint8s_be(ints:'array[uint32]') -> 'array[uint8]':
-        blocks = [uint32.to_bytes_le(i) for i in ints]
-        return array([uint8(b) for block in blocks for b in reversed(block)])
-
-    @staticmethod
-    def uint32s_to_uint8s_le(ints:'array[uint32]') -> 'array[uint8]':
-        blocks = [uint32.to_bytes_le(i) for i in ints]
-        return array([uint8(b) for block in blocks for b in block])
-
