@@ -10,7 +10,7 @@ test:
 	$(PYTHON) aead_chacha20poly1305_test.py
 	$(PYTHON) sha2_test.py
 	$(PYTHON) curve25519_test.py
-	# $(PYTHON) wots_test.py
+	$(PYTHON) wots_test.py # this takes a while
 
 check-specs:
 	$(PYTHON) ../spec-checker/spec-checker.py chacha20.py
