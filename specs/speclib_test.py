@@ -1,27 +1,41 @@
 #!/usr/bin/python3
 
-from speclib import array, uint8, uint32
+from speclib import *
+from sys import exit
 
 # Tests for speclib
 
 
-def uint32_to_uint8_array_conversion():
-    x = array([uint32(0x5a77d9f4), uint32(0xb90f5e16), uint32(0x3a41ed73)])
-    expected = array([uint8(0x5a), uint8(0x77), uint8(0xd9), uint8(0xf4),
-                      uint8(0xb9), uint8(0x0f), uint8(0x5e), uint8(0x16),
-                      uint8(0x3a), uint8(0x41), uint8(0xed), uint8(0x73)])
-    r = array.uint32s_to_uint8s_be(x)
-    for (a, b) in zip(expected, r):
-        assert(a == b)
-    expected = array([uint8(0xf4), uint8(0xd9), uint8(0x77), uint8(0x5a),
-                      uint8(0x16), uint8(0x5e), uint8(0x0f), uint8(0xb9),
-                      uint8(0x73), uint8(0xed), uint8(0x41), uint8(0x3a)])
-    r = array.uint32s_to_uint8s_le(x)
-    for (a, b) in zip(expected, r):
-        assert(a == b)
+def test_bytes():
+    x: bytes_t = bytes([0x01, 0x02, 0x03, 0x04, 0x05])
+    y: bytes_t = bytes([0x01, 0x02, 0x03, 0x04, 0x05])
+    if x != y:
+        print("got      " + str(x))
+        print("expected " + str(y))
+        exit(1)
+    print("test_bytes success!")
+
+def test_2d_arrays():
+    x: vlarray_t(bytes_t) = vlarray.create_type([], bytes)
+    x = array.concat(x, bytes([0x01, 0x02, 0x03]))
+    x = array.concat(x, bytes([0x04, 0x05]))
+    y: vlarray_t(bytes_t) = vlarray([bytes([0x01, 0x02, 0x03]), bytes([0x04, 0x05])], bytes)
+    z: vlarray_t(bytes_t) = vlarray.create_type([], bytes)
+    z = array.concat(z, bytes([0x01, 0x02, 0x03]))
+    z = array.concat(z, bytes([0x04, 0x05]))
+    if x != y:
+        print("got      " + str(x))
+        print("expected " + str(y))
+        exit(1)
+    if x != z:
+        print("got      " + str(x))
+        print("expected " + str(z))
+        exit(1)
+    print("test_2d_arrays success!")
 
 def main(x: int) -> None:
-    uint32_to_uint8_array_conversion()
+    test_bytes()
+    test_2d_arrays()
 
 
 if __name__ == "__main__":

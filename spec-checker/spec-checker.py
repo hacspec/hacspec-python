@@ -19,6 +19,7 @@ def isTypeAllowed(node, typeList):
             return True
     return False
 
+VARIABLES = []
 
 def read(node, allowed=None, prev=[]):
     indent = ''.join(["  " for _ in prev])
@@ -99,6 +100,7 @@ def read(node, allowed=None, prev=[]):
                   previous)
         right = read(node.right,
                      [Num, BinOp, Call, Name, Subscript], previous)
+        print(indent + str(left) + str(op) + str(right))
         if left is Num and right is Num:
             return Num
         return BinOp
@@ -109,7 +111,18 @@ def read(node, allowed=None, prev=[]):
         return Num
 
     if isinstance(node, Name):
+        ctx = read(node.ctx, prev=previous)
+        print(indent+node.id+" "+str(ctx))
         return node.id
+
+    if isinstance(node, Load):
+        return Load
+    if isinstance(node, Store):
+        return Store
+    if isinstance(node, AugStore):
+        return AugStore
+    if isinstance(node, AugLoad):
+        return AugLoad
 
     # Loops
     if isinstance(node, For):
@@ -140,6 +153,9 @@ def read(node, allowed=None, prev=[]):
         return Mod
     if isinstance(node, FloorDiv):
         print(indent + "FloorDiv: " + str(node))
+        return FloorDiv
+    if isinstance(node, Div):
+        print(indent + "Div: " + str(node))
         return FloorDiv
     if isinstance(node, BitXor):
         print(indent + "BitXor: " + str(node))

@@ -1,4 +1,6 @@
-from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type
+from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type, GenericMeta
+from random import SystemRandom as rand
+import builtins
 
 class Error(Exception): pass
 def fail(s):
@@ -345,10 +347,10 @@ def bitvector_t(len:nat):
     return _bitvector
 bitvector = _bitvector
 
-
 class _vlarray(Iterable[T]):
-    def __init__(self,x:Sequence[T]) -> None:
+    def __init__(self,x:Sequence[T],t:Type=T) -> None:
         self.l = list(x)
+        self.t = t
     def __len__(self) -> int:
         return len(self.l)
     def __str__(self) -> str:
@@ -360,14 +362,18 @@ class _vlarray(Iterable[T]):
         return iter(self.l)
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.l == other.l)
+        # TODO: this shouldn't be necessary if we type check.
+        if not isinstance(self, vlarray) or not isinstance(other, vlarray):
+            fail("vlarray.__eq__ only works on two vlarray.")
+        if str(other.t) == "speclib.vlbytes" or str(other.t) == "speclib.vlarray" \
+           or str(type(other)) == "speclib.vlbytes" or str(type(other)) == "speclib.vlarray":
+            return self.l == other.l
         else:
             return False
 
     def __ne__(self, other):
         if isinstance(other, self.__class__):
-            return (self.l != other.l)
+            return self.l != other.l
         else:
             return True
 
@@ -395,8 +401,8 @@ class _vlarray(Iterable[T]):
     def create(len:int,default) -> '_vlarray[T]':
         return _vlarray([default] * len)
     @staticmethod
-    def create_type(x:Iterable[U], T) -> '_vlarray[T]':
-        return _vlarray(list([T(el) for el in x]))
+    def create_type(x:Iterable[U], t: Type) -> '_vlarray[t]':
+        return _vlarray(list([t(el) for el in x]), t)
 
     @staticmethod
     def len(a:'_vlarray[T]') -> int:
@@ -409,7 +415,11 @@ class _vlarray(Iterable[T]):
         return _vlarray(x.l[:])
 
     @staticmethod
-    def concat(x:'_vlarray[T]',y:'_vlarray[T]') -> '_vlarray[T]':
+    def concat(x:'_vlarray[T]',y:'_vlarray[U]') -> '_vlarray[T]':
+        if str(x.t) == "speclib.vlbytes" or str(x.t) == "speclib.vlarray":
+            tmp = x.l[:]
+            tmp.append(vlarray(y.l[:], type(y)))
+            return _vlarray(tmp, x.t)
         return _vlarray(x.l[:]+y.l[:])
 
     @staticmethod
@@ -442,6 +452,12 @@ class _vlarray(Iterable[T]):
             acc = f(a[i],acc)
         return acc
 
+    @staticmethod
+    def create_random(len:nat, t:_uintn) -> '_vlarray[t]':
+        r = rand()
+        x = t(0)
+        return array(list([t(r.randint(0, x.max)) for _ in range(0, len)]))
+
 
 def vlarray_t(T):
     return _vlarray[T]
@@ -452,6 +468,8 @@ def array_t(T,len):
 array = _vlarray
 
 class _vlbytes(vlarray[uint8]):
+    def __init__(self,x:Sequence[T]) -> None:
+        super(_vlbytes, self).__init__(x, uint8_t)
     @staticmethod
     def from_ints(x:List[int]) -> '_vlbytes':
         return vlarray([uint8(i) for i in x])
@@ -476,17 +494,19 @@ class _vlbytes(vlarray[uint8]):
 
     @staticmethod
     def to_nat_le(x:vlarray[uint8]) -> nat:
-        b = bytes([uint8.to_int(u) for u in x])
+        b = builtins.bytes([uint8.to_int(u) for u in x])
         return int.from_bytes(b,'little')
 
     @staticmethod
-    def from_nat_be(x:nat) -> '_vlbytes':
+    def from_nat_be(x:nat,l:nat=0) -> '_vlbytes':
         b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
-        return vlarray([uint8(i) for i in b])
+        pad = vlarray([uint8(0) for i in range(0,max(0,l-len(b)))])
+        result = vlarray([uint8(i) for i in b])
+        return array.concat(pad, result)
 
     @staticmethod
     def to_nat_be(x:vlarray[uint8]) -> nat:
-        b = bytes([uint8.to_int(u) for u in x])
+        b = builtins.bytes([uint8.to_int(u) for u in x])
         return int.from_bytes(b,'big')
     
     @staticmethod
@@ -542,10 +562,10 @@ class _vlbytes(vlarray[uint8]):
     @staticmethod
     def from_uint32_be(x:uint32) -> vlarray[uint8]:
         xv = uint32.to_int(x)
-        x0 = uint8(xv & 255)
-        x1 = uint8((xv >> 8) & 255)
-        x2 = uint8((xv >> 16) & 255)
-        x3 = uint8((xv >> 24) & 255)
+        x0 = uint8((xv >> 24) & 255)
+        x1 = uint8((xv >> 16) & 255)
+        x2 = uint8((xv >> 8) & 255)
+        x3 = uint8(xv & 255)
         return vlarray([x3,x2,x1,x0])
 
     @staticmethod
@@ -625,6 +645,11 @@ class _vlbytes(vlarray[uint8]):
             fail("array length not a multple of 8")
         else:
             return(vlarray([vlbytes.to_uint64_be(i) for i in nums]))
+
+    @staticmethod
+    def create_random_bytes(len:nat) -> '_vlarray[uint8]':
+        r = rand()
+        return array(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
 
 def vlbytes_t(T):
@@ -865,10 +890,6 @@ class gfelem:
     def to_int(x:'gfelem') -> int:
         return bitvector.to_int(x.v)
 
-
-
-
-
     @staticmethod
     def uint32s_to_uint8s_be(ints:'array[uint32]') -> 'array[uint8]':
         blocks = [uint32.to_bytes_le(i) for i in ints]
@@ -879,21 +900,3 @@ class gfelem:
         blocks = [uint32.to_bytes_le(i) for i in ints]
         return array([uint8(b) for block in blocks for b in block])
 
-def precondition(*types):
-    def precondition_decorator(func):
-        assert(len(types) == func.__code__.co_argcount)
-        def wrapper(*args, **kwds):
-            for (a, t) in zip(args, types):
-                if not isinstance(t, str):
-                    # Check type.
-                    assert isinstance(a, t), "arg %r does not match %s" % (a,t)
-                else:
-                    # Parse string as condition on variable
-                    r = eval(str(a) + t)
-                    if not r:
-                        print("Precondition " + str(a) + t + " did not hold.")
-                        assert False, "Precondition %r %s did not hold." % (a, t)
-            return func(*args, **kwds)
-        wrapper.func_name = func.__name__
-        return wrapper
-    return precondition_decorator
