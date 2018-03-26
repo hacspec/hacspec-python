@@ -1,5 +1,6 @@
 from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type
 from random import SystemRandom as rand
+from math import ceil, log
 import builtins
 
 class Error(Exception): pass
@@ -61,7 +62,7 @@ class _uintn:
     @staticmethod
     def to_int(x:'_uintn') -> int:
         return x.v
-    
+
 class _bit(_uintn):
     def __init__(self,v:Union[int,_uintn]) -> None:
         if isinstance(v,int):
@@ -188,7 +189,6 @@ class _uint32(_uintn):
     @staticmethod
     def rotate_right(x:'_uint32',other:int) -> '_uint32':
         return (x >> other | x << (x.bits - other))
-
 
 
 class _uint64(_uintn):
@@ -887,3 +887,12 @@ class gfelem:
     @staticmethod
     def to_int(x:'gfelem') -> int:
         return bitvector.to_int(x.v)
+
+
+# Typed versions of all python functions that can be used in specs.
+class speclib:
+    def ceil(x:int) -> int:
+        return ceil(x)
+
+    def log(x:int, b:int) -> int:
+        return log(x, b)
