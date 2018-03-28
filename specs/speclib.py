@@ -471,7 +471,7 @@ class _vlbytes(vlarray[uint8]):
     @staticmethod
     def from_ints(x:List[int]) -> '_vlbytes':
         return vlarray([uint8(i) for i in x])
-    
+
     @staticmethod
     def concat_bytes(blocks:'vlarray[_vlbytes]') -> '_vlbytes':
         concat = [b for block in blocks for b in block]
@@ -506,7 +506,7 @@ class _vlbytes(vlarray[uint8]):
     def to_nat_be(x:vlarray[uint8]) -> nat:
         b = builtins.bytes([uint8.to_int(u) for u in x])
         return int.from_bytes(b,'big')
-    
+
     @staticmethod
     def from_uint32_le(x:uint32) -> vlarray[uint8]:
         xv = uint32.to_int(x)
@@ -643,6 +643,18 @@ class _vlbytes(vlarray[uint8]):
             fail("array length not a multple of 8")
         else:
             return(vlarray([vlbytes.to_uint64_be(i) for i in nums]))
+
+    @staticmethod
+    def from_uint64s_le(x:vlarray[uint64]) -> vlarray[uint8]:
+        by = vlarray([vlbytes.from_uint64_le(i) for i in x])
+        return(vlarray.concat_blocks(by,vlarray([])))
+    @staticmethod
+    def to_uint64s_le(x:vlarray[uint8]) -> vlarray[uint64]:
+        nums,x = vlarray.split_blocks(x,8)
+        if len(x) > 0:
+            fail("array length not a multple of 8")
+        else:
+            return(vlarray([vlbytes.to_uint64_le(i) for i in nums]))
 
     @staticmethod
     def create_random_bytes(len:nat) -> '_vlarray[uint8]':
