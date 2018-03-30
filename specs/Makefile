@@ -9,10 +9,12 @@ test:
 	$(PYTHON) chacha20_test.py
 	$(PYTHON) aead_chacha20poly1305_test.py
 	$(PYTHON) sha2_test.py
+	$(PYTHON) blake2b_test.py
 	$(PYTHON) curve25519_test.py
 	$(PYTHON) wots_test.py # this takes a while
 
 check-specs:
+	$(PYTHON) ../spec-checker/spec-checker.py blake2b_test.py
 	$(PYTHON) ../spec-checker/spec-checker.py chacha20.py
 	$(PYTHON) ../spec-checker/spec-checker.py poly1305.py
 	$(PYTHON) ../spec-checker/spec-checker.py aead_chacha20poly1305.py

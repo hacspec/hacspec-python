@@ -12,7 +12,7 @@ working_vector_t = array_t(uint64_t, 16)
 hash_vector_t = array_t(uint64_t, 8)
 index_t = range_t(0, 16)
 
-SIGMA: array_t(index_t, 16 * 12) = [
+SIGMA: array_t(index_t, 16 * 12) = array([
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
     11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,
@@ -25,7 +25,7 @@ SIGMA: array_t(index_t, 16 * 12) = [
     10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0,
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3
-]
+])
 
 IV = array([
     uint64(0x6A09E667F3BCC908), uint64(0xBB67AE8584CAA73B),
@@ -53,7 +53,7 @@ def F(h: hash_vector_t, m: working_vector_t, t: uint128_t, flag: bool) -> hash_v
     v[8:16] = IV
     v[12] = v[12] ^ uint64(t)
     v[13] = v[13] ^ uint64(t >> 64)
-    if flag:
+    if flag == True:
         v[14] = v[14] ^ uint64(0xFFFFFFFFFFFFFFFF)
     for i in range(rounds_in_f):
         s = SIGMA[i * 16:(i + 1) * 16]
@@ -73,11 +73,11 @@ def F(h: hash_vector_t, m: working_vector_t, t: uint128_t, flag: bool) -> hash_v
 data_internal_t = refine(bytes_t, lambda x: vlbytes.length(
     x) < 2 ** 64 and (vlbytes.length(x) % block_bytes == 0))
 key_t = refine(vlbytes_t, lambda x: vlbytes.length(x) <= 64)
-key_size_t = refine(int, lambda x: x <= 64)
-out_size_t = refine(int, lambda x: x <= 32)
+key_size_t = refine(nat, lambda x: x <= 64)
+out_size_t = refine(nat, lambda x: x <= 32)
 
 
-def blake2b_internal(data: data_internal_t, input_bytes: uint128, kk: key_size_t, nn: out_size_t) -> refine(vlbytes_t, lambda x: vlbytes.length(x) == nn):
+def blake2b_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size_t, nn: out_size_t) -> refine(vlbytes_t, lambda x: vlbytes.length(x) == nn):
     h = array.copy(IV)
     h[0] = h[0] ^ uint64(0x01010000) ^ (uint64(kk) << 8) ^ uint64(nn)
     data_blocks = vlbytes.length(data) // block_bytes
