@@ -32,12 +32,12 @@ let encode_r (r:block_t) : felem_t =
 let poly (text:vlbytes_t) (r:felem_t) : felem_t =
   let (blocks,last) = split_blocks text blocksize in 
   let acc = felem 0x0 in 
-  let acc = repeati (range (length blocks))
-    (fun i acc ->
+  let () = repeati (range (length blocks))
+    (fun i () ->
       let acc = fmul (fadd acc (encode blocks.[i])) r in 
-      acc)
-    acc in 
-  let acc = if ((length last > 0x0)) then (let acc = fmul (fadd acc (encode last)) r in acc )else (acc) in 
+      ())
+    () in 
+  let () = if ((length last > 0x0)) then (let acc = fmul (fadd acc (encode last)) r in () )else (()) in 
   acc 
 let poly1305_mac (text:vlbytes_t) (k:key_t) : tag_t =
   let r = slice k 0x0 blocksize in 

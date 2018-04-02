@@ -140,7 +140,12 @@ def dump(node, annotate_fields=True, include_attributes=False):
             isinstance(node.targets[0],Subscript)):
             return {node.targets[0].value.id}
         elif isinstance(node, Assign):
-            return {x.id for x in node.targets}
+            result = {}
+            for x in node.targets:
+                if isinstance(x, Tuple):
+                    result[x.elts[0].id] = x
+                else:
+                    result[x.id] = x
         elif isinstance(node, Subscript):
             return {node.value.id}
         if (isinstance(node, AugAssign) and
@@ -168,6 +173,8 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return "~."
         elif isinstance(o,BitAnd):
             return "&."
+        elif isinstance(o,BitOr):
+            return "|."
         elif isinstance(o,BitXor):
             return "^."
         elif isinstance(o,RShift):

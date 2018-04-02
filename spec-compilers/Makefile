@@ -3,7 +3,7 @@
 HACL_HOME?=../../hacl-star
 PYTHON?=python3.6
 
-FSPECS=chacha20.fst poly1305.fst sha2.fst
+FSPECS=chacha20.fst poly1305.fst sha2.fst curve25519.fst
 SPECS=$(FSPECS)
 
 all: fstar
@@ -16,7 +16,7 @@ fstar: $(SPECS)
 typecheck: $(addsuffix -verify, $(addprefix fstar/, $(SPECS)))
 
 %-verify: %
-	fstar.exe --include $(HACL_HOME)/specs/lib $<
+	fstar.exe --include $(HACL_HOME)/specs/lib --include fstar/ $<
 
 clean:
 	rm -f $(addprefix fstar/, $(SPECS)) *~ *.hints *.checked

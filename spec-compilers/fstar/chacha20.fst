@@ -47,11 +47,11 @@ let chacha20_init (k:key_t) (counter:uint32_t) (nonce:nonce_t) : state_t =
   st 
 let chacha20_core (st:state_t) : state_t =
   let working_state = copy st in 
-  let working_state = repeati (range 0xa)
-    (fun x working_state ->
+  let () = repeati (range 0xa)
+    (fun x () ->
       let working_state = double_round working_state in 
-      working_state)
-    working_state in 
+      ())
+    () in 
   let working_state = repeati (range 0x10)
     (fun i working_state ->
       let working_state = working_state.[i] <- working_state.[i] +. st.[i] in 
@@ -76,13 +76,13 @@ let chacha20_counter_mode (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vl
   let (blocks,last) = split_blocks msg blocksize in 
   let keyblock = create blocksize (u8 0x0) in 
   let ctr = counter in 
-  let (blocks,ctr,keyblock) = repeati (range (length blocks))
-    (fun i (blocks,ctr,keyblock) ->
+  let (ctr,blocks) = repeati (range (length blocks))
+    (fun i (ctr,blocks) ->
       let keyblock = chacha20_block key ctr nonce in 
       let blocks = blocks.[i] <- xor_block blocks.[i] keyblock in 
       let ctr = ctr +. u32 0x1 in 
-      (blocks,ctr,keyblock))
-    (blocks,ctr,keyblock) in 
+      (ctr,blocks))
+    (ctr,blocks) in 
   let keyblock = chacha20_block key ctr nonce in 
   let last = xor_block last keyblock in 
   array.concat_blocks blocks last 
