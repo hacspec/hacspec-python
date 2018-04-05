@@ -1,7 +1,7 @@
 from mypy_extensions import TypedDict
 from speclib import array
 
-chacha20_test = TypedDict('blake2b_test', {
+blake2b_test = TypedDict('blake2b_test', {
     'data': str,
     'key': str,
     'nn': int,
