@@ -77,7 +77,10 @@ key_size_t = refine(nat, lambda x: x <= 64)
 out_size_t = refine(nat, lambda x: x <= 32)
 
 
-def blake2b_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size_t, nn: out_size_t) -> refine(vlbytes_t, lambda x: vlbytes.length(x) == nn):
+def blake2b_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size_t, nn: out_size_t) \
+        -> contract(vlbytes_t,
+                    lambda data, input_bytes, kk, nn: True,
+                    lambda data, input_bytes, kk, nn, res: vlbytes.length(res) == nn):
     h = array.copy(IV)
     h[0] = h[0] ^ uint64(0x01010000) ^ (uint64(kk) << 8) ^ uint64(nn)
     data_blocks = vlbytes.length(data) // block_bytes
@@ -91,14 +94,16 @@ def blake2b_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size
     else:
         h = F(h, vlbytes.to_uint64s_le(
             data[block_bytes * (data_blocks - 1):block_bytes * data_blocks]), uint128(input_bytes + block_bytes), True)
-    return vlbytes.from_uint64s_le(h[:nn])
+    return vlbytes.from_uint64s_le(h)[:nn]
 
 
 data_t = refine(vlbytes_t, lambda x: vlbytes.lenght(x)
                 < 2 ** 64 - 2 * block_bytes)
 
 
-def blake2b(data: data_t, key: key_t, nn: out_size_t) -> refine(vlbytes_t, lambda x: vlbytes.length(x) == nn):
+def blake2b(data: data_t, key: key_t, nn: out_size_t) \
+        -> contract(vlbytes_t,
+                    lambda data, key, nn: True, lambda data, key, nn, res: vlbytes.length(res) == nn):
     ll = vlbytes.length(data)
     kk = vlbytes.length(key)
     data_blocks = (ll - 1) // block_bytes + 1

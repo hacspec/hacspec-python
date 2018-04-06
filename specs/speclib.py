@@ -33,6 +33,9 @@ nat = refine(int,lambda x : x >= 0)
 def range_t(min,max):
     return refine(int,lambda x : x >= min and x < max)
 
+def contract(T: Type[T], pre, post):
+    return T
+
 class _uintn:
     def __init__(self,x:int,bits:int) -> None:
         if x < 0:

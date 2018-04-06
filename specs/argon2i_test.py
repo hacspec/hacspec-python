@@ -19,8 +19,8 @@ def main(x:int) -> None:
             print("Argon2i Test {} passed.".format(i+1))
         else:
             print("Argon2i Test {} failed.".format(i+1))
-            print("expected hash:",expected)
-            print("computed hash:",computed)
+            print("expected hash:",bytes.to_hex(expected))
+            print("computed hash:",bytes.to_hex(computed))
             exit(1)
 
 
