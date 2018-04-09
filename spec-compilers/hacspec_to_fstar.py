@@ -183,7 +183,7 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return "<<."
         elif isinstance(o,Mod):
             return "%."
-        elif isinstance(o,Eq):
+        elif isinstance(o,Eq) or isinstance(o,Is):
             return "="
         elif isinstance(o,Gt):
             return ">"
@@ -344,6 +344,8 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return _sp(ind)+"assert ("+_format(node.test,False,ind,paren)+");"
         if isinstance(node,Name):
             return node.id
+        if isinstance(node,NameConstant):
+            return str(node.value)
         if isinstance(node,Attribute):
             return _trans(_format(node.value,False,ind,paren) + "." + node.attr)
         if isinstance(node,Attribute) and _format(node.value,False,ind,paren) == "array":
@@ -395,9 +397,7 @@ def dump(node, annotate_fields=True, include_attributes=False):
 
 import ntpath
 def main(path):
-#    print("opening file:",path)
     with open(path, 'r', encoding='utf-8') as py_file:
-#        print("opened file:",path)
         code = py_file.read()
         ast = parse(source=code, filename=path)
         print("module",ntpath.splitext(ntpath.basename(path))[0].title())
