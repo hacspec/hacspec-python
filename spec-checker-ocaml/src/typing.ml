@@ -109,7 +109,14 @@ let rec tt_expr ?(cty : ctype option) (env : env) (pe : pexpr) =
         assert false
   
     | PEGet (pe, ps) ->
-        assert false
+        let e, ety = tt_expr ~cty:PArray env pe in
+        let s = tt_slice env ps in
+        let ty =
+         match s with
+         | `One   _ -> Type.as_array ety
+         | `Slice _ -> ety
+
+        in (EGet (e, s), ty)
 
   in
 

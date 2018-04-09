@@ -76,6 +76,8 @@ module Type : sig
   val is_tuple  : type_ -> bool
   val is_array  : type_ -> bool
 
+  val as_array : type_ -> type_
+
   val to_ctype : type_ -> ctype
 end = struct
   let eq = ((=) : type_ -> type_ -> bool)
@@ -98,6 +100,8 @@ end = struct
     | TWord   _  -> PWord  
     | TTuple  _  -> PTuple 
     | TArray  _  -> PArray 
+
+  let as_array = function TArray ty -> ty | _ -> assert false
 
   let compat (ty : type_) (cty : ctype) =
     to_ctype ty = cty
