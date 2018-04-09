@@ -85,7 +85,7 @@ def blake2b_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size
     h[0] = h[0] ^ uint64(0x01010000) ^ (uint64(kk) << 8) ^ uint64(nn)
     data_blocks = vlbytes.length(data) // block_bytes
     if data_blocks > 1:
-        for i in range(data_blocks - 2):
+        for i in range(data_blocks - 1):
             h = F(h, vlbytes.to_uint64s_le(
                 data[block_bytes * i:block_bytes * (i + 1)]), uint128((i + 1) * block_bytes), False)
     if kk == 0:
@@ -113,6 +113,6 @@ def blake2b(data: data_t, key: key_t, nn: out_size_t) \
         padded_data[:ll] = data
     else:
         padded_data = array.create(padded_data_length + block_bytes, uint8(0))
-        padded_data[:ll] = data
-        padded_data[padded_data_length:padded_data_length + kk] = key
+        padded_data[0:kk] = key
+        padded_data[block_bytes:block_bytes+ll] = key
     return blake2b_internal(padded_data, ll, kk, nn)

@@ -42,7 +42,6 @@ def h_prime(t_len: refine(size_nat, lambda x: 1 <= t_len and t_len + 64 <= max_s
     t_with_x = array.create(vlbytes.length(x) + 4, uint8(0))
     t_with_x[0:4] = vlbytes.from_uint32_le(uint32(t_len))
     t_with_x[4:] = x
-    # print("t_with_x: {}".format(bytes.to_hex(t_with_x)))
     if t_len <= 64:
         return h(t_with_x, t_len)
     else:
@@ -126,21 +125,15 @@ def update_block_column(j: range_t(0, 8), col: bytes_t(line_size), block: bytes_
 def G(X: bytes_t(block_size), Y: bytes_t(block_size)) -> bytes_t(block_size):
     R = array.create(block_size, uint8(0))
     R[:] = xor_blocks(X, Y)
-    # print("R: {}".format(bytes.to_hex(R)))
     Q = array.copy(R)
     for i in range(8):
         row = array.copy(Q[i * line_size:(i + 1) * line_size])
-        # print("row: {}".format(bytes.to_hex(row)))
         row = P(row)
         Q[line_size * i:line_size * (i + 1)] = row
-    # print("Q: {}".format(bytes.to_hex(Q)))
     for j in range(8):
         col = extract_block_column(j, Q)
-        # print("Columns before: {}".format(bytes.to_hex(col)))
         col = P(col)
-        # print("Columns after: {}".format(bytes.to_hex(col)))
         Q = update_block_column(j, col, Q)
-        # print("Block: {}".format(bytes.to_hex(Q)))
     return xor_blocks(Q, R)
 
 
@@ -222,10 +215,8 @@ def generate_seeds(lanes: lanes_t, columns: size_nat, i: size_nat, iterations: s
         concat_block[32:40] = vlbytes.from_uint64_le(uint64(iterations))
         concat_block[40:48] = vlbytes.from_uint64_le(uint64(argon_type))
         concat_block[48:56] = vlbytes.from_uint64_le(uint64(ctr + 1))
-        # print("G2 arg: {}".format(bytes.to_hex(concat_block)))
         arg_block = G(zero_block, concat_block)
         address_block = G(zero_block, arg_block)
-        # print("address block: {}".format(bytes.to_hex(address_block)))
         addresses_list = vlbytes.to_uint32s_le(address_block)
         pseudo_rands[ctr * line_size *
                      2:(ctr + 1) * line_size * 2] = addresses_list
@@ -264,7 +255,6 @@ def map_indexes(t: size_nat, segment: segment_t, lanes: lanes_t, columns: size_n
         r_start = (segment + 1) * segment_length
     else:
         r_start = 0
-    # print("rsize: {}, r_start: {}".format(r_size,r_start))
     j_prime_tmp = pseudo_random_generation(uint32.to_int(j1), r_size)
     j_prime = (r_start + j_prime_tmp) % columns
     return (i_prime, j_prime)
@@ -300,17 +290,13 @@ def fill_segment(h0: bytes_t(64), iterations: size_nat, segment: segment_t, t_le
         else:
             j1 = pseudo_rands[2 * idx]
             j2 = pseudo_rands[2 * idx + 1]
-            # print("(j1,j2) = ({},{})".format(
-            #    uint32.to_int(j1), uint32.to_int(j2)))
             (i_prime, j_prime) = map_indexes(
                 t, segment, lanes, columns, idx, i, j, j1, j2)
-            # print("Selected: ({},{})".format(i_prime,j_prime))
             offset = block_offset(lanes, columns, i, (j - 1) % columns)
             arg1 = output[offset:offset + block_size]
             offset = block_offset(lanes, columns, i_prime, j_prime)
             arg2 = output[offset:offset + block_size]
             new_block = G(arg1, arg2)
-            # print("New block : {}".format(bytes.to_hex(new_block)))
             if t != 0:
                 offset = block_offset(lanes, columns, i, j)
                 old_block = output[offset:offset + block_size]
@@ -366,5 +352,4 @@ def argon2i(p: vlbytes, s: vlbytes, lanes: lanes_t, t_len: t_len_t, m: size_nat,
                 memory = fill_segment(h0, iterations, segment,
                                       t_len, lanes, columns, t, i, memory)
     final_block = xor_last_column(lanes, columns, memory)
-    # print("Final block: {}".format(bytes.to_hex(final_block)))
     return h_prime(t_len, final_block)
