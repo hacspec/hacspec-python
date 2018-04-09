@@ -178,7 +178,6 @@ def sign(priv:serialized_scalar_t,msg:vlbytes_t) -> sigval_t :
     h = sha512_modq(tmp)
     s = (r + ((h * bytes.to_nat_le(a)) % q25519)) % q25519
     tmp[32:64] = bytes.from_nat_le(s)
-    print("End of signature")
     return tmp[0:64]
 
 def point_equal(p:extended_point_t,q:extended_point_t) -> bool :
