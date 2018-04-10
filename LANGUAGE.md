@@ -1,5 +1,6 @@
 The hacspec language is a typed subset of python. This file provides a rough description of the current language design.
 There's a library `speclib.py` that provides common functionality that can be used in any specification written in hacspec.
+hacspec files MUST NOT include any non-hacspec modules other than `speclib`.
 We describe some of the functions provided by this library below (but their documentation needs to be improved.)
 
 

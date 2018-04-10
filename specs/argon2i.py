@@ -1,6 +1,5 @@
 from speclib import *
 from blake2b import blake2b
-from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type
 
 version_number = uint8(0x13)
 argon_type = 1

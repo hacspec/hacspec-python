@@ -185,6 +185,8 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return "%."
         elif isinstance(o,Eq) or isinstance(o,Is):
             return "="
+        elif isinstance(o,NotEq):
+            return "!="
         elif isinstance(o,Gt):
             return ">"
         elif isinstance(o,Lt):
