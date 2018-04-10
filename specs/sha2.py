@@ -171,12 +171,12 @@ def sha2(v:variant):
 
     def hash(msg:vlbytes_t) -> digest_t:
         blocks,last = vlarray.split_blocks(msg, blockSize)
-        nblocks = vlarray.length(blocks)
+        nblocks = array.len(blocks)
         h = h0
         for i in range(nblocks):
             h = compress(blocks[i],h)
-        last_len = array.length(last)
-        len_bits = array.length(msg) * 8
+        last_len = array.len(last)
+        len_bits = array.len(msg) * 8
         pad = array.create(2*blockSize,uint8(0))
         pad[0:last_len] = last
         pad[last_len] = uint8(0x80)

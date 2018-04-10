@@ -4,7 +4,7 @@ from math import ceil, log
 import builtins
 
 class Error(Exception): pass
-def fail(s):
+def fail(s:str) -> None:
     raise Error(s)
 
 T = TypeVar('T')
@@ -13,16 +13,16 @@ V = TypeVar('V')
 W = TypeVar('W')
 X = TypeVar('X')
 
-def tuple2(T,U):
+def tuple2(T:type,U:type) -> Tuple[T,U]:
     return Tuple[T,U]
 
-def tuple3(T,U,V):
+def tuple3(T:type,U:type,V:type) -> Tuple[T,U,V]:
     return Tuple[T,U,V]
 
-def tuple4(T,U,V,W):
+def tuple4(T:type,U:type,V:type,W:type):
     return Tuple[T,U,V,W]
 
-def tuple5(T,U,V,W,X):
+def tuple5(T:type,U:type,V:type,W:type,X:type):
     return Tuple[T,U,V,W,X]
 
 def refine(T:Type[T],f:Callable[[T],bool]):
@@ -411,9 +411,6 @@ class _vlarray(Iterable[T]):
     def len(a:'_vlarray[T]') -> int:
         return len(a.l)
     @staticmethod
-    def length(a:'_vlarray[T]') -> int:
-        return len(a.l)
-    @staticmethod
     def copy(x:'_vlarray[T]') -> '_vlarray[T]':
         return _vlarray(x.l[:])
 
@@ -434,7 +431,7 @@ class _vlarray(Iterable[T]):
         return _vlarray(list(enumerate(x.l)))
 
     @staticmethod
-    def split_blocks(a:'_vlarray[T]',blocksize:int) -> 'Typle[_vlarray[_vlarray[T]],_vlarray[T]]':
+    def split_blocks(a:'_vlarray[T]',blocksize:int) -> 'Tuple[_vlarray[_vlarray[T]],_vlarray[T]]':
         nblocks = len(a) // blocksize
         blocks = _vlarray([a[x*blocksize:(x+1)*blocksize] for x in range(nblocks)])
         last = _vlarray(a[len(a) - (len(a) % blocksize):len(a)])
@@ -444,16 +441,10 @@ class _vlarray(Iterable[T]):
     def concat_blocks(blocks:'_vlarray[_vlarray[T]]',last:'_vlarray[T]') -> '_vlarray[T]':
         return (_vlarray.concat(_vlarray([b for block in blocks for b in block]),last))
 
+    # Only used in ctr. Maybe delete
     @staticmethod
     def map(f:Callable[[T],U],a:'_vlarray[T]') -> '_vlarray[U]':
         return _vlarray(list(map(f,a.l)))
-
-    @staticmethod
-    def reduce(f:Callable[[T,U],U],a:'_vlarray[T]',init:U) -> U:
-        acc = init
-        for i in range(len(a)):
-            acc = f(a[i],acc)
-        return acc
 
     @staticmethod
     def create_random(len:nat, t:_uintn) -> '_vlarray[t]':

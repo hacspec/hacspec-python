@@ -68,9 +68,9 @@ def F(h: hash_vector_t, m: working_vector_t, t: uint64_t, flag: bool) -> hash_ve
     return h
 
 
-data_internal_t = refine(bytes_t, lambda x: vlbytes.length(
-    x) < 2 ** 64 and (vlbytes.length(x) % block_bytes == 0))
-key_t = refine(vlbytes_t, lambda x: vlbytes.length(x) <= 32)
+data_internal_t = refine(bytes_t, lambda x: array.len(
+    x) < 2 ** 64 and (array.len(x) % block_bytes == 0))
+key_t = refine(vlbytes_t, lambda x: array.len(x) <= 32)
 key_size_t = refine(nat, lambda x: x <= 32)
 out_size_t = refine(nat, lambda x: x <= 32)
 
@@ -78,10 +78,10 @@ out_size_t = refine(nat, lambda x: x <= 32)
 def blake2s_internal(data: data_internal_t, input_bytes: uint64_t, kk: key_size_t, nn: out_size_t) \
         -> contract(vlbytes_t,
                     lambda data, input_bytes, kk, nn: True,
-                    lambda data, input_bytes, kk, nn, res: vlbytes.length(res) == nn):
+                    lambda data, input_bytes, kk, nn, res: array.len(res) == nn):
     h = array.copy(IV)
     h[0] = h[0] ^ uint32(0x01010000) ^ (uint32(kk) << 8) ^ uint32(nn)
-    data_blocks = vlbytes.length(data) // block_bytes
+    data_blocks = array.len(data) // block_bytes
     if data_blocks > 1:
         for i in range(data_blocks - 1):
             h = F(h, vlbytes.to_uint32s_le(
@@ -102,9 +102,9 @@ data_t = refine(vlbytes_t, lambda x: vlbytes.lenght(x)
 
 def blake2s(data: data_t, key: key_t, nn: out_size_t) \
         -> contract(vlbytes_t,
-                    lambda data, key, nn: True, lambda data, key, nn, res: vlbytes.length(res) == nn):
-    ll = vlbytes.length(data)
-    kk = vlbytes.length(key)
+                    lambda data, key, nn: True, lambda data, key, nn, res: array.len(res) == nn):
+    ll = array.len(data)
+    kk = array.len(key)
     data_blocks = (ll - 1) // block_bytes + 1
     padded_data_length = data_blocks * block_bytes
     if kk == 0:

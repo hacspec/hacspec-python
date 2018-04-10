@@ -12,8 +12,8 @@ size_nat = refine(nat, lambda x: x <= max_size_t)
 output_size_t = refine(nat, lambda x: x <= 64)
 
 
-def h(a: refine(vlbytes_t, lambda x: vlbytes.length(x) < max_size_t - 2 * line_size), nn: output_size_t) \
-        -> contract(vlbytes_t, lambda a, nn: True, lambda a, nn, res: vlbytes.length(res) == nn):
+def h(a: refine(vlbytes_t, lambda x: array.len(x) < max_size_t - 2 * line_size), nn: output_size_t) \
+        -> contract(vlbytes_t, lambda a, nn: True, lambda a, nn, res: array.len(res) == nn):
     res = blake2b(a, array([]), nn)
     return res
 
@@ -34,11 +34,11 @@ def compute_variable_length_output_size(t_len: refine(size_nat, lambda x: x + 64
 
 
 def h_prime(t_len: refine(size_nat, lambda x: 1 <= t_len and t_len + 64 <= max_size_t),
-            x: refine(vlbytes_t, lambda x: vlbytes.length(x) + 4 <= max_size_t - 2 * line_size)) \
+            x: refine(vlbytes_t, lambda x: array.len(x) + 4 <= max_size_t - 2 * line_size)) \
         -> contract(vlbytes_t,
                     lambda t_len, x: True,
-                    lambda t_len, x, res: vlbytes.length(x) == compute_variable_length_output_size(t_len)):
-    t_with_x = array.create(vlbytes.length(x) + 4, uint8(0))
+                    lambda t_len, x, res: array.len(x) == compute_variable_length_output_size(t_len)):
+    t_with_x = array.create(array.len(x) + 4, uint8(0))
     t_with_x[0:4] = vlbytes.from_uint32_le(uint32(t_len))
     t_with_x[4:] = x
     if t_len <= 64:
@@ -136,9 +136,9 @@ def G(X: bytes_t(block_size), Y: bytes_t(block_size)) -> bytes_t(block_size):
     return xor_blocks(Q, R)
 
 
-def extend_to_block(input: refine(vlbytes_t, lambda x: vlbytes.length(x) <= block_size)) -> bytes_t(block_size):
+def extend_to_block(input: refine(vlbytes_t, lambda x: array.len(x) <= block_size)) -> bytes_t(block_size):
     output = array.create(block_size, uint8(0))
-    output[:vlbytes.length(intput)] = input
+    output[:array.len(intput)] = input
     return output
 
 
@@ -158,8 +158,8 @@ def xor_last_column(lanes: lanes_t, columns: size_nat, memory: vlbytes) \
     -> contract(vlbytes,
                 lambda lanes, columns, memory: columns <= 4 and columns *
                 columns * block_size <= max_size_t and
-                vlbytes.length(memory) == lanes * columns * block_size,
-                lambda lanes, columns, memory, res: vlbytes.length(res) ==
+                array.len(memory) == lanes * columns * block_size,
+                lambda lanes, columns, memory, res: array.len(res) ==
                 lanes * columns * block_size):
     output = array.create(block_size, uint8(0))
     offset = block_offset(lanes, columns, 0, columns - 1)
@@ -199,7 +199,7 @@ def generate_seeds(lanes: lanes_t, columns: size_nat, i: size_nat, iterations: s
                 columns * block_size <= max_size_t and i < lanes and
                 t < iterations,
                 lambda lanes, columns, i, iterations, t, segment, res:
-                vlarray.length(res) == seeds_length(lanes, columns)):
+                array.len(res) == seeds_length(lanes, columns)):
     segment_length = columns // 4
     pseudo_rands_rounds = segment_length // line_size + 1
     pseudo_rands_size = pseudo_rands_rounds * line_size * 2
@@ -268,9 +268,9 @@ def fill_segment(h0: bytes_t(64), iterations: size_nat, segment: segment_t, t_le
                 lambda h0, iterations, segment, t_len, lanes, columns, t, i, memory:
                 columns <= 4 and lanes * columns * block_size <= max_size_t and
                 i < lanes and j < columns and
-                vlbytes.length(memory) == lanes * columns * block_size,
+                array.len(memory) == lanes * columns * block_size,
                 lambda h0, iterations, segment, t_len, lanes, columns, t, i, memory, res:
-                vlbytes.length(res) == lanes * columns * block_size):
+                array.len(res) == lanes * columns * block_size):
     output = array.copy(memory)
     segment_length = columns // 4
     counter = 0
@@ -310,36 +310,36 @@ def fill_segment(h0: bytes_t(64), iterations: size_nat, segment: segment_t, t_le
 def argon2i(p: vlbytes, s: vlbytes, lanes: lanes_t, t_len: t_len_t, m: size_nat,
             iterations: size_nat, x: vlbytes, k: vlbytes) \
     -> contract(vlbytes_t,
-                lambda p, s, lanes, t_len, m, iterations, x, k: vlbytes.length(s >= 8) and
+                lambda p, s, lanes, t_len, m, iterations, x, k: array.len(s >= 8) and
                 m >= 8 * lanes and (m + 4 * lanes) * block_size <= max_size_t and
-                iterations >= 1 and vlbytes.length(x) + 4 <= max_size_t - 2 * line_size and
-                vlbytes.length(p) + vlbytes.length(s) + vlbytes.length(x) +
-                vlbytes.length(k) + 11 * 4 <= max_size_t - 2 * line_size,
+                iterations >= 1 and array.len(x) + 4 <= max_size_t - 2 * line_size and
+                array.len(p) + array.len(s) + array.len(x) +
+                array.len(k) + 11 * 4 <= max_size_t - 2 * line_size,
                 lambda p, s, lanes, t_len, m, iterations, x, k, res:
-                vlbytes.length(res) == compute_variable_length_output_size(t_len)):
-    h0_arg = array.create(10 * 4 + vlbytes.length(p) +
-                          vlbytes.length(k) + vlbytes.length(s) + vlbytes.length(x), uint8(0))
+                array.len(res) == compute_variable_length_output_size(t_len)):
+    h0_arg = array.create(10 * 4 + array.len(p) +
+                          array.len(k) + array.len(s) + array.len(x), uint8(0))
     h0_arg[0:4] = vlbytes.from_uint32_le(uint32(lanes))
     h0_arg[4:8] = vlbytes.from_uint32_le(uint32(t_len))
     h0_arg[8:12] = vlbytes.from_uint32_le(uint32(m))
     h0_arg[12:16] = vlbytes.from_uint32_le(uint32(iterations))
     h0_arg[16:20] = vlbytes.from_uint32_le(uint32(version_number))
     h0_arg[20:24] = vlbytes.from_uint32_le(uint32(argon_type))
-    h0_arg[24:28] = vlbytes.from_uint32_le(uint32(vlbytes.length(p)))
-    offset = 28 + vlbytes.length(p)
+    h0_arg[24:28] = vlbytes.from_uint32_le(uint32(array.len(p)))
+    offset = 28 + array.len(p)
     h0_arg[28:offset] = p
     h0_arg[offset:offset +
-           4] = vlbytes.from_uint32_le(uint32(vlbytes.length(s)))
-    h0_arg[offset + 4:offset + 4 + vlbytes.length(s)] = s
-    offset = offset + 4 + vlbytes.length(s)
+           4] = vlbytes.from_uint32_le(uint32(array.len(s)))
+    h0_arg[offset + 4:offset + 4 + array.len(s)] = s
+    offset = offset + 4 + array.len(s)
     h0_arg[offset:offset +
-           4] = vlbytes.from_uint32_le(uint32(vlbytes.length(k)))
-    h0_arg[offset + 4:offset + 4 + vlbytes.length(k)] = k
-    offset = offset + 4 + vlbytes.length(k)
+           4] = vlbytes.from_uint32_le(uint32(array.len(k)))
+    h0_arg[offset + 4:offset + 4 + array.len(k)] = k
+    offset = offset + 4 + array.len(k)
     h0_arg[offset:offset +
-           4] = vlbytes.from_uint32_le(uint32(vlbytes.length(x)))
-    h0_arg[offset + 4:offset + 4 + vlbytes.length(x)] = x
-    offset = offset + 4 + vlbytes.length(x)
+           4] = vlbytes.from_uint32_le(uint32(array.len(x)))
+    h0_arg[offset + 4:offset + 4 + array.len(x)] = x
+    offset = offset + 4 + array.len(x)
     h0 = h(h0_arg, 64)
     columns = 4 * (m // (4 * lanes))
     number_of_blocks = lanes * columns

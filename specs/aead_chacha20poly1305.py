@@ -41,7 +41,7 @@ def aead_chacha20poly1305_decrypt(key:key_t,nonce:bytes_t,
     _, to_mac = padded_aad_msg(aad,ciphertext)
     mac = poly1305_mac(to_mac,mac_key)
     if mac == tag:
-        msg = chacha20_decrypt(key,1,nonce,ciphertext)
+        msg = chacha20_decrypt(key, uint32(1), nonce, ciphertext)
         return msg
     else:
-        return ""
+        fail("mac failed")
