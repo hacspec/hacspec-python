@@ -9,6 +9,7 @@ test:
 	$(PYTHON) chacha20_test.py
 	$(PYTHON) aead_chacha20poly1305_test.py
 	$(PYTHON) sha2_test.py
+	$(PYTHON) keccak_test.py
 	$(PYTHON) blake2b_test.py
 	$(PYTHON) blake2s_test.py
 	$(PYTHON) argon2i_test.py
@@ -22,6 +23,7 @@ check-specs:
 	$(PYTHON) ../spec-checker/spec-checker.py poly1305.py
 	$(PYTHON) ../spec-checker/spec-checker.py aead_chacha20poly1305.py
 	$(PYTHON) ../spec-checker/spec-checker.py sha2.py
+	$(PYTHON) ../spec-checker/spec-checker.py keccak.py
 	$(PYTHON) ../spec-checker/spec-checker.py curve25519.py
 	$(PYTHON) ../spec-checker/spec-checker.py wots.py
 	$(PYTHON) ../spec-checker/spec-checker.py argon2i.py
