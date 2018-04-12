@@ -36,10 +36,7 @@ def point_add(p:extended_point_t,q:extended_point_t) -> extended_point_t:
   y3 = fmul(g,h)
   t3 = fmul(e,h)
   z3 = fmul(f,g)
-
   p = (x3, y3, z3, t3)
-
-
   return p
 
 def point_double(p:extended_point_t) -> extended_point_t:
@@ -58,20 +55,6 @@ def point_double(p:extended_point_t) -> extended_point_t:
   t3 = fmul(e,h)
   z3 = fmul(f,g)
   return (x3, y3, z3, t3)
-
-# def montgomery_ladder(k:scalar_t,init:extended_point_t) -> extended_point_t :
-#     p0 : extended_point_t = (0,1,1,0)
-#     p1 : extended_point_t = init
-#     for i in range(256):
-#       if k[255-i] == bit(1):
-#         p1 = point_add(p0,p1) #x + xp1
-#         p0 = point_add(p0, p0) #xx
-#       else :
-#         p0 = point_add(p0, p1)
-#         p1 = point_add(p1, p1)
-#     return(p0)
-
-
 
 def montgomery_ladder(k:scalar_t, init: extended_point_t) -> extended_point_t:
     p0 : extended_point_t = (0, 1, 1, 0)
@@ -92,10 +75,6 @@ def point_mul(s:serialized_scalar_t,p:extended_point_t) -> extended_point_t:
     s_ = bitvector(bytes.to_nat_le(s),256)
     Q : extended_point_t = (0, 1, 1, 0)
     Q1 = montgomery_ladder(s_, p) 
-    # for i in range(256):
-    #   if s_[i] == bit(1):
-    #     Q = point_add(Q, p)
-    #   p = point_add(p, p) 
     return Q1 
 
 def point_compress(p:extended_point_t) -> serialized_point_t :
@@ -103,7 +82,8 @@ def point_compress(p:extended_point_t) -> serialized_point_t :
     zinv = finv(pz)
     x = fmul(px,zinv)
     y = fmul(py,zinv)
-    return bytes.from_nat_le(((1 << 255) * (x % 2)) + y)
+    r = nat_t(2**255 * (x % 2) + y)
+    return bytes.from_nat_le(r)
 
 fsqrt_m1 : felem_t = felem(pow(2,((p25519 - 1) // 4),p25519))
 
@@ -177,7 +157,7 @@ def sign(priv:serialized_scalar_t,msg:vlbytes_t) -> sigval_t :
     tmp[32:64] = ap
     h = sha512_modq(tmp)
     s = (r + ((h * bytes.to_nat_le(a)) % q25519)) % q25519
-    tmp[32:64] = bytes.from_nat_le(s)
+    tmp[32:64] = bytes.from_nat_le(nat(s))
     return tmp[0:64]
 
 def point_equal(p:extended_point_t,q:extended_point_t) -> bool :
