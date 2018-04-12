@@ -6,12 +6,14 @@ blocksize = 16
 block_t = bytes_t(16)
 key_t = bytes_t(32)
 tag_t = bytes_t(16)
-subblock_t = refine(vlbytes_t,lambda x: vlbytes.length(x) <= 16)
+subblock = refine3('subblock_t', vlbytes, lambda x: vlbytes.length(x) <= 16)
+subblock_t = subblock
 
 # Define prime field
 
 p130m5 = (2 ** 130) - 5
-felem_t = refine(nat,lambda x: x < p130m5)
+felem = refine3('felem_t', nat, lambda x: x < p130m5)
+felem_t = felem
 def felem(x:nat) -> felem_t:
     return (x % p130m5)
 def fadd(x:felem_t,y:felem_t) -> felem_t:
@@ -21,9 +23,9 @@ def fmul(x:felem_t,y:felem_t) -> felem_t:
 
 def encode(block:subblock_t) -> felem_t:
     b = array.create(16,uint8(0))
-    b[0:array.len(block)] = block
+    b[0:array.length(block)] = block
     welem = felem(uint128.to_int(bytes.to_uint128_le(b)))
-    lelem = felem(2 ** (8 * array.len(block)))
+    lelem = felem(2 ** (8 * array.length(block)))
     return fadd(lelem,welem)
 
 def encode_r(r:block_t) -> felem_t:
@@ -36,9 +38,9 @@ def encode_r(r:block_t) -> felem_t:
 def poly(text:vlbytes_t,r:felem_t) -> felem_t:
     blocks,last = vlarray.split_blocks(text,blocksize)
     acc = felem(0)
-    for i in range(array.len(blocks)):
+    for i in range(array.length(blocks)):
         acc = fmul(fadd(acc,encode(blocks[i])),r)
-    if (array.len(last) > 0):
+    if (array.length(last) > 0):
         acc = fmul(fadd(acc,encode(last)),r)
     return acc
 

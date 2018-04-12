@@ -5,22 +5,30 @@ open Spec.Lib.RawIntTypes
 open Spec.Lib.IntSeq
 open Speclib
 let p25519 = ((0x2 **. 0xff) -. 0x13) 
-type felem_t = x:nat{(x < p25519)}
-
-let felem (x:nat) : felem_t =
-  (x %. p25519) 
+let felem = refine3 "felem_t" nat Lambda(args=arguments(args=arg(arg='x',
+            annotation=None,
+            type_comment=None),
+            vararg=None,
+            kwonlyargs=,
+            kw_defaults=,
+            kwarg=None,
+            defaults=),
+            body=(x < p25519)) 
+let felem_t = felem 
+let to_felem (x:nat_t) : felem_t =
+  felem (x %. p25519) 
 let fadd (x:felem_t) (y:felem_t) : felem_t =
-  felem (x +. y) 
+  to_felem (x +. y) 
 let fsub (x:felem_t) (y:felem_t) : felem_t =
-  felem (x -. y) 
+  to_felem (x -. y) 
 let fmul (x:felem_t) (y:felem_t) : felem_t =
-  felem (x *. y) 
+  to_felem (x *. y) 
 let fsqr (x:felem_t) : felem_t =
-  felem (x *. x) 
-let fexp (x:felem_t) (n:nat) : felem_t =
-  felem (pow x nat p25519) 
+  to_felem (x *. x) 
+let fexp (x:felem_t) (n:nat_t) : felem_t =
+  to_felem (pow x n p25519) 
 let finv (x:felem_t) : felem_t =
-  felem (pow x (p25519 -. 0x2) p25519) 
+  to_felem (pow x (p25519 -. 0x2) p25519) 
 let point_t = tuple2 felem_t felem_t 
 let scalar_t = bitvector_t 0x100 
 let g25519 : point_t = Tuple(elts=0x9

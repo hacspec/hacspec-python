@@ -67,7 +67,7 @@ def state_permute (s:state_t) -> state_t:
         s,lfsr = state_permute1(s,lfsr)
     return s
 
-bytes_len_t = refine(vlbytes_t, lambda x: array.len(x) <= 200)
+bytes_len_t = refine(vlbytes_t, lambda x: array.length(x) <= 200)
 max_size_t = 2**64 - 1
 size_nat = refine(nat, lambda x: x <= max_size_t)
 size_nat_200 = refine(nat, lambda x: x <= 200)

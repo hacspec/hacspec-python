@@ -5,28 +5,29 @@ from speclib import *
 # Define prime field
 p25519 = (2 ** 255) - 19
 
-felem_t = refine(nat,lambda x: x < p25519)
+felem = refine3('felem_t', nat, lambda x: x < p25519)
+felem_t = felem
 
-def felem(x:nat) -> felem_t:
-    return (x % p25519)
+def to_felem(x:nat_t) -> felem_t:
+    return felem(x % p25519)
 
 def fadd(x:felem_t,y:felem_t) -> felem_t:
-    return felem(x + y)
+    return to_felem(x + y)
 
 def fsub(x:felem_t,y:felem_t) -> felem_t:
-    return felem(x - y)
+    return to_felem(x - y)
 
 def fmul(x:felem_t,y:felem_t) -> felem_t:
-    return felem(x * y)
+    return to_felem(x * y)
 
 def fsqr(x:felem_t) -> felem_t:
-    return felem(x * x)
+    return to_felem(x * x)
 
-def fexp(x:felem_t,n:nat) -> felem_t:
-    return felem(pow(x,nat,p25519))
+def fexp(x:felem_t,n:nat_t) -> felem_t:
+    return to_felem(pow(x,n,p25519))
 
 def finv(x:felem_t) -> felem_t:
-    return felem(pow(x,p25519-2,p25519))
+    return to_felem(pow(x,p25519-2,p25519))
 
 point_t = tuple2(felem_t, felem_t)   #projective coordinates
 

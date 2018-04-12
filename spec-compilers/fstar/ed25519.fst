@@ -110,7 +110,7 @@ let recover_x_coordinate (y:nat) (sign:bool) : felem_t =
     let p1 = fmul d25519 (fsqr y) in 
     let p1_1 = fadd p1 0x1 in 
     let x2 = fmul (fsub (fsqr y) 0x1) (finv p1_1) in 
-    let () = if ((x2 = 0x0) && sign) then (None() )else (let () = if ((x2 = 0x0) && (unknown op: <_ast3.Not object at 0x00000190A71B3F98> sign)) then (felem 0x0() )else (let x = pow x2 ((p25519 +. 0x3) /. 0x8) p25519 in 
+    let () = if ((x2 = 0x0) && sign) then (None() )else (let () = if ((x2 = 0x0) && (unknown op: <_ast3.Not object at 0x00000226D9F93FD0> sign)) then (felem 0x0() )else (let x = pow x2 ((p25519 +. 0x3) /. 0x8) p25519 in 
         let () = if ((fsub (fsqr x) x2 != 0x0)) then (let x = fmul x fsqrt_m1 in () )else (()) in 
         let () = if ((fsub (fsqr x) x2 != 0x0)) then (None() )else (let () = if ((((x %. 0x2) = 0x1) != sign)) then (felem (p25519 -. x)() )else (x()) in ()) in ()) in ()) in ()) in  
 let point_decompress (s:serialized_point_t) : extended_point_t =
@@ -147,7 +147,7 @@ let private_to_public (s:serialized_scalar_t) : serialized_point_t =
 let sign (priv:serialized_scalar_t) (msg:vlbytes_t) : sigval_t =
   let (a,prefix) = expand_secret priv in 
   let ap = point_compress (point_mul a g_ed25519) in 
-  let tmp = create ((array.length msg) +. 0x40) (u8 0x0) in 
+  let tmp = create ((length msg) +. 0x40) (u8 0x0) in 
   let tmp = update_slice tmp 0x20 0x40 prefix in 
   let tmp = update_slice tmp 0x40 None msg in 
   let pmsg = slice tmp 0x20 None in 
@@ -170,7 +170,7 @@ let verify (pub:serialized_point_t) (msg:vlbytes) (sigval:sigval_t) : bool =
   let rp = point_decompress rs in 
   let () = if ((rp = None)) then (False() )else (()) in 
   let s = bytes.to_nat_le slice sigval 0x20 0x40 in 
-  let tmp = if ((s >= q25519)) then (Falsetmp )else (let tmp = create ((array.length msg) +. 0x40) (u8 0x0) in 
+  let tmp = if ((s >= q25519)) then (Falsetmp )else (let tmp = create ((length msg) +. 0x40) (u8 0x0) in 
     let tmp = update_slice tmp 0x0 0x20 rs in 
     let tmp = update_slice tmp 0x20 0x40 pub in 
     let tmp = update_slice tmp 0x40 None msg in 

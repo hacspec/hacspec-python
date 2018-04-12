@@ -43,15 +43,15 @@ def hash(prefix: bytes_t(32), key: bytes_t(32), m: vlbytes_t) -> digest_t:
 
 
 def F(key: bytes_t(32), m: vlbytes_t) -> digest_t:
-    return hash(bytes.from_nat_be(0, 32), key, m)
+    return hash(bytes.from_nat_be(nat(0), nat(32)), key, m)
 
 
 def H(key: bytes_t(32), m: vlbytes_t) -> digest_t:
-    return hash(bytes.from_nat_be(1, 32), key, m)
+    return hash(bytes.from_nat_be(nat(1), nat(32)), key, m)
 
 
 def H_msg(key: bytes_t(32), m: vlbytes_t) -> digest_t:
-    return hash(bytes.from_nat_be(2, 32), key, m)
+    return hash(bytes.from_nat_be(nat(2), nat(32)), key, m)
 
 
 def PRF(key: bytes_t(32), m: address_t) -> digest_t:
@@ -63,7 +63,7 @@ def PRF(key: bytes_t(32), m: address_t) -> digest_t:
     m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[5]))
     m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[6]))
     m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[7]))
-    return hash(bytes.from_nat_be(3, 32), key, m_)
+    return hash(bytes.from_nat_be(nat(3), nat(32)), key, m_)
 
 
 # Address is a 32-byte array with the following definition
@@ -146,7 +146,7 @@ def wots_msg(msg: digest_t) -> vlbytes_t:
     m = base_w(msg, length1)
     for i in range(0, uint32.to_int(length1)):
         csum = csum + uint32.to_int(w) - 1 - uint32.to_int(m[i])
-    csum = csum << int(8 - ((uint32.to_int(length2) * log_w) % 8))
+    csum = nat(csum << int(8 - ((uint32.to_int(length2) * log_w) % 8)))
     length2_bytes = speclib.ceil((uint32.to_int(length2) * log_w) / 8)
     csum_bytes = bytes.from_nat_be(csum, length2_bytes)
     m = array.concat(m, base_w(csum_bytes, length2))

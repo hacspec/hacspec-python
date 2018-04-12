@@ -65,6 +65,8 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "length"
         if f == "vlbytes.length":
            return "length"
+        if f == "array.length":
+           return "length"
         if f == "vlarray.split_blocks":
            return "split_blocks"
         if f == "vlbytes.split_blocks":

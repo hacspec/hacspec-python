@@ -63,12 +63,27 @@ Statements s ::=
 
 ## Library functions
 
-```
 Builtin functions (hacspec library in speclib.py):
 
-uint8, uint32, uint63, uint128:
-  to_int(u:uintN) -> int		(convert uintN to int)
+```
+bit, uint8, uint32, uint63, uint128:
+  constructor:
+    uintN(x:int) -> uintN
+    uintN(x:uintN) -> uintN
+  member functions:
+    to_int(u:uintN) -> int                          (convert uintN to int)
 
+  operators:
+    + - * ~ | & ^ << >>
+
+  static methods:
+    uintN.num_bits(u:uintN) -> int                  (get bit size of u)
+    uintN.rotate_left(u:uintN,o:int) -> uintN       (rotate u by o bits to the left)
+    uintN.rotate_right(u:uintN,o:int) -> uintN      (rotate u by o bits to the right)
+```
+
+
+```
 array(T,len):
   copy(e:array[T]) -> array[T]          (copy array)
   create(len:int,d:T) -> array[T]     	(make array with len elements, each equal to d)

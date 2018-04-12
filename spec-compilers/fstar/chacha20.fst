@@ -11,8 +11,16 @@ let state_t = array_t uint32_t 0x10
 let key_t = bytes_t 0x20 
 let nonce_t = bytes_t 0xc 
 let block_t = bytes_t 0x40 
-type subblock_t = x:vlbytes_t{(length x <= blocksize)}
-
+let subblock = refine3 "subblock_t" vlbytes Lambda(args=arguments(args=arg(arg='x',
+               annotation=None,
+               type_comment=None),
+               vararg=None,
+               kwonlyargs=,
+               kw_defaults=,
+               kwarg=None,
+               defaults=),
+               body=((length x) <= blocksize)) 
+let subblock_t = subblock 
 let line (a:index_t) (b:index_t) (d:index_t) (s:rotval_t) (m:state_t) : state_t =
   let m = copy m in 
   let m = m.[a] <- (m.[a] +. m.[b]) in 
