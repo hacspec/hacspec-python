@@ -1,4 +1,4 @@
-from ed25519_2 import *
+from ed25519 import *
 import json
 #from test_vectors.ed25519_test_vectors import ed25519_test_vectors
 from sys import exit

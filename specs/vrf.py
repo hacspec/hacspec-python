@@ -17,7 +17,7 @@ def ECP2OS(p:extended_point_t) -> serialized_point_t :
 	return point_compress(p)
 
 def I2OSP(value: nat) -> bytes_t(32):
-	return bytes.from_nat_le(value)
+	return bytes.from_nat_le(nat(value))
 
 def OS2IP(s: serialized_scalar_t) -> felem_t:
 	return (bytes.to_nat_le(s))
