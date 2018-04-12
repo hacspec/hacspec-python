@@ -1,5 +1,3 @@
-from typing import Callable, List, Iterator, Tuple
-from functools import reduce
 from speclib import *
 
 block_t = array[uint8]     #length <= blocksize

@@ -65,6 +65,8 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "length"
         if f == "vlbytes.length":
            return "length"
+        if f == "array.length":
+           return "length"
         if f == "vlarray.split_blocks":
            return "split_blocks"
         if f == "vlbytes.split_blocks":
@@ -140,7 +142,12 @@ def dump(node, annotate_fields=True, include_attributes=False):
             isinstance(node.targets[0],Subscript)):
             return {node.targets[0].value.id}
         elif isinstance(node, Assign):
-            return {x.id for x in node.targets}
+            result = {}
+            for x in node.targets:
+                if isinstance(x, Tuple):
+                    result[x.elts[0].id] = x
+                else:
+                    result[x.id] = x
         elif isinstance(node, Subscript):
             return {node.value.id}
         if (isinstance(node, AugAssign) and
@@ -168,6 +175,8 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return "~."
         elif isinstance(o,BitAnd):
             return "&."
+        elif isinstance(o,BitOr):
+            return "|."
         elif isinstance(o,BitXor):
             return "^."
         elif isinstance(o,RShift):
@@ -176,8 +185,10 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return "<<."
         elif isinstance(o,Mod):
             return "%."
-        elif isinstance(o,Eq):
+        elif isinstance(o,Eq) or isinstance(o,Is):
             return "="
+        elif isinstance(o,NotEq):
+            return "!="
         elif isinstance(o,Gt):
             return ">"
         elif isinstance(o,Lt):
@@ -337,6 +348,8 @@ def dump(node, annotate_fields=True, include_attributes=False):
             return _sp(ind)+"assert ("+_format(node.test,False,ind,paren)+");"
         if isinstance(node,Name):
             return node.id
+        if isinstance(node,NameConstant):
+            return str(node.value)
         if isinstance(node,Attribute):
             return _trans(_format(node.value,False,ind,paren) + "." + node.attr)
         if isinstance(node,Attribute) and _format(node.value,False,ind,paren) == "array":
@@ -388,9 +401,7 @@ def dump(node, annotate_fields=True, include_attributes=False):
 
 import ntpath
 def main(path):
-#    print("opening file:",path)
     with open(path, 'r', encoding='utf-8') as py_file:
-#        print("opened file:",path)
         code = py_file.read()
         ast = parse(source=code, filename=path)
         print("module",ntpath.splitext(ntpath.basename(path))[0].title())

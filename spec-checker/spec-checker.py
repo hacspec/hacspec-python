@@ -185,6 +185,10 @@ def read(node, allowed=None, prev=[]):
             read(ex, prev=previous)
         return BoolOp
 
+    if isinstance(node, Str):
+        print(indent + node.s)
+        return Str
+
     if isinstance(node, Subscript):
         return read(node.value, prev=previous)
 
@@ -239,11 +243,11 @@ def read(node, allowed=None, prev=[]):
         called_function = previous[-3]
         if isinstance(called_function, Call):
             if isinstance(called_function.func, Name):
-                if called_function.func.id == "refine":
-                    print(indent + "Refine " + str(previous[-2][0].id))
+                if called_function.func.id == "refine" or called_function.func.id == "refine3":
+                    # print(indent + "Refine " + str(previous[-2][0].id))
                     return Lambda
         raise SyntaxError(
-            "Lambdas are only allowed in `refine` (you didn't call refine)")
+            "Lambdas are only allowed in `refine` (you didn't call refine but)")
 
     # Explicitly disallowed statements
     if isinstance(node, With):
