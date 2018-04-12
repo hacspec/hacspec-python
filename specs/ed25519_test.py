@@ -12,20 +12,20 @@ def main (x: int) -> None :
     sig_computed = sign(sk0,msg0)
     verified = verify(pk0,msg0,sig_computed)
     if (sig_expected == sig_computed):
-        print('Ed25518 Test 0 signature succeeded')
+        print('Ed25519 Test 0 signature succeeded')
     else:
-        print('Ed25518 Test 0 signature failed')
+        print('Ed25519 Test 0 signature failed')
         print('expected: '+str(sig_expected))
         print('computed: '+str(sig_computed))
     if (verified):
-        print('Ed25518 Test 0 verification succeeded')
+        print('Ed25519 Test 0 verification succeeded')
     else:
-        print('Ed25518 Test 0 verification failed')
+        print('Ed25519 Test 0 verification failed')
     verified = verify(pk0,msg0,sig_expected)
     if (verified):
-        print('Ed25518 Test 0 verification_expected succeeded')
+        print('Ed25519 Test 0 verification_expected succeeded')
     else:
-        print('Ed25518 Test 0 verification_expected failed')
+        print('Ed25519 Test 0 verification_expected failed')
         
 main(0)
 
