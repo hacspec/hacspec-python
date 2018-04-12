@@ -2,7 +2,7 @@ from speclib import *
 
 # Four variants of SHA-2
 
-variant = refine(nat,lambda x: x == 224 or x == 256 or x == 384 or x == 512)
+variant = refine3('variant_t', nat_t, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 
 # Generic SHA-2 spec parameterized by variant
 
@@ -20,12 +20,13 @@ def sha2(v:variant):
         words_to_bytes = bytes.from_uint32s_be
         kSize = 64
         k_t = array_t(word_t,kSize)
-        opTable : array_t(range(0,32),12) = array([
+        opTableType = array_t(uint32_t,12)
+        opTable: opTableType = array([
             2, 13, 22,
             6, 11, 25,
             7, 18, 3,
             17, 19, 10])
-        kTable : k_t = array([
+        kTable: k_t = array([
             uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf), uint32(0xe9b5dba5),
             uint32(0x3956c25b), uint32(0x59f111f1), uint32(0x923f82a4), uint32(0xab1c5ed5),
             uint32(0xd807aa98), uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3),
@@ -54,12 +55,13 @@ def sha2(v:variant):
         words_to_bytes = bytes.from_uint64s_be
         kSize = 80
         k_t = array_t(word_t,kSize)
-        opTable : array_t(range(0,64),12) = array([
+        opTableType = array_t(uint64_t,12)
+        opTable: opTableType = array([
             28, 34, 39,
             14, 18, 41,
             1,   8,  7,
             19, 61,  6])
-        kTable : k_t = array([
+        kTable: k_t = array([
             uint64(0x428a2f98d728ae22), uint64(0x7137449123ef65cd), uint64(0xb5c0fbcfec4d3b2f), uint64(0xe9b5dba58189dbbc),
             uint64(0x3956c25bf348b538), uint64(0x59f111f1b605d019), uint64(0x923f82a4af194f9b), uint64(0xab1c5ed5da6d8118),
             uint64(0xd807aa98a3030242), uint64(0x12835b0145706fbe), uint64(0x243185be4ee4b28c), uint64(0x550c7dc3d5ffb4e2),
@@ -108,7 +110,9 @@ def sha2(v:variant):
         return (x & y) ^ ((~ x) & z)
     def maj(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((x & z) ^ (y & z))
-    def sigma(x:word_t,i:range_t(0,4),op:range_t(0,1)) -> word_t:
+    i_range = range_t(0,4)
+    op_range = range_t(0,1)
+    def sigma(x:word_t,i:i_range,op:op_range) -> word_t:
         if op == 0:
             tmp = x >> opTable[3*i+2]
         else:
@@ -171,8 +175,8 @@ def sha2(v:variant):
 
     def hash(msg:vlbytes_t) -> digest_t:
         blocks,last = vlarray.split_blocks(msg, blockSize)
-        nblocks = vlarray.length(blocks)
-        h = h0
+        nblocks = array.length(blocks)
+        h:hash_t = h0
         for i in range(nblocks):
             h = compress(blocks[i],h)
         last_len = array.length(last)
@@ -193,7 +197,7 @@ def sha2(v:variant):
 
 # Specific instances of SHA-2 
 
-sha224 = sha2(224)
-sha256 = sha2(256)
-sha384 = sha2(384)
-sha512 = sha2(512)
+sha224 = sha2(variant(224))
+sha256 = sha2(variant(256))
+sha384 = sha2(variant(384))
+sha512 = sha2(variant(512))

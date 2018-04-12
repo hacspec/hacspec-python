@@ -11,8 +11,16 @@ let state_t = array_t uint32_t 0x10
 let key_t = bytes_t 0x20 
 let nonce_t = bytes_t 0xc 
 let block_t = bytes_t 0x40 
-type subblock_t = x:vlbytes_t{(length x <= blocksize)}
-
+let subblock = refine3 "subblock_t" vlbytes Lambda(args=arguments(args=arg(arg='x',
+               annotation=None,
+               type_comment=None),
+               vararg=None,
+               kwonlyargs=,
+               kw_defaults=,
+               kwarg=None,
+               defaults=),
+               body=((length x) <= blocksize)) 
+let subblock_t = subblock 
 let line (a:index_t) (b:index_t) (d:index_t) (s:rotval_t) (m:state_t) : state_t =
   let m = copy m in 
   let m = m.[a] <- (m.[a] +. m.[b]) in 
@@ -47,11 +55,11 @@ let chacha20_init (k:key_t) (counter:uint32_t) (nonce:nonce_t) : state_t =
   st 
 let chacha20_core (st:state_t) : state_t =
   let working_state = copy st in 
-  let working_state = repeati (range 0xa)
-    (fun x working_state ->
+  let () = repeati (range 0xa)
+    (fun x () ->
       let working_state = double_round working_state in 
-      working_state)
-    working_state in 
+      ())
+    () in 
   let working_state = repeati (range 0x10)
     (fun i working_state ->
       let working_state = working_state.[i] <- working_state.[i] +. st.[i] in 
@@ -76,13 +84,13 @@ let chacha20_counter_mode (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vl
   let (blocks,last) = split_blocks msg blocksize in 
   let keyblock = create blocksize (u8 0x0) in 
   let ctr = counter in 
-  let (blocks,ctr,keyblock) = repeati (range (length blocks))
-    (fun i (blocks,ctr,keyblock) ->
+  let (blocks,ctr) = repeati (range (length blocks))
+    (fun i (blocks,ctr) ->
       let keyblock = chacha20_block key ctr nonce in 
       let blocks = blocks.[i] <- xor_block blocks.[i] keyblock in 
       let ctr = ctr +. u32 0x1 in 
-      (blocks,ctr,keyblock))
-    (blocks,ctr,keyblock) in 
+      (blocks,ctr))
+    (blocks,ctr) in 
   let keyblock = chacha20_block key ctr nonce in 
   let last = xor_block last keyblock in 
   array.concat_blocks blocks last 

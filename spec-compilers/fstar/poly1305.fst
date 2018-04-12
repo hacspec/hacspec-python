@@ -8,11 +8,27 @@ let blocksize = 0x10
 let block_t = bytes_t 0x10 
 let key_t = bytes_t 0x20 
 let tag_t = bytes_t 0x10 
-type subblock_t = x:vlbytes_t{(length x <= 0x10)}
-
+let subblock = refine3 "subblock_t" vlbytes Lambda(args=arguments(args=arg(arg='x',
+               annotation=None,
+               type_comment=None),
+               vararg=None,
+               kwonlyargs=,
+               kw_defaults=,
+               kwarg=None,
+               defaults=),
+               body=((length x) <= 0x10)) 
+let subblock_t = subblock 
 let p130m5 = ((0x2 **. 0x82) -. 0x5) 
-type felem_t = x:nat{(x < p130m5)}
-
+let felem = refine3 "felem_t" nat Lambda(args=arguments(args=arg(arg='x',
+            annotation=None,
+            type_comment=None),
+            vararg=None,
+            kwonlyargs=,
+            kw_defaults=,
+            kwarg=None,
+            defaults=),
+            body=(x < p130m5)) 
+let felem_t = felem 
 let felem (x:nat) : felem_t =
   (x %. p130m5) 
 let fadd (x:felem_t) (y:felem_t) : felem_t =
@@ -32,12 +48,12 @@ let encode_r (r:block_t) : felem_t =
 let poly (text:vlbytes_t) (r:felem_t) : felem_t =
   let (blocks,last) = split_blocks text blocksize in 
   let acc = felem 0x0 in 
-  let acc = repeati (range (length blocks))
-    (fun i acc ->
+  let () = repeati (range (length blocks))
+    (fun i () ->
       let acc = fmul (fadd acc (encode blocks.[i])) r in 
-      acc)
-    acc in 
-  let acc = if ((length last > 0x0)) then (let acc = fmul (fadd acc (encode last)) r in acc )else (acc) in 
+      ())
+    () in 
+  let () = if ((length last > 0x0)) then (let acc = fmul (fadd acc (encode last)) r in () )else (()) in 
   acc 
 let poly1305_mac (text:vlbytes_t) (k:key_t) : tag_t =
   let r = slice k 0x0 blocksize in 

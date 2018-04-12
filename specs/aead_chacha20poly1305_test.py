@@ -45,7 +45,8 @@ def main(x: int) -> None :
     exp_mac = bytes.from_ints([0x1a,0xe1,0x0b,0x59,0x4f,0x09,0xe2,0x6a,
             0x7e,0x90,0x2e,0xcb,0xd0,0x60,0x06,0x91])
     cipher, mac = aead_chacha20poly1305_encrypt(k,n,aad,p)
-    if (exp_cipher == cipher and exp_mac == mac):
+    decrypted_msg = aead_chacha20poly1305_decrypt(k,n,aad,cipher,mac)
+    if (exp_cipher == cipher and exp_mac == mac and decrypted_msg == p):
         print("AEAD-ChachaPoly Test  0 passed.")
     else:
         print("AEAD-ChachaPoly Test  0 failed.")
@@ -62,8 +63,9 @@ def main(x: int) -> None :
         expected = bytes.from_hex(aead_chacha20poly1305_test_vectors[i]['output'])
         exp_mac = expected[len(msg):len(expected)]
         exp_cipher = expected[0:len(msg)]
-        cipher,mac = aead_chacha20poly1305_encrypt(k,n,aad,msg)
-        if (exp_cipher == cipher and exp_mac == mac):
+        cipher, mac = aead_chacha20poly1305_encrypt(k,n,aad,msg)
+        decrypted_msg = aead_chacha20poly1305_decrypt(k,n,aad,cipher,mac)
+        if (exp_cipher == cipher and exp_mac == mac and decrypted_msg == msg):
             print("AEAD-ChachaPoly Test ",i+1," passed.")
         else:
             print("AEAD-ChachaPoly Test ",i+1," failed:")

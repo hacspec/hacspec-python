@@ -1,15 +1,17 @@
 The hacspec language is a typed subset of python. This file provides a rough description of the current language design.
 There's a library `speclib.py` that provides common functionality that can be used in any specification written in hacspec.
+hacspec files MUST NOT include any non-hacspec modules other than `speclib`.
 We describe some of the functions provided by this library below (but their documentation needs to be improved.)
 
 
 ```
 Types t ::= int | bool | str
           | bit_t | uint8_t | uint16_t | uint32_t | uint64_t | uint128_t
-          | tuple2_t(t1,t2) | tuple3_t(t1,t2,t3) | ...
+          | tuple2_t(t1,t2) | tuple3_t(t1,t2,t3) | tuple4_t(t1,t2,t3,t4) | tuple5_t(t1,t2,t3,t4,t5)
           | vlarray_t(t)
           | refine(t,pred)
           | bitvector_t(len)
+          | range(min,max)
 
 Derived Types:
       nat                  := refine(int,lambda x: x >= 0)
@@ -43,7 +45,7 @@ Statements s ::=
       | x : t = e           (variable declaration)
       | def f(x1:t1,...,xn:tn) -> t :
               s             (function declaration)
-      | x = e 		    (assignment)
+      | x = e               (assignment)
       | (x1,..,xn) = e      (tuple assignment)
       | x[i] = e      	    (array update)
       | x[i:j] = e    	    (array slice update)
@@ -55,25 +57,42 @@ Statements s ::=
       | for i in range(e):
             s		    (for loop)
       | s
-        s		    (sequential composition)
+        s	          (sequential composition)
       | from x import x1,x2,...,xn (import from external module)
 ```
 
 ## Library functions
 
-```
 Builtin functions (hacspec library in speclib.py):
 
-uint8, uint32, uint63, uint128:
-  to_int(u:uintN) -> int		(convert uintN to int)
+```
+bit, uint8, uint32, uint63, uint128:
+  constructor:
+    uintN(x:int) -> uintN
+    uintN(x:uintN) -> uintN
+  member functions:
+    to_int(u:uintN) -> int                          (convert uintN to int)
 
+  operators:
+    + - * ~ | & ^ << >>
+
+  static methods:
+    uintN.num_bits(u:uintN) -> int                  (get bit size of u)
+    uintN.rotate_left(u:uintN,o:int) -> uintN       (rotate u by o bits to the left)
+    uintN.rotate_right(u:uintN,o:int) -> uintN      (rotate u by o bits to the right)
+```
+
+
+```
 array(T,len):
   copy(e:array[T]) -> array[T]          (copy array)
   create(len:int,d:T) -> array[T]     	(make array with len elements, each equal to d)
-  len(a)	      	                (get length of array)
+  create_type(x:Iterable[U],t:type) -> array[t]  (create a new array type)
+  len(a:array)                          (get length of array)
+  concat(x:array[T],y:array[U]) -> array[T]  (concatenate two arrays)
   concat_blocks(array[array[T]]) -> array[T]
 					(flatten array of arrays by concatenation)
-  split_blocks(a:array[T],blocksize:int) -> array[array[T]]
+  split_blocks(a:array[T],blocksize:int) -> Tuple[array[array[T]], array[T]]
   					(split array into blocks of size blocksize;
 					 last element may have size < blocksize)
   zip(a:array[T],b:array[U]) -> array[Tuple[T,U]]
@@ -82,6 +101,7 @@ array(T,len):
 					 truncate to shorter length)
   enumerate(a:array[T]) -> array[Tuple[int,U]]
 					(convert each element x at index i into a pair (i,x))
+  create_random(len:nat, t:type) -> array[t]  (create array with len random elements of type t)
 
 bytes(len):
   to_uintNs_le(b:bytes_t(4*len)) -> array_t(uintN,len)
