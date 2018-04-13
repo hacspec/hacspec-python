@@ -12,6 +12,14 @@ output_size = refine3('size_nat', nat, lambda x: x <= 64)
 output_size_t = output_size
 
 
+j_range = range_t('j_range', 0, 8)
+lanes_t = range_t('lanes_t', 1, 2**24)
+segment_t = range_t('segment_t', 0, 4)
+t_len_t = range(1, max_size_t - 65)
+idx_t = refine(size_nat, lambda x: x <= 15)
+working_vector_t = array_t(uint64_t, 16)
+
+
 def h(a: refine(vlbytes_t, lambda x: array.length(x) < max_size_t - 2 * line_size), nn: output_size_t) \
         -> contract(vlbytes_t, lambda a, nn: True, lambda a, nn, res: array.length(res) == nn):
     res = blake2b(a, array([]), nn)
@@ -58,25 +66,23 @@ def h_prime(t_len: refine(size_nat, lambda x: 1 <= t_len and t_len + 64 <= max_s
         return output
 
 
-idx_t = refine(size_nat, lambda x: x <= 15)
-
-
 def low_bits(x: uint64_t) -> uint64_t:
     return uint64(uint32(x))
 
 
-working_vector_t = array_t(uint64_t, 16)
-
-
 def g(v: working_vector_t, a: idx_t, b: idx_t, c: idx_t, d: idx_t) -> working_vector_t:
     v_res = array.copy(v)
-    v_res[a] = v_res[a] + v_res[b] + uint64(2) * low_bits(v_res[a]) * low_bits(v_res[b])
+    v_res[a] = v_res[a] + v_res[b] + \
+        uint64(2) * low_bits(v_res[a]) * low_bits(v_res[b])
     v_res[d] = uint64_t.rotate_right(v_res[d] ^ v_res[a], 32)
-    v_res[c] = v_res[c] + v_res[d] + uint64(2) * low_bits(v_res[c]) * low_bits(v_res[d])
+    v_res[c] = v_res[c] + v_res[d] + \
+        uint64(2) * low_bits(v_res[c]) * low_bits(v_res[d])
     v_res[b] = uint64_t.rotate_right(v_res[b] ^ v_res[c], 24)
-    v_res[a] = v_res[a] + v_res[b] + uint64(2) * low_bits(v_res[a]) * low_bits(v_res[b])
+    v_res[a] = v_res[a] + v_res[b] + \
+        uint64(2) * low_bits(v_res[a]) * low_bits(v_res[b])
     v_res[d] = uint64_t.rotate_right(v_res[d] ^ v_res[a], 16)
-    v_res[c] = v_res[c] + v_res[d] + uint64(2) * low_bits(v_res[c]) * low_bits(v_res[d])
+    v_res[c] = v_res[c] + v_res[d] + \
+        uint64(2) * low_bits(v_res[c]) * low_bits(v_res[d])
     v_res[b] = uint64_t.rotate_right(v_res[b] ^ v_res[c], 63)
     return v_res
 
@@ -105,7 +111,7 @@ def xor_blocks(X: bytes_t(block_size), Y: bytes_t(block_size)) -> bytes_t(block_
     return output
 
 
-def extract_block_column(j: range_t(0, 8), block: bytes_t(block_size)) -> bytes_t(line_size):
+def extract_block_column(j: j_range, block: bytes_t(block_size)) -> bytes_t(line_size):
     col = array.create(line_size, uint8(0))
     for i in range(8):
         offset = i * line_size + j * 16
@@ -113,7 +119,7 @@ def extract_block_column(j: range_t(0, 8), block: bytes_t(block_size)) -> bytes_
     return col
 
 
-def update_block_column(j: range_t(0, 8), col: bytes_t(line_size), block: bytes_t(block_size)) -> bytes_t(block_size):
+def update_block_column(j: j_range, col: bytes_t(line_size), block: bytes_t(block_size)) -> bytes_t(block_size):
     output = array.copy(block)
     for i in range(8):
         offset = i * line_size + j * 16
@@ -140,9 +146,6 @@ def extend_to_block(input: refine(vlbytes_t, lambda x: array.length(x) <= block_
     output = array.create(block_size, uint8(0))
     output[:array.length(intput)] = input
     return output
-
-
-lanes_t = range_t(1, 2**24)
 
 
 def block_offset(lanes: lanes_t, columns: size_nat, i: size_nat, j: size_nat) \
@@ -188,9 +191,6 @@ def seeds_length(lanes: lanes_t, columns: size_nat) \
     segment_length = columns // 4
     tmp = segment_length // line_size + 1
     return tmp * line_size * 2
-
-
-segment_t = range_t(0, 4)
 
 
 def generate_seeds(lanes: lanes_t, columns: size_nat, i: size_nat, iterations: size_nat, t: size_nat, segment: segment_t) \
@@ -257,9 +257,6 @@ def map_indexes(t: size_nat, segment: segment_t, lanes: lanes_t, columns: size_n
     j_prime_tmp = pseudo_random_generation(uint32.to_int(j1), r_size)
     j_prime = (r_start + j_prime_tmp) % columns
     return (i_prime, j_prime)
-
-
-t_len_t = range(1, max_size_t - 65)
 
 
 def fill_segment(h0: bytes_t(64), iterations: size_nat, segment: segment_t, t_len: t_len_t,

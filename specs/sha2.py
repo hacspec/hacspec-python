@@ -110,8 +110,8 @@ def sha2(v:variant):
         return (x & y) ^ ((~ x) & z)
     def maj(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((x & z) ^ (y & z))
-    i_range = range_t(0,4)
-    op_range = range_t(0,1)
+    i_range = range_t('i_range', 0, 4)
+    op_range = range_t('op_range', 0, 1)
     def sigma(x:word_t,i:i_range,op:op_range) -> word_t:
         if op == 0:
             tmp = x >> opTable[3*i+2]

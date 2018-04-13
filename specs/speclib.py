@@ -64,8 +64,8 @@ nat = refine3('nat_t', int, lambda x: x >= 0)
 nat_t = nat
 
 
-def range_t(min, max):
-    return refine(int, lambda x: x >= min and x < max)
+def range_t(range_name, min, max) -> type:
+    return refine3(range_name, int, lambda x: x >= min and x < max)
 
 
 def contract(T: Type[T], pre, post):
@@ -96,6 +96,8 @@ class _uintn:
 
     @staticmethod
     def num_bits(x: '_uintn') -> int:
+        if not isinstance(x, _uintn):
+            fail("num_bits is only valid for uintN.")
         return x.bits
 
     def __int__(self) -> int:
@@ -103,6 +105,8 @@ class _uintn:
 
     @staticmethod
     def to_int(x: '_uintn') -> int:
+        if not isinstance(x, _uintn):
+            fail("to_int is only valid for uintN.")
         return x.v
 
 
@@ -111,41 +115,67 @@ class bit(_uintn):
         if isinstance(v, int):
             super().__init__(v, 1)
         else:
+            if not isinstance(v, _uintn):
+                fail("bit() is only valid for int or uintN.")
             super().__init__(_uintn.to_int(v), 1)
 
     def __add__(self, other: 'bit') -> 'bit':
+        if not isinstance(other, bit):
+            fail("+ is only valid for two bit.")
         return bit(self.v + other.v)
 
     def __sub__(self, other: 'bit') -> 'bit':
+        if not isinstance(other, bit):
+            fail("- is only valid for two bit.")
         return bit(self.v - other.v)
 
     def __mul__(self, other: 'bit') -> 'bit':
+        if not isinstance(other, bit):
+            fail("* is only valid for two bit.")
         return bit(self.v * other.v)
 
     def __inv__(self) -> 'bit':
         return bit(~ self.v)
 
     def __or__(self, other: 'bit') -> 'bit':
+        if not isinstance(other, bit):
+            fail("| is only valid for two bit.")
         return bit(self.v | other.v)
 
     def __and__(self, other: 'bit') -> 'bit':
+        if not isinstance(other, bit):
+            fail("& is only valid for two bit.")
         return bit(self.v & other.v)
 
     def __xor__(self, other: 'bit') -> 'bit':
+        if not isinstance(other, bit):
+            fail("^ is only valid for two bit.")
         return bit(self.v ^ other.v)
 
     def __lshift__(self, other: int) -> 'bit':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return bit(self.v << other)
 
     def __rshift__(self, other: int) -> 'bit':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return bit(self.v >> other)
 
     @staticmethod
     def rotate_left(x: 'bit', other: int) -> 'bit':
+        if not isinstance(x, bit):
+            fail("rotate_left is only valid for bit.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x << other | x >> (x.bits - other))
 
     @staticmethod
     def rotate_right(x: 'bit', other: int) -> 'bit':
+        if not isinstance(x, bit):
+            fail("rotate_right is only valid for bit.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x >> other | x << (x.bits - other))
 
 
@@ -154,41 +184,67 @@ class uint8(_uintn):
         if isinstance(v, int):
             super().__init__(v, 8)
         else:
+            if not isinstance(v, _uintn):
+                fail("uint8() is only valid for int or uintN.")
             super().__init__(_uintn.to_int(v), 8)
 
     def __add__(self, other: 'uint8') -> 'uint8':
+        if not isinstance(other, uint8):
+            fail("+ is only valid for two uint8_t.")
         return uint8(self.v + other.v)
 
     def __sub__(self, other: 'uint8') -> 'uint8':
+        if not isinstance(other, uint8):
+            fail("- is only valid for two uint8_t.")
         return uint8(self.v - other.v)
 
     def __mul__(self, other: 'uint8') -> 'uint8':
+        if not isinstance(other, uint8):
+            fail("* is only valid for two uint8_t.")
         return uint8(self.v * other.v)
 
     def __inv__(self) -> 'uint8':
         return uint8(~ self.v)
 
     def __or__(self, other: 'uint8') -> 'uint8':
+        if not isinstance(other, uint8):
+            fail("| is only valid for two uint8_t.")
         return uint8(self.v | other.v)
 
     def __and__(self, other: 'uint8') -> 'uint8':
+        if not isinstance(other, uint8):
+            fail("& is only valid for two uint8_t.")
         return uint8(self.v & other.v)
 
     def __xor__(self, other: 'uint8') -> 'uint8':
+        if not isinstance(other, uint8):
+            fail("^ is only valid for two uint8_t.")
         return uint8(self.v ^ other.v)
 
     def __lshift__(self, other: int) -> 'uint8':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint8(self.v << other)
 
     def __rshift__(self, other: int) -> 'uint8':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint8(self.v >> other)
 
     @staticmethod
     def rotate_left(x: 'uint8', other: int) -> 'uint8':
+        if not isinstance(x, uint8):
+            fail("rotate_left is only valid for uint8_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x << other | x >> (x.bits - other))
 
     @staticmethod
     def rotate_right(x: 'uint8', other: int) -> 'uint8':
+        if not isinstance(x, uint8):
+            fail("rotate_right is only valid for uint8_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x >> other | x << (x.bits - other))
 
 
@@ -197,41 +253,67 @@ class uint16(_uintn):
         if isinstance(v, int):
             super().__init__(v, 16)
         else:
+            if not isinstance(v, _uintn):
+                fail("uint16() is only valid for int or uintN.")
             super().__init__(_uintn.to_int(v), 16)
 
     def __add__(self, other: 'uint16') -> 'uint16':
+        if not isinstance(other, uint8):
+            fail("+ is only valid for two uint16_t.")
         return uint16(self.v + other.v)
 
     def __sub__(self, other: 'uint16') -> 'uint16':
+        if not isinstance(other, uint8):
+            fail("- is only valid for two uint16_t.")
         return uint16(self.v - other.v)
 
     def __mul__(self, other: 'uint16') -> 'uint16':
+        if not isinstance(other, uint8):
+            fail("* is only valid for two uint16_t.")
         return uint16(self.v * other.v)
 
     def __inv__(self) -> 'uint16':
         return uint16(~ self.v)
 
     def __or__(self, other: 'uint16') -> 'uint16':
+        if not isinstance(other, uint8):
+            fail("| is only valid for two uint16_t.")
         return uint16(self.v | other.v)
 
     def __and__(self, other: 'uint16') -> 'uint16':
+        if not isinstance(other, uint8):
+            fail("& is only valid for two uint16_t.")
         return uint16(self.v & other.v)
 
     def __xor__(self, other: 'uint16') -> 'uint16':
+        if not isinstance(other, uint8):
+            fail("^ is only valid for two uint16_t.")
         return uint16(self.v ^ other.v)
 
     def __lshift__(self, other: int) -> 'uint16':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint16(self.v << other)
 
     def __rshift__(self, other: int) -> 'uint16':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint16(self.v >> other)
 
     @staticmethod
     def rotate_left(x: 'uint16', other: int) -> 'uint16':
+        if not isinstance(x, uint16):
+            fail("rotate_left is only valid for uint16_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x << other | x >> (x.bits - other))
 
     @staticmethod
     def rotate_right(x: 'uint16', other: int) -> 'uint16':
+        if not isinstance(x, uint16):
+            fail("rotate_right is only valid for uint16_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x >> other | x << (x.bits - other))
 
 
@@ -240,15 +322,23 @@ class uint32(_uintn):
         if isinstance(v, int):
             super().__init__(v, 32)
         else:
+            if not isinstance(v, _uintn):
+                fail("uint32() is only valid for int or uintN.")
             super().__init__(_uintn.to_int(v), 32)
 
     def __add__(self, other: 'uint32') -> 'uint32':
+        if not isinstance(other, uint32):
+            fail("+ is only valid for two uint32_t.")
         return uint32(self.v + other.v)
 
     def __sub__(self, other: 'uint32') -> 'uint32':
+        if not isinstance(other, uint32):
+            fail("- is only valid for two uint32_t.")
         return uint32(self.v - other.v)
 
     def __mul__(self, other: 'uint32') -> 'uint32':
+        if not isinstance(other, uint32):
+            fail("* is only valid for two uint32_t.")
         return uint32(self.v * other.v)
 
     def __inv__(self) -> 'uint32':
@@ -258,26 +348,44 @@ class uint32(_uintn):
         return uint32(~ self.v & self.max)
 
     def __or__(self, other: 'uint32') -> 'uint32':
+        if not isinstance(other, uint32):
+            fail("| is only valid for two uint32_t.")
         return uint32(self.v | other.v)
 
     def __and__(self, other: 'uint32') -> 'uint32':
+        if not isinstance(other, uint32):
+            fail("& is only valid for two uint32_t.")
         return uint32(self.v & other.v)
 
     def __xor__(self, other: 'uint32') -> 'uint32':
+        if not isinstance(other, uint32):
+            fail("^ is only valid for two uint32_t.")
         return uint32(self.v ^ other.v)
 
     def __lshift__(self, other: int) -> 'uint32':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint32(self.v << other)
 
     def __rshift__(self, other: int) -> 'uint32':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint32(self.v >> other)
 
     @staticmethod
     def rotate_left(x: 'uint32', other: int) -> 'uint32':
+        if not isinstance(x, uint32):
+            fail("rotate_left is only valid for uint32_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x << other | x >> (x.bits - other))
 
     @staticmethod
     def rotate_right(x: 'uint32', other: int) -> 'uint32':
+        if not isinstance(x, uint32):
+            fail("rotate_right is only valid for uint32_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x >> other | x << (x.bits - other))
 
 
@@ -286,15 +394,23 @@ class uint64(_uintn):
         if isinstance(v, int):
             super().__init__(v, 64)
         else:
+            if not isinstance(v, _uintn):
+                fail("uint64() is only valid for int or uintN.")
             super().__init__(_uintn.to_int(v), 64)
 
     def __add__(self, other: 'uint64') -> 'uint64':
+        if not isinstance(other, uint64):
+            fail("+ is only valid for two uint64_t.")
         return uint64(self.v + other.v)
 
     def __sub__(self, other: 'uint64') -> 'uint64':
+        if not isinstance(other, uint64):
+            fail("- is only valid for two uint64_t.")
         return uint64(self.v - other.v)
 
     def __mul__(self, other: 'uint64') -> 'uint64':
+        if not isinstance(other, uint64):
+            fail("* is only valid for two uint64_t.")
         return uint64(self.v * other.v)
 
     def __inv__(self) -> 'uint64':
@@ -304,26 +420,44 @@ class uint64(_uintn):
         return uint64(~ self.v & self.max)
 
     def __or__(self, other: 'uint64') -> 'uint64':
+        if not isinstance(other, uint64):
+            fail("| is only valid for two uint64_t.")
         return uint64(self.v | other.v)
 
     def __and__(self, other: 'uint64') -> 'uint64':
+        if not isinstance(other, uint64):
+            fail("& is only valid for two uint64_t.")
         return uint64(self.v & other.v)
 
     def __xor__(self, other: 'uint64') -> 'uint64':
+        if not isinstance(other, uint64):
+            fail("^ is only valid for two uint64_t.")
         return uint64(self.v ^ other.v)
 
     def __lshift__(self, other: int) -> 'uint64':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint64(self.v << other)
 
     def __rshift__(self, other: int) -> 'uint64':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint64(self.v >> other)
 
     @staticmethod
     def rotate_left(x: 'uint64', other: int) -> 'uint64':
+        if not isinstance(x, uint64):
+            fail("rotate_left is only valid for uint64_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x << other | x >> (x.bits - other))
 
     @staticmethod
     def rotate_right(x: 'uint64', other: int) -> 'uint64':
+        if not isinstance(x, uint64):
+            fail("rotate_right is only valid for uint64_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x >> other | x << (x.bits - other))
 
 
@@ -332,41 +466,67 @@ class uint128(_uintn):
         if isinstance(v, int):
             super().__init__(v, 128)
         else:
+            if not isinstance(v, _uintn):
+                fail("uint128() is only valid for int or uintN.")
             super().__init__(_uintn.to_int(v), 128)
 
     def __add__(self, other: 'uint128') -> 'uint128':
+        if not isinstance(other, uint128):
+            fail("+ is only valid for two uint128_t.")
         return uint128(self.v + other.v)
 
     def __sub__(self, other: 'uint128') -> 'uint128':
+        if not isinstance(other, uint128):
+            fail("- is only valid for two uint128_t.")
         return uint128(self.v - other.v)
 
     def __mul__(self, other: 'uint128') -> 'uint128':
+        if not isinstance(other, uint128):
+            fail("* is only valid for two uint128_t.")
         return uint128(self.v * other.v)
 
     def __inv__(self) -> 'uint128':
         return uint128(~ self.v)
 
     def __or__(self, other: 'uint128') -> 'uint128':
+        if not isinstance(other, uint128):
+            fail("| is only valid for two uint128_t.")
         return uint128(self.v | other.v)
 
     def __and__(self, other: 'uint128') -> 'uint128':
+        if not isinstance(other, uint128):
+            fail("& is only valid for two uint128_t.")
         return uint128(self.v & other.v)
 
     def __xor__(self, other: 'uint128') -> 'uint128':
+        if not isinstance(other, uint128):
+            fail("^ is only valid for two uint128_t.")
         return uint128(self.v ^ other.v)
 
     def __lshift__(self, other: int) -> 'uint128':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint128(self.v << other)
 
     def __rshift__(self, other: int) -> 'uint128':
+        if not isinstance(other, int):
+            fail("Shift value has to be int.")
         return uint128(self.v >> other)
 
     @staticmethod
     def rotate_left(x: 'uint128', other: int) -> 'uint128':
+        if not isinstance(x, uint128):
+            fail("rotate_left is only valid for uint128_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x << other | x >> (x.bits - other))
 
     @staticmethod
     def rotate_right(x: 'uint128', other: int) -> 'uint128':
+        if not isinstance(x, uint128):
+            fail("rotate_right is only valid for uint128_t.")
+        if not isinstance(other, int):
+            fail("Rotate value has to be int.")
         return (x >> other | x << (x.bits - other))
 
 
@@ -454,7 +614,10 @@ class bitvector(_uintn):
 
 
 class vlarray(Iterable[T]):
-    def __init__(self, x: Sequence[T], t: Type=None) -> None:
+    def __init__(self, x: Union[Sequence[T], 'vlarray[T]'], t: Type=None) -> None:
+        if not (isinstance(x, Sequence) or isinstance(x, vlarray)):
+            fail("vlarray() takes a sequence or vlarray as first argument.")
+        # TODO: check for T and t
         self.l = list(x)
         self.t = t
 
@@ -540,6 +703,10 @@ class vlarray(Iterable[T]):
 
     @staticmethod
     def split_blocks(a: 'vlarray[T]', blocksize: int) -> 'Tuple[vlarray[vlarray[T]],vlarray[T]]':
+        if not isinstance(a, vlarray):
+            fail("split_blocks takes a vlarray[T] as first argument.")
+        if not isinstance(blocksize, int):
+            fail("split_blocks takes an int as second argument.")
         nblocks = len(a) // blocksize
         blocks = vlarray([a[x*blocksize:(x+1)*blocksize]
                           for x in range(nblocks)])
