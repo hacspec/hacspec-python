@@ -10,7 +10,7 @@ chacha20poly1305_test = TypedDict('chacha20poly1305_test', {
     'nonce' :  str,
     'output' :  str})
 
-aead_chacha20poly1305_test_vectors : 'array[chacha20poly1305_test]' = array([
+aead_chacha20poly1305_test_vectors : array = array([
 {
 	'key'	: "1c9240a5eb55d38af333888604f6b5f0473917c1402b80099dca5cbc207075c0",
 	'nonce'	: "000000000102030405060708",

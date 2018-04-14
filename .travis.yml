@@ -6,6 +6,7 @@ install:
   - pip install mypy
   - pip install mypy_extensions
   - pip install xml2rfc
+  - pip install typeguard
   - gem install --no-doc kramdown-rfc2629
 
 script:
