@@ -35,6 +35,7 @@ IV = array([
 ])
 
 
+@typechecked
 def G(v: working_vector_t, a: index_t, b: index_t, c: index_t, d: index_t, x: uint64_t, y: uint64_t) -> working_vector_t:
     v[a] = v[a] + v[b] + x
     v[d] = uint64_t.rotate_right(v[d] ^ v[a], R1)
@@ -47,6 +48,7 @@ def G(v: working_vector_t, a: index_t, b: index_t, c: index_t, d: index_t, x: ui
     return v
 
 
+@typechecked
 def F(h: hash_vector_t, m: working_vector_t, t: uint128_t, flag: bool) -> hash_vector_t:
     v = array.create(16, uint64(0))
     v[0:8] = h
@@ -69,14 +71,14 @@ def F(h: hash_vector_t, m: working_vector_t, t: uint128_t, flag: bool) -> hash_v
         h[i] = h[i] ^ v[i] ^ v[i + 8]
     return h
 
+data_internal_t = refine3('data_internal_t', vlbytes,
+    lambda x: vlbytes.length(x) < 2 ** 64 and (vlbytes.length(x) % block_bytes == 0))
+key_t = refine3('key_t', vlbytes, lambda x: array.length(x) <= 64)
+key_size_t = refine3('key_size_t', nat, lambda x: x <= 64)
+out_size_t = refine3('out_size_t', nat, lambda x: x <= 32)
 
-data_internal_t = refine(bytes_t, lambda x: array.length(
-    x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
-key_t = refine(vlbytes_t, lambda x: array.length(x) <= 64)
-key_size_t = refine(nat, lambda x: x <= 64)
-out_size_t = refine(nat, lambda x: x <= 32)
 
-
+@typechecked
 def blake2b_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size_t, nn: out_size_t) \
         -> contract(vlbytes_t,
                     lambda data, input_bytes, kk, nn: True,
@@ -97,10 +99,11 @@ def blake2b_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size
     return vlbytes.from_uint64s_le(h)[:nn]
 
 max_size_t = 2**64 - 1
-data_t = refine(vlbytes_t, lambda x: vlbytes.lenght(x)
-                < max_size_t - 2 * block_bytes)
+data_t = refine3('data_t', vlbytes,
+    lambda x: vlbytes.lenght(x) < max_size_t - 2 * block_bytes)
 
 
+@typechecked
 def blake2b(data: data_t, key: key_t, nn: out_size_t) \
         -> contract(vlbytes_t,
                     lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn):
@@ -109,10 +112,10 @@ def blake2b(data: data_t, key: key_t, nn: out_size_t) \
     data_blocks = (ll - 1) // block_bytes + 1
     padded_data_length = data_blocks * block_bytes
     if kk == 0:
-        padded_data = array.create(padded_data_length, uint8(0))
+        padded_data = bytes(array.create(padded_data_length, uint8(0)))
         padded_data[:ll] = data
     else:
-        padded_data = array.create(padded_data_length + block_bytes, uint8(0))
+        padded_data = bytes(array.create(padded_data_length + block_bytes, uint8(0)))
         padded_data[0:kk] = key
         padded_data[block_bytes:block_bytes+ll] = key
-    return blake2b_internal(padded_data, ll, kk, nn)
+    return blake2b_internal(padded_data, uint128(ll), nat(kk), nn)

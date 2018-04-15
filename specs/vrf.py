@@ -16,7 +16,7 @@ def OS2ECP(s:serialized_point_t) -> extended_point_t:
 def ECP2OS(p:extended_point_t) -> serialized_point_t :
 	return point_compress(p)
 
-def I2OSP(value: nat) -> bytes_t(32):
+def I2OSP(value: nat) -> bytes_t('i2osp_out', 32):
 	return bytes.from_nat_le(nat(value))
 
 def OS2IP(s: serialized_scalar_t) -> felem_t:
@@ -27,7 +27,7 @@ def hash (msg:vlbytes) -> nat:
 
 curveOrder = (7237005577332262213973186563042994240857116359379907606001950938285454250989)
 
-def ECVRF_hash_to_curve(ctr: nat, pub: serialized_point_t, input: bytes_t(uint32)) -> extended_point_t:
+def ECVRF_hash_to_curve(ctr: nat, pub: serialized_point_t, input: bytes_t('i_in', uint32)) -> extended_point_t:
 	tmp = array.create(array.length(input)+64,uint8(0))
 	lenMessage = array.length(input)
 	tmp[:lenMessage] = input
@@ -50,7 +50,7 @@ def ECVRF_hash_to_curve(ctr: nat, pub: serialized_point_t, input: bytes_t(uint32
 		return possiblePoint		
 
 
-def ECVRF_decode_proof(pi: bytes_t(5*n)) -> (extended_point_t, bytes_t(n), bytes_t(2*n)):
+def ECVRF_decode_proof(pi: bytes_t('pi_in', 5*n)) -> (extended_point_t, bytes_t('co', n), bytes_t('so', 2*n)):
 	gamma = pi[:2*n]
 	c = pi[2*n: 3*n]
 	s = pi[3*n: 5*n]
@@ -68,7 +68,7 @@ def ECVRF_hash_points (g: extended_point_t, h: extended_point_t, pub: extended_p
 	result = felem(hashed)
 	return result
 
-def ECVRF_prove (input: bytes_t(uint32), pub: serialized_point_t, priv: serialized_scalar_t, k:felem_t) -> (bytes_t(5*n)):
+def ECVRF_prove (input: bytes_t('iin', uint32), pub: serialized_point_t, priv: serialized_scalar_t, k:felem_t) -> (bytes_t('p_out', 5*n)):
 	ap = point_decompress(pub)
 	if ap is None:
 		return False	
@@ -93,12 +93,12 @@ def ECVRF_prove (input: bytes_t(uint32), pub: serialized_point_t, priv: serializ
 	tmp[48:80] = I2OSP(s)
 	return tmp
 
-def ECVRF_proof_to_hash (pi: bytes_t(5*n)) -> (bytes_t(2*n)):
+def ECVRF_proof_to_hash (pi: bytes_t('pi_in', 5*n)) -> (bytes_t('ph_out', 2*n)):
 	(gamma, c, s) = ECVRF_decode_proof(pi)
 	h = hash(ECP2OS(gamma))
 	return I2OSP(h)
 
-def ECVRF_verify (pub: serialized_point_t, pi: bytes_t(5*n), input: bytes_t(uint32)) -> bool:
+def ECVRF_verify (pub: serialized_point_t, pi: bytes_t('pi_in', 5*n), input: bytes_t('i_in', uint32)) -> bool:
 	ap = point_decompress(pub)
 	if ap is None:
 		return False

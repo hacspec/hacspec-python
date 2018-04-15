@@ -5,7 +5,6 @@ from importlib import import_module
 import builtins
 from typeguard import typechecked
 
-
 class Error(Exception):
     pass
 
@@ -40,13 +39,13 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> Tuple[T, U, V, W, X]:
 def refine(t: type, f: Callable[[T], bool]) -> type:
     return t
 
-from inspect import getfullargspec
+from inspect import getfullargspec, getsource
 
 def refine3(u: str, t: type, f: Callable[[T], bool]) -> type:
     __class__ = t
     def init(self, x:t) -> None:
-        if not (isinstance(x, t) or f(x)):
-            fail("Type error. You tried to use " + str(x) + " with " + u + ".")
+        if not isinstance(x, t) or not f(x):
+            fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with " + u + ".")
         else:
             num_init_args = len(getfullargspec(super().__init__).args)
             if num_init_args == 1:
@@ -56,7 +55,7 @@ def refine3(u: str, t: type, f: Callable[[T], bool]) -> type:
             else:
                 fail("refine3 super.init has more args than we expected (" + str(num_init_args) + ")")
             t(x)
-    cl = type(u, (t,), {'__init__': init , '__class__': t})
+    cl = type(u, (t,), {'__init__': init , '__origin__': t}) # '__class__': t,
     __class__ = cl
     return cl
 
@@ -848,7 +847,7 @@ class vlbytes(vlarray):
         a = vlarray.create(16, uint8(0))
         a[0:8] = vlbytes.from_uint64_le(x0)
         a[8:16] = vlbytes.from_uint64_le(x1)
-        return a
+        return bytes(a)
 
     @staticmethod
     def to_uint128_le(x: 'vlbytes') -> uint128:
@@ -950,7 +949,7 @@ class vlbytes(vlarray):
     @staticmethod
     def from_uint64s_le(x: vlarray) -> 'vlbytes':
         by = vlarray([vlbytes.from_uint64_le(i) for i in x])
-        return(vlarray.concat_blocks(by, vlarray([])))
+        return bytes(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
     def to_uint64s_le(x: 'vlbytes') -> vlarray:
@@ -958,20 +957,21 @@ class vlbytes(vlarray):
         if len(x) > 0:
             fail("array length not a multple of 8")
         else:
-            return(vlarray([vlbytes.to_uint64_le(i) for i in nums]))
+            return vlarray([vlbytes.to_uint64_le(i) for i in nums])
 
     @staticmethod
     def create_random_bytes(len: nat) -> 'vlbytes':
         r = rand()
-        return array(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
+        return bytes(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
 
 def vlbytes_t(T):
     return vlbytes
 
 
-def bytes_t(len):
-    return vlbytes
+def bytes_t(name, l:int):
+    return refine3(name, vlbytes, lambda x: vlbytes.length(x) <= l)
+    # return vlbytes
 
 
 def bitvector_t(len: nat):
@@ -1245,5 +1245,5 @@ class speclib:
     def ceil(x: int) -> nat_t:
         return nat(ceil(x))
 
-    def log(x: int, b: int) -> nat_t:
-        return nat(log(x, b))
+    def log(x: int, b: int) -> int:
+        return log(x, b)

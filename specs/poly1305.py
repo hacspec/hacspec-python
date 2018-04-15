@@ -3,28 +3,28 @@
 from speclib import *
 
 blocksize = 16
-block_t = bytes_t(16)
-key_t = bytes_t(32)
-tag_t = bytes_t(16)
+block_t = bytes_t('block_t', 16)
+key_t = bytes_t('key_t', 32)
+tag_t = bytes_t('tag_t', 16)
 subblock = refine3('subblock_t', vlbytes, lambda x: vlbytes.length(x) <= 16)
 subblock_t = subblock
 
 
 # Define prime field
 
-p130m5 = (2 ** 130) - 5
+p130m5 = nat((2 ** 130) - 5)
 felem = refine3('felem_t', nat, lambda x: x < p130m5)
 felem_t = felem
 
 
 @typechecked
-def to_felem(x: nat) -> felem_t:
-    return felem(x % p130m5)
+def to_felem(x: nat_t) -> felem_t:
+    return felem(nat(x % p130m5))
 
 
 @typechecked
 def fadd(x: felem_t, y: felem_t) -> felem_t:
-    return to_felem(nat(x + y))
+    return to_felem(x + y)
 
 
 @typechecked
@@ -45,18 +45,19 @@ def encode(block: subblock_t) -> felem_t:
 def encode_r(r: block_t) -> felem_t:
     ruint = bytes.to_uint128_le(r)
     ruint = ruint & uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
-    return to_felem(uint128.to_nat(ruint))
+    r_nat = uint128.to_nat(ruint)
+    return to_felem(r_nat)
 
 # There are many ways of writing the polynomial evaluation function
 # This version: use a loop to accumulate the result
 @typechecked
 def poly(text: vlbytes_t, r: felem_t) -> felem_t:
     blocks, last = vlarray.split_blocks(text, blocksize)
-    acc = felem(0)
+    acc = felem(nat(0))
     for i in range(array.length(blocks)):
         acc = fmul(fadd(acc, encode(subblock(blocks[i]))), r)
     if (array.length(last) > 0):
-        acc = fmul(fadd(acc, encode(subblock(last))), r)
+        acc = fmul(fadd(acc, encode(subblock(bytes(last)))), r)
     return acc
 
 

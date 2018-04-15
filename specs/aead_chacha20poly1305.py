@@ -4,10 +4,11 @@ from speclib import *
 from chacha20 import chacha20_block, chacha20_encrypt, chacha20_decrypt
 from poly1305 import poly1305_mac
 
-key_t    = bytes_t(32)
-nonce_t  = bytes_t(12)
-tag_t    = bytes_t(16)
+key_t    = bytes_t('key_t', 32)
+nonce_t  = bytes_t('nonce_t', 12)
+tag_t    = bytes_t('tag_t', 16)
 
+@typechecked
 def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> Tuple[int,vlbytes_t]:
     laad = len(aad)
     lmsg = len(msg)
@@ -24,6 +25,7 @@ def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> Tuple[int,vlbytes_t]:
     to_mac[pad_aad+pad_msg+8:pad_aad+pad_msg+16] = bytes.from_uint64_le(uint64(lmsg))
     return pad_aad+pad_msg+16, to_mac
 
+@typechecked
 def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> Tuple[vlbytes_t,tag_t]:
     keyblock0 = chacha20_block(key,uint32(0),nonce)
     mac_key = keyblock0[0:32]
@@ -32,6 +34,7 @@ def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlby
     mac = poly1305_mac(to_mac,mac_key)
     return ciphertext, mac
 
+@typechecked
 def aead_chacha20poly1305_decrypt(key:key_t,nonce:bytes_t,
                                   aad:vlbytes_t,
                                   ciphertext:vlbytes_t,

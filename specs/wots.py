@@ -21,13 +21,15 @@ length = length1 + length2
 
 # Types
 
-sk_t = vlarray_t(bytes_t(n))
-pk_t = vlarray_t(bytes_t(n))
-sig_t = vlarray_t(bytes_t(n))
+
+key_t = bytes_t('key_t', n)
+sk_t = vlarray_t(bytes_t('sk_t', n))
+pk_t = vlarray_t(bytes_t('pk_t', n))
+sig_t = vlarray_t(bytes_t('sig_t', n))
 address_t = array_t(uint32_t, 8)
 key_pair_t = Tuple[sk_t, pk_t, address_t]
-digest_t = bytes_t(32)
-seed_t = bytes_t(n)
+digest_t = bytes_t('digest_t', 32)
+seed_t = bytes_t('seed_t', n)
 chain_t = Tuple[address_t, vlbytes_t]
 
 # F: SHA2-256(toByte(0, 32) || KEY || M),
@@ -36,25 +38,25 @@ chain_t = Tuple[address_t, vlbytes_t]
 # PRF: SHA2-256(toByte(3, 32) || KEY || M).
 
 
-def hash(prefix: bytes_t(32), key: bytes_t(32), m: vlbytes_t) -> digest_t:
+def hash(prefix: key_t, key: key_t, m: vlbytes_t) -> digest_t:
     h_in = bytes.concat(prefix, key)
     h_in = bytes.concat(h_in, m)
     return sha256(h_in)
 
 
-def F(key: bytes_t(32), m: vlbytes_t) -> digest_t:
+def F(key: key_t, m: vlbytes_t) -> digest_t:
     return hash(bytes.from_nat_be(nat(0), nat(32)), key, m)
 
 
-def H(key: bytes_t(32), m: vlbytes_t) -> digest_t:
+def H(key: key_t, m: vlbytes_t) -> digest_t:
     return hash(bytes.from_nat_be(nat(1), nat(32)), key, m)
 
 
-def H_msg(key: bytes_t(32), m: vlbytes_t) -> digest_t:
+def H_msg(key: key_t, m: vlbytes_t) -> digest_t:
     return hash(bytes.from_nat_be(nat(2), nat(32)), key, m)
 
 
-def PRF(key: bytes_t(32), m: address_t) -> digest_t:
+def PRF(key: key_t, m: address_t) -> digest_t:
     m_ = vlbytes.from_uint32_be(m[0])
     m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[1]))
     m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[2]))

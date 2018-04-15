@@ -10,9 +10,9 @@ def main(x:int) -> None:
         x = bytes.from_hex(vec['x'])
         k = bytes.from_hex(vec['k'])
         lanes = vec['lanes']
-        t_len = vec['t_len']
-        m = vec['m']
-        iterations = vec['iterations']
+        t_len = nat(vec['t_len'])
+        m = nat(vec['m'])
+        iterations = nat(vec['iterations'])
         expected = bytes.from_hex(vec['output'])
         computed = argon2i(p,s,lanes,t_len,m,iterations,x,k)
         if computed == expected:

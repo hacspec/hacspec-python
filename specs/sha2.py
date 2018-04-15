@@ -10,7 +10,7 @@ def sha2(v:variant):
     # Initializing types and constants for different variants 
     if v == 224 or v == 256:
         blockSize = 64
-        block_t = bytes_t(blockSize)
+        block_t = bytes_t('block_t', blockSize)
         lenSize = 8
         len_t = uint64_t
         len_to_bytes = bytes.from_uint64_be
@@ -45,7 +45,7 @@ def sha2(v:variant):
             uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7), uint32(0xc67178f2)])
     else:
         blockSize = 128
-        block_t = bytes_t(blockSize)
+        block_t = bytes_t('block_t', blockSize)
         lenSize = 16
         len_t = uint128_t
         len_to_bytes = bytes.from_uint128_be
@@ -85,7 +85,7 @@ def sha2(v:variant):
 
     hashSize = v // 8
     hash_t = array_t(word_t,8)
-    digest_t = bytes_t(hashSize)
+    digest_t = bytes_t('digest_t', hashSize)
     h0 : hash_t = array.create(8,to_word(0))
     if v == 224:
         h0 = array([
@@ -167,7 +167,7 @@ def sha2(v:variant):
             h[i] += hIn[i]
         return h
 
-    def truncate(b:bytes_t(v)) -> digest_t:
+    def truncate(b:bytes_t('b_in', v)) -> digest_t:
         result = array.create(hashSize, uint8(0))
         for i in range(0, hashSize):
             result[i] = b[i]
@@ -197,7 +197,7 @@ def sha2(v:variant):
 
 # Specific instances of SHA-2 
 
-sha224 = sha2(variant(224))
-sha256 = sha2(variant(256))
-sha384 = sha2(variant(384))
-sha512 = sha2(variant(512))
+sha224 = sha2(variant(nat(224)))
+sha256 = sha2(variant(nat(256)))
+sha384 = sha2(variant(nat(384)))
+sha512 = sha2(variant(nat(512)))

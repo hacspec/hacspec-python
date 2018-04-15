@@ -9,7 +9,7 @@ felem = refine3('felem_t', nat, lambda x: x < p25519)
 felem_t = felem
 
 def to_felem(x:nat_t) -> felem_t:
-    return felem(x % p25519)
+    return felem(nat(x % p25519))
 
 def fadd(x:felem_t,y:felem_t) -> felem_t:
     return to_felem(x + y)
@@ -35,8 +35,8 @@ scalar_t = bitvector_t(256)
 
 g25519:point_t = (9,1)
 
-serialized_point_t = bytes_t(32)
-serialized_scalar_t = bytes_t(32)
+serialized_point_t = bytes_t('serialized_point_t', 32)
+serialized_scalar_t = bytes_t('serialized_scalar_t', 32)
 
 def decodeScalar(s:serialized_scalar_t) -> scalar_t:
     k = vlbytes.copy(s)
@@ -69,7 +69,7 @@ def point_add_and_double(q:point_t,nq:point_t,nqp1:point_t) -> tuple2(point_t,po
   x_3 = fsqr(fadd(da,cb))
   z_3 = fmul(x_1,(fsqr(fsub(da,cb))))
   x_2 = fmul(aa,bb)
-  z_2 = fmul(e,fadd(aa,fmul(felem(121665),e)))
+  z_2 = fmul(e,fadd(aa,fmul(felem(nat(121665)),e)))
   return ((x_2, z_2), (x_3, z_3))
 
 def montgomery_ladder(k:scalar_t,init:point_t) -> point_t :
