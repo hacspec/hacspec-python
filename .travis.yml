@@ -10,7 +10,7 @@ install:
   - gem install --no-doc kramdown-rfc2629
 
 script:
-  - make -C specs
+  - travis_wait make -C specs
   - make -C specs check-specs
   - make -C spec-compilers
   - make -C rfc
