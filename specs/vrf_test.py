@@ -20,6 +20,7 @@ def main (x: int) -> None :
         print('VRF Test verification succeeded')
     else:
         print('VRF Test verification failed')
+        exit(1)
 
         
 main(0)

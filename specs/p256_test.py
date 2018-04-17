@@ -16,7 +16,8 @@ def main (x: int) -> None :
 		(x_e, y_e) = point_expected0
 		print("expected   x: " + str (x_e) + "   y: " + str(y_e))
 		(x_c, y_c) = point_computed0
-		print("computed   x: " + str (x_c) + "   y: " + str(y_c))	
+		print("computed   x: " + str (x_c) + "   y: " + str(y_c))
+		exit(1)	
 
 	sk1 = bytes.from_hex('130eed5eb9bb8e01')	
 	point_computed1 = point_mul(sk1)
@@ -30,6 +31,7 @@ def main (x: int) -> None :
 		print("expected   x: " + str (x_e) + "   y: " + str(y_e))
 		(x_c, y_c) = point_computed1
 		print("computed   x: " + str (x_c) + "   y: " + str(y_c))	
+		exit(1)
 
 	sk2 =bytes.from_hex('502563fcc2cab9f3849e17a7adfae6bcffffffffffffffff00000000ffffffff')	
 	point_computed2 = point_mul(sk2)
@@ -43,6 +45,7 @@ def main (x: int) -> None :
 		print("expected   x: " + str (x_e) + "   y: " + str(y_e))
 		(x_c, y_c) = point_computed2
 		print("computed   x: " + str (x_c) + "   y: " + str(y_c))
+		exit(1)
 
 main(0)
 
