@@ -45,36 +45,36 @@ def toAffine(p: jacobian_t) -> affine_t:
 	y = fmul(y, z3i)
 	return (x, y)
 
-def pointCompress(p: jacobian_t) -> serialized_point_t:
-	(x, y, z) = p
-	(x_a, y_a) = toAffine(p)
-	r = 2**256 * (y_a % 2) + x_a
-	return bytes.from_nat_le(nat(r))
+# def pointCompress(p: jacobian_t) -> serialized_point_t:
+# 	(x, y, z) = p
+# 	(x_a, y_a) = toAffine(p)
+# 	r = 2**256 * (y_a % 2) + x_a
+# 	return bytes.from_nat_le(nat(r))
 
-def recoverY(x: felem_t, sign: nat) -> jacobian_t:
-	if x >= prime:
-		return None
-	a = prime -3
-	b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
+# def recoverY(x: felem_t, sign: nat) -> jacobian_t:
+# 	if x >= prime:
+# 		return None
+# 	a = prime -3
+# 	b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
 	
-	x3 = fmul(x, fsqr(x))
-	ax = fmul(a, x)
-	z = fadd(fadd(x3, ax), b)
-	p = felem((prime+1)/4)
-	z1 = felem(pow(z, p, prime))
-	if sign:
-		return (prime - z1)
-	return z1
+# 	x3 = fmul(x, fsqr(x))
+# 	ax = fmul(a, x)
+# 	z = fadd(fadd(x3, ax), b)
+# 	p = felem((prime+1)/4)
+# 	z1 = felem(pow(z, p, prime))
+# 	if sign:
+# 		return (prime - z1)
+# 	return z1
 	
-def pointDecompress(s:serialized_point_t) -> jacobian_t:
-    x = bytes.to_nat_le(s)
-    sign = (x // (1 << 256)) % 2 == 1 
-    x = x % (1 << 256)
-    y = recoverY(x,sign)
-    if x is None:
-        return None
-    else:
-        return (x, y % prime, 1)
+# def pointDecompress(s:serialized_point_t) -> jacobian_t:
+#     x = bytes.to_nat_le(s)
+#     sign = (x // (1 << 256)) % 2 == 1 
+#     x = x % (1 << 256)
+#     y = recoverY(x,sign)
+#     if x is None:
+#         return None
+#     else:
+#         return (x, y % prime, 1)
 
 
 def pointDouble(p: jacobian_t) -> jacobian_t:
@@ -142,11 +142,9 @@ def montgomery_ladder(k:scalar_t, init: jacobian_t) -> jacobian_t:
     p0 : extended_point_t = (0, 1, 0)
     p1 : extended_point_t = init
     for i in range(256):
-    	print(i)
     	if k[255-i] == bit(1):
     		(p0, p1) = (p1, p0)	
     	xx = pointDouble(p0)
-    	print(xx)
     	xp1 = pointAdd(p0, p1)
     	if k[255-i] == bit(1):
     		(p0, p1) = (xp1, xx)
@@ -154,32 +152,8 @@ def montgomery_ladder(k:scalar_t, init: jacobian_t) -> jacobian_t:
     		(p0, p1) = (xx, xp1)	
     return p0 	
 
-#(X / Z^2, Y / Z^3).
-def main():
-	basePoint =  (0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296, 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5, 1) 
-	pAtInf = (0, 1, 0)
-
-	# b2 = (7cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978, 7775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1, 1)
-	# p3 = (5ECBE4D1A6330A44C8F7EF951D4BF165E6C6B721EFADA985FB41661BC6E7FD6C, 8734640C4998FF7E374B06CE1A64A2ECD82AB036384FB83D9A79B127A27D5032, 1)
+basePoint =  (0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296, 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5, 1) 
 	
-
-	# p2 = pointAdd(basePoint, b2)
-
-	print(toAffine(p2) ==toAffine(pointDecompress(pointCompress(p2))))
-	# print(toAffine(p2))
-	# print(p3)
-
-	p2 = pointAdd(basePoint, pAtInf)
-	print(toAffine(p2))
-
-	pk0 = bytes.from_hex('130eed5eb9bb8e01000000000000000000000000000000000000000000000000')
-	pk0 = bitvector(bytes.to_nat_le(pk0),256)
-	print(pk0)
-
-	p = montgomery_ladder(pk0, basePoint)
-	print(toAffine(p))
-
-
-
-if __name__ == '__main__':
-    	main()    
+def point_mul(k: scalar_t) -> affine_t:
+	k = bitvector(bytes.to_nat_le(k),256)
+	return toAffine(montgomery_ladder(k, basePoint))

@@ -16,6 +16,7 @@ test:
 	$(PYTHON) curve25519_test.py
 	$(PYTHON) ed25519_test.py
 	$(PYTHON) vrf_test.py
+	$(PYTHON) p256_test.py
 	$(PYTHON) wots_test.py # this takes a while
 
 check-specs:
