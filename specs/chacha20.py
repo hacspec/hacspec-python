@@ -3,8 +3,8 @@
 from speclib import *
 
 blocksize = 64
-index_t  = range_t(0,16)
-rotval_t = range_t(1,32)
+index_t  = range_t('index_t', 0,16)
+rotval_t = range_t('index_t', 1,32)
 state_t  = array_t(uint32_t,16)
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)

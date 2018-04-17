@@ -47,7 +47,7 @@ def read(node, allowed=None, prev=[]):
         return
 
     if isinstance(node, Tuple):
-        names = [read(x, [Name, BinOp, Num, Tuple], previous) for x in node.elts]
+        names = [read(x, [Name, BinOp, Num, Tuple, Call], previous) for x in node.elts]
         print(indent + "Tuple: " + ', '.join(str(names)))
         return Tuple
 
@@ -57,7 +57,7 @@ def read(node, allowed=None, prev=[]):
                    for x in node.targets]
         print(indent + "targets: " + ', '.join(targets))
         value = read(node.value,
-                     [Call, BinOp, Num, Subscript, Name, UnaryOp], previous)
+                     [Call, BinOp, Num, Subscript, Name, UnaryOp, Tuple, Compare], previous)
         print(indent + "value: " + str(value))
         type_comment = node.type_comment
         if type_comment:

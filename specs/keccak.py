@@ -10,7 +10,7 @@ def lfsr86540(lfsr:uint8) -> tuple2(uint8_t, bool):
         return (lfsr2, result)
 
 state_t = array_t(uint64_t, 25)
-index_t = range_t(0, 5)
+index_t = range_t('index_t', 0, 5)
 
 def readLane (s:state_t, x:index_t, y:index_t) -> uint64_t:
     return s[x + 5 * y]
@@ -67,13 +67,14 @@ def state_permute (s:state_t) -> state_t:
         s,lfsr = state_permute1(s,lfsr)
     return s
 
-bytes_len_t = refine(vlbytes_t, lambda x: array.length(x) <= 200)
 max_size_t = 2**64 - 1
 size_nat = refine(nat, lambda x: x <= max_size_t)
 size_nat_200 = refine(nat, lambda x: x <= 200)
 size_nat_1600 = refine(nat, lambda x: x <= 1600 and x % 8 == 0 and x // 8 > 0)
 
-def loadState (rateInBytes:size_nat_200, input_b:bytes_len_t, s:state_t) -> state_t:
+def loadState (rateInBytes:size_nat_200,
+               input_b:refine(vlbytes_t, lambda x: array.length(x) == rateInBytes),
+               s:state_t) -> state_t:
     block = array.create(200, uint8(0))
     block[0:rateInBytes] = input_b
     for j in range(25):
@@ -81,13 +82,17 @@ def loadState (rateInBytes:size_nat_200, input_b:bytes_len_t, s:state_t) -> stat
         s[j] = s[j] ^ nj
     return s
 
-def storeState (rateInBytes:size_nat_200, s:state_t) -> bytes_len_t:
+def storeState (rateInBytes:size_nat_200,
+                s:state_t) -> refine(vlbytes_t, lambda x: array.length(x) == rateInBytes):
     block = array.create(200, uint8(0))
     for j in range(25):
         block[(j * 8):(j * 8 + 8)] = vlbytes.from_uint64_le(s[j])
     return block[0:rateInBytes]
 
-def absorb (rateInBytes:size_nat_200, inputByteLen:size_nat, input_b:vlbytes_t, delimitedSuffix:uint8_t) -> state_t:
+def absorb (rateInBytes:refine(nat, lambda x: 0 < x and x <= 200),
+            inputByteLen:size_nat,
+            input_b:refine(vlbytes_t, lambda x: array.length(x) == inputByteLen),
+            delimitedSuffix:uint8_t) -> state_t:
     s = array.create(25, uint64(0))
     n = inputByteLen // rateInBytes
     for i in range(n):
@@ -110,7 +115,9 @@ def absorb (rateInBytes:size_nat_200, inputByteLen:size_nat, input_b:vlbytes_t, 
     s = state_permute(s)
     return s
 
-def squeeze (s:state_t, rateInBytes:size_nat_200, outputByteLen:size_nat) -> vlbytes_t:
+def squeeze (s:state_t,
+             rateInBytes:refine(nat, lambda x: 0 < x and x <= 200),
+             outputByteLen:size_nat) -> refine(vlbytes_t, lambda x: array.length(x) == outputByteLen):
     output = array.create(outputByteLen, uint8(0))
     outBlocks = outputByteLen // rateInBytes
     for i in range(outBlocks):
@@ -124,26 +131,43 @@ def squeeze (s:state_t, rateInBytes:size_nat_200, outputByteLen:size_nat) -> vlb
     return output
 
 def keccak (rate:size_nat_1600, capacity:size_nat, inputByteLen:size_nat,
-            input_b:vlbytes_t, delimitedSuffix:uint8_t, outputByteLen:size_nat) -> vlbytes_t:
+            input_b:vlbytes_t, delimitedSuffix:uint8_t, outputByteLen:size_nat) \
+    -> contract(vlbytes_t,
+                lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen:
+                capacity + rate == 1600 and array.length(input_b) == inputByteLen,
+                lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen, res:
+                array.length(res) == outputByteLen):
     rateInBytes = rate // 8
     s = absorb(rateInBytes, inputByteLen, input_b, delimitedSuffix)
     output = squeeze(s, rateInBytes, outputByteLen)
     return output
 
-def shake128 (inputByteLen:size_nat, input_b:vlbytes_t, outputByteLen:size_nat) -> vlbytes_t:
+def shake128 (inputByteLen:size_nat,
+              input_b:refine(vlbytes_t, lambda x: array.length(x) == inputByteLen),
+              outputByteLen:size_nat) -> refine(vlbytes_t, lambda x: array.length(x) == outputByteLen):
     return keccak(1344, 256, inputByteLen, input_b, uint8(0x1F), outputByteLen)
 
-def shake256 (inputByteLen:size_nat, input_b:vlbytes_t, outputByteLen:size_nat) -> vlbytes_t:
+def shake256 (inputByteLen:size_nat,
+              input_b:refine(vlbytes_t, lambda x: array.length(x) == inputByteLen),
+              outputByteLen:size_nat) -> refine(vlbytes_t, lambda x: array.length(x) == outputByteLen):
     return keccak(1088, 512, inputByteLen, input_b, uint8(0x1F), outputByteLen)
 
-def sha3_224 (inputByteLen:size_nat, input_b:vlbytes_t) -> vlbytes_t:
+def sha3_224 (inputByteLen:size_nat,
+              input_b:refine(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> \
+              refine(vlbytes_t, lambda x: array.length(x) == 28):
     return keccak(1152, 448, inputByteLen, input_b, uint8(0x06), 28)
 
-def sha3_256 (inputByteLen:size_nat, input_b:vlbytes_t) -> vlbytes_t:
+def sha3_256 (inputByteLen:size_nat,
+              input_b:refine(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> \
+              refine(vlbytes_t, lambda x: array.length(x) == 32):
     return keccak(1088, 512, inputByteLen, input_b, uint8(0x06), 32)
 
-def sha3_384 (inputByteLen:size_nat, input_b:vlbytes_t) -> vlbytes_t:
+def sha3_384 (inputByteLen:size_nat,
+              input_b:refine(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> \
+              refine(vlbytes_t, lambda x: array.length(x) == 48):
     return keccak(832, 768, inputByteLen, input_b, uint8(0x06), 48)
 
-def sha3_512 (inputByteLen:size_nat, input_b:vlbytes_t) -> vlbytes_t:
+def sha3_512 (inputByteLen:size_nat,
+              input_b:refine(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> \
+              refine(vlbytes_t, lambda x: array.length(x) == 64):
     return keccak(576, 1024, inputByteLen, input_b, uint8(0x06), 64)
