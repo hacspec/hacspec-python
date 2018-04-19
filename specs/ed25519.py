@@ -138,7 +138,7 @@ _g_y : felem_t = felem(nat(46316835694926478169428394003475163141307993866256225
 
 g_ed25519: extended_point_t = (_g_x,_g_y,1,fmul(_g_x,_g_y))
 
-sigval_t = bytes_t('sigval_t', 64)
+sigval_t = bytes_t(64)
 
 def private_to_public(s:serialized_scalar_t) -> serialized_point_t:
     (a,_) = expand_secret(s)

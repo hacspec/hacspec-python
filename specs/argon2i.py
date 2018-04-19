@@ -16,12 +16,12 @@ j_range = range_t(0, 8)
 lanes_t = range_t(1, 2**24)
 segment_t = range_t(0, 4)
 t_len_t = range(1, max_size_t - 65)
-idx_t = refine3('idx_t', size_nat, lambda x: x <= 15)
+idx_t = refine3(size_nat, lambda x: x <= 15)
 working_vector_t = array_t(uint64_t, 16)
 
 
 @typechecked
-def h(a: refine3('a_t', vlbytes, lambda x: array.length(x) < max_size_t - 2 * line_size), nn: output_size_t) \
+def h(a: refine3(vlbytes, lambda x: array.length(x) < max_size_t - 2 * line_size), nn: output_size_t) \
         -> contract(vlbytes_t, lambda a, nn: True, lambda a, nn, res: array.length(res) == nn):
     res = blake2b(a, bytes([]), nn)
     return res
@@ -94,7 +94,7 @@ def g(v: working_vector_t, a: idx_t, b: idx_t, c: idx_t, d: idx_t) -> working_ve
 
 
 @typechecked
-def P(input: bytes_t('P_in', line_size)) -> bytes_t('P_out', line_size):
+def P(input: bytes_t(line_size)) -> bytes_t(line_size):
     v = array.create(16, uint64(0))
     for i in range(8):
         v[2 * i] = vlbytes.to_uint64_le(input[i * 16:i * 16 + 8])
@@ -111,7 +111,7 @@ def P(input: bytes_t('P_in', line_size)) -> bytes_t('P_out', line_size):
 
 
 @typechecked
-def xor_blocks(X: bytes_t('x_in', block_size), Y: bytes_t('Y_in', block_size)) -> bytes_t('xbl_out', block_size):
+def xor_blocks(X: bytes_t(block_size), Y: bytes_t(block_size)) -> bytes_t(block_size):
     output = bytes(array.create(block_size, uint8(0)))
     for i in range(block_size // 8):
         output[i * 8:(i + 1) * 8] = vlbytes.from_uint64_be(vlbytes.to_uint64_be(
@@ -120,7 +120,7 @@ def xor_blocks(X: bytes_t('x_in', block_size), Y: bytes_t('Y_in', block_size)) -
 
 
 @typechecked
-def extract_block_column(j: j_range, block: bytes_t('block_in', block_size)) -> bytes_t('ebc_out', line_size):
+def extract_block_column(j: j_range, block: bytes_t(block_size)) -> bytes_t(line_size):
     col = bytes(array.create(line_size, uint8(0)))
     for i in range(8):
         offset = i * line_size + j * 16
@@ -129,7 +129,7 @@ def extract_block_column(j: j_range, block: bytes_t('block_in', block_size)) -> 
 
 
 @typechecked
-def update_block_column(j: j_range, col: bytes_t('col_in', line_size), block: bytes_t('bl_in', block_size)) -> bytes_t('ubc_out', block_size):
+def update_block_column(j: j_range, col: bytes_t(line_size), block: bytes_t(block_size)) -> bytes_t(block_size):
     output = bytes(array.copy(block))
     for i in range(8):
         offset = i * line_size + j * 16
@@ -138,7 +138,7 @@ def update_block_column(j: j_range, col: bytes_t('col_in', line_size), block: by
 
 
 @typechecked
-def G(X: bytes_t('X_in', block_size), Y: bytes_t('Y_in', block_size)) -> bytes_t('G_out', block_size):
+def G(X: bytes_t(block_size), Y: bytes_t(block_size)) -> bytes_t(block_size):
     R = bytes(array.create(block_size, uint8(0)))
     R[:] = xor_blocks(X, Y)
     Q = bytes(array.copy(R))
@@ -154,7 +154,7 @@ def G(X: bytes_t('X_in', block_size), Y: bytes_t('Y_in', block_size)) -> bytes_t
 
 
 @typechecked
-def extend_to_block(input: refine(vlbytes_t, lambda x: array.length(x) <= block_size)) -> bytes_t('etb_out', block_size):
+def extend_to_block(input: refine(vlbytes_t, lambda x: array.length(x) <= block_size)) -> bytes_t(block_size):
     output = array.create(block_size, uint8(0))
     output[:array.length(intput)] = input
     return output
@@ -278,7 +278,7 @@ def map_indexes(t: size_nat, segment: segment_t, lanes: lanes_t, columns: size_n
 
 
 @typechecked
-def fill_segment(h0: bytes_t('h0_in', 64), iterations: size_nat, segment: segment_t, t_len: t_len_t,
+def fill_segment(h0: bytes_t(64), iterations: size_nat, segment: segment_t, t_len: t_len_t,
                  lanes: lanes_t, columns: size_nat, t: size_nat, i: size_nat, memory: vlbytes_t) \
     -> contract(vlbytes_t,
                 lambda h0, iterations, segment, t_len, lanes, columns, t, i, memory:

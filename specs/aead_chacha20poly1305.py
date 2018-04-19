@@ -4,9 +4,9 @@ from speclib import *
 from chacha20 import chacha20_block, chacha20_encrypt, chacha20_decrypt
 from poly1305 import poly1305_mac
 
-key_t    = bytes_t('key_t', 32)
-nonce_t  = bytes_t('nonce_t', 12)
-tag_t    = bytes_t('tag_t', 16)
+key_t    = bytes_t(32)
+nonce_t  = bytes_t(12)
+tag_t    = bytes_t(16)
 
 @typechecked
 def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> Tuple[int,vlbytes_t]:

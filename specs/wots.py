@@ -22,14 +22,14 @@ length = length1 + length2
 # Types
 
 
-key_t = bytes_t('key_t', n)
-sk_t = vlarray_t(bytes_t('sk_t', n))
-pk_t = vlarray_t(bytes_t('pk_t', n))
-sig_t = vlarray_t(bytes_t('sig_t', n))
+key_t = bytes_t(n)
+sk_t = vlarray_t(bytes_t(n))
+pk_t = vlarray_t(bytes_t(n))
+sig_t = vlarray_t(bytes_t(n))
 address_t = array_t(uint32_t, 8)
 key_pair_t = Tuple[sk_t, pk_t, address_t]
-digest_t = bytes_t('digest_t', 32)
-seed_t = bytes_t('seed_t', n)
+digest_t = bytes_t(32)
+seed_t = bytes_t(n)
 chain_t = Tuple[address_t, vlbytes_t]
 
 # F: SHA2-256(toByte(0, 32) || KEY || M),

@@ -7,7 +7,7 @@ felem = refine3(nat, lambda x: x < prime)
 felem_t = felem
 
 def to_felem(x:nat_t) -> felem_t:
-    return felem(x % prime)
+    return felem(nat(x % prime))
 
 def fadd(x:felem_t,y:felem_t) -> felem_t:
     return to_felem(x + y)

@@ -31,8 +31,8 @@ def finv(x:felem_t) -> felem_t:
 point_t = tuple2(felem_t, felem_t)
 scalar_t = bitvector_t(448)
 
-serialized_point_t = bytes_t('serialized_scalar_t', 56)
-serialized_scalar_t = bytes_t('serialized_scalar_t', 56)
+serialized_point_t = bytes_t(56)
+serialized_scalar_t = bytes_t(56)
 
 def decodeScalar(s:serialized_scalar_t) -> scalar_t:
     k = vlbytes.copy(s)

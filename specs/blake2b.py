@@ -71,11 +71,11 @@ def F(h: hash_vector_t, m: working_vector_t, t: uint128_t, flag: bool) -> hash_v
         h[i] = h[i] ^ v[i] ^ v[i + 8]
     return h
 
-data_internal_t = refine3('data_internal_t', vlbytes,
+data_internal_t = refine3(vlbytes,
     lambda x: vlbytes.length(x) < 2 ** 64 and (vlbytes.length(x) % block_bytes == 0))
-key_t = refine3('key_t', vlbytes, lambda x: array.length(x) <= 64)
-key_size_t = refine3('key_size_t', nat, lambda x: x <= 64)
-out_size_t = refine3('out_size_t', nat, lambda x: x <= 32)
+key_t = refine3(vlbytes, lambda x: array.length(x) <= 64)
+key_size_t = refine3(nat, lambda x: x <= 64)
+out_size_t = refine3(nat, lambda x: x <= 32)
 
 
 @typechecked
@@ -99,7 +99,7 @@ def blake2b_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size
     return vlbytes.from_uint64s_le(h)[:nn]
 
 max_size_t = 2**64 - 1
-data_t = refine3('data_t', vlbytes,
+data_t = refine3(vlbytes,
     lambda x: vlbytes.lenght(x) < max_size_t - 2 * block_bytes)
 
 

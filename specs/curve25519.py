@@ -35,8 +35,8 @@ scalar_t = bitvector_t(256)
 
 g25519:point_t = (9,1)
 
-serialized_point_t = bytes_t('serialized_point_t', 32)
-serialized_scalar_t = bytes_t('serialized_scalar_t', 32)
+serialized_point_t = bytes_t(32)
+serialized_scalar_t = bytes_t(32)
 
 def decodeScalar(s:serialized_scalar_t) -> scalar_t:
     k = vlbytes.copy(s)
