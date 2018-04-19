@@ -5,7 +5,7 @@ from speclib import *
 # Define prime field
 p25519 = (2 ** 255) - 19
 
-felem = refine3('felem_t', nat, lambda x: x < p25519)
+felem = refine3(nat, lambda x: x < p25519)
 felem_t = felem
 
 def to_felem(x:nat_t) -> felem_t:

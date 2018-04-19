@@ -4,7 +4,7 @@ from speclib import *
 
 p448 = 2 ** 448 - 2 ** 224 - 1
 
-felem = refine3('felem_t', nat, lambda x: x < p448)
+felem = refine3(nat, lambda x: x < p448)
 felem_t = felem
 
 def to_felem(x:nat_t) -> felem_t:

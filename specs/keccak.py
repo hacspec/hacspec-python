@@ -10,7 +10,7 @@ def lfsr86540(lfsr:uint8) -> tuple2(uint8_t, bool):
         return (lfsr2, result)
 
 state_t = array_t(uint64_t, 25)
-index_t = range_t('index_t', 0, 5)
+index_t = range_t(0, 5)
 
 def readLane (s:state_t, x:index_t, y:index_t) -> uint64_t:
     return s[x + 5 * y]

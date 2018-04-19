@@ -3,13 +3,13 @@
 from speclib import *
 
 blocksize = 64
-index_t  = range_t('index_t', 0,16)
-rotval_t = range_t('index_t', 1,32)
+index_t  = range_t(0,16)
+rotval_t = range_t(1,32)
 state_t  = array_t(uint32_t,16)
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 block_t  = bytes_t(64)
-subblock  = refine3('subblock_t', vlbytes, lambda x: array.length(x) <= blocksize)
+subblock  = refine3(vlbytes, lambda x: array.length(x) <= blocksize)
 subblock_t = subblock
 
 def line(a: index_t, b: index_t, d: index_t, s: rotval_t, m: state_t) -> state_t:

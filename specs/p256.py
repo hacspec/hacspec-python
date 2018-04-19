@@ -3,7 +3,7 @@ from speclib import *
 prime = 2**256 - 2**224 + 2**192 + 2**96 - 1
 
 
-felem = refine3('felem_t', nat, lambda x: x < prime)
+felem = refine3(nat, lambda x: x < prime)
 felem_t = felem
 
 def to_felem(x:nat_t) -> felem_t:

@@ -10,7 +10,7 @@ R4 = 63
 
 working_vector_t = array_t(uint64_t, 16)
 hash_vector_t = array_t(uint64_t, 8)
-index_t = range_t('index_t', 0, 16)
+index_t = range_t(0, 16)
 
 SIGMA: array_t(index_t, 16 * 12) = array([
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
