@@ -3,17 +3,17 @@
 from speclib import *
 
 blocksize = 16
-block_t = bytes_t('block_t', 16)
-key_t = bytes_t('key_t', 32)
-tag_t = bytes_t('tag_t', 16)
-subblock = refine3('subblock_t', vlbytes, lambda x: vlbytes.length(x) <= 16)
+block_t = bytes_t(16)
+key_t = bytes_t(32)
+tag_t = bytes_t(16)
+subblock = refine3(vlbytes, lambda x: vlbytes.length(x) <= 16)
 subblock_t = subblock
 
 
 # Define prime field
 
 p130m5 = nat((2 ** 130) - 5)
-felem = refine3('felem_t', nat, lambda x: x < p130m5)
+felem = refine3(nat, lambda x: x < p130m5)
 felem_t = felem
 
 

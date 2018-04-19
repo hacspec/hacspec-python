@@ -1,5 +1,7 @@
 from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type, cast
 from random import SystemRandom as rand
+from random import choices as random_string
+from string import ascii_uppercase, ascii_lowercase
 from math import ceil, log
 from importlib import import_module
 import builtins
@@ -41,11 +43,11 @@ def refine(t: type, f: Callable[[T], bool]) -> type:
 
 from inspect import getfullargspec, getsource
 
-def refine3(u: str, t: type, f: Callable[[T], bool]) -> type:
+def refine3(t: type, f: Callable[[T], bool]) -> type:
     __class__ = t
     def init(self, x:t) -> None:
         if not isinstance(x, t) or not f(x):
-            fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with " + u + ".")
+            fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(t) + ".")
         else:
             num_init_args = len(getfullargspec(super().__init__).args)
             if num_init_args == 1:
@@ -55,16 +57,21 @@ def refine3(u: str, t: type, f: Callable[[T], bool]) -> type:
             else:
                 fail("refine3 super.init has more args than we expected (" + str(num_init_args) + ")")
             t(x)
-    cl = type(u, (t,), {'__init__': init , '__origin__': t}) # '__class__': t,
+    # We use a random string as class name here. The result of refine3 has to
+    # get assigend to a type alias, which can be used as class name.
+    u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+    cl = type(u_rand, (t,), {'__init__': init , '__origin__': t})
     __class__ = cl
     return cl
 
-nat = refine3('nat_t', int, lambda x: x >= 0)
+# nat = refine2('nat_t', int, lambda x: x >= 0)
+# class nat_t(int): pass
+nat = refine3(int, lambda x: x >= 0)
 nat_t = nat
 
 
-def range_t(range_name, min, max) -> type:
-    return refine3(range_name, int, lambda x: x >= min and x < max)
+def range_t(min, max) -> type:
+    return refine3(int, lambda x: x >= min and x < max)
 
 
 def contract(T: Type[T], pre, post):
@@ -969,8 +976,8 @@ def vlbytes_t(T):
     return vlbytes
 
 
-def bytes_t(name, l:int):
-    return refine3(name, vlbytes, lambda x: vlbytes.length(x) <= l)
+def bytes_t(l:int):
+    return refine3(vlbytes, lambda x: vlbytes.length(x) <= l)
     # return vlbytes
 
 

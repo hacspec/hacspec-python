@@ -7,14 +7,14 @@ block_size = nat(1024)
 line_size = nat(128)
 
 max_size_t = 2**64 - 1
-size_nat = refine3('size_nat', nat, lambda x: x <= max_size_t)
-output_size = refine3('size_nat', nat, lambda x: x <= 64)
+size_nat = refine3(nat, lambda x: x <= max_size_t)
+output_size = refine3(nat, lambda x: x <= 64)
 output_size_t = output_size
 
 
-j_range = range_t('j_range', 0, 8)
-lanes_t = range_t('lanes_t', 1, 2**24)
-segment_t = range_t('segment_t', 0, 4)
+j_range = range_t(0, 8)
+lanes_t = range_t(1, 2**24)
+segment_t = range_t(0, 4)
 t_len_t = range(1, max_size_t - 65)
 idx_t = refine3('idx_t', size_nat, lambda x: x <= 15)
 working_vector_t = array_t(uint64_t, 16)
