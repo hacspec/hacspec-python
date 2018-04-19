@@ -17,15 +17,18 @@ def main (x: int) -> None :
         print('Ed25519 Test 0 signature failed')
         print('expected: '+str(sig_expected))
         print('computed: '+str(sig_computed))
+        exit(1)
     if (verified):
         print('Ed25519 Test 0 verification succeeded')
     else:
         print('Ed25519 Test 0 verification failed')
+        exit(1)
     verified = verify(pk0,msg0,sig_expected)
     if (verified):
         print('Ed25519 Test 0 verification_expected succeeded')
     else:
         print('Ed25519 Test 0 verification_expected failed')
+        exit(1)
         
 main(0)
 
