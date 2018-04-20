@@ -18,6 +18,7 @@ test:
 	$(PYTHON) vrf_test.py
 	$(PYTHON) p256_test.py
 	$(PYTHON) curve448_test.py
+	$(PYTHON) rsapss_test.py
 	$(PYTHON) wots_test.py # this takes a while
 
 check-specs:
@@ -34,4 +35,4 @@ check-specs:
 	$(PYTHON) ../spec-checker/spec-checker.py argon2i.py
 	$(PYTHON) ../spec-checker/spec-checker.py ed25519.py
 	$(PYTHON) ../spec-checker/spec-checker.py vrf.py
-
+	$(PYTHON) ../spec-checker/spec-checker.py rsapss.py
