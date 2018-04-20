@@ -171,7 +171,7 @@ def sha2(v:variant):
         result = array.create(hashSize, uint8(0))
         for i in range(0, hashSize):
             result[i] = b[i]
-        return result
+        return digest_t(bytes(result))
 
     def hash(msg:vlbytes_t) -> digest_t:
         blocks,last = vlarray.split_blocks(msg, blockSize)
