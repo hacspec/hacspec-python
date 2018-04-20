@@ -14,7 +14,7 @@ rsapss_test = TypedDict('rsapss_test', {
     'valid' : bool}
 )
 
-rsapss_test_vectors : array[rsapss_test] = array([
+rsapss_test_vectors : array = array([
     {
         'modBits' : 1024,
         'n' : 'be499b5e7f06c83fa0293e31465c8eb6b58af920bae52a7b5b9bfeb7aa72db1264112eb3fd431d31a2a7e50941566929494a0e891ed5613918b4b51b0d1fb97783b26acf7d0f384cfb35f4d2824f5dd380623a26bf180b63961c619dcdb20cae406f22f6e276c80a37259490cfeb72c1a71a84f1846d330877ba3e3101ec9c7b',

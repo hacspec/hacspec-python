@@ -33,6 +33,7 @@ IV = array([
 ])
 
 
+@typechecked
 def G(v: working_vector_t, a: index_t, b: index_t, c: index_t, d: index_t, x: uint32_t, y: uint32_t) -> working_vector_t:
     v[a] = v[a] + v[b] + x
     v[d] = uint32_t.rotate_right(v[d] ^ v[a], R1)
@@ -45,6 +46,7 @@ def G(v: working_vector_t, a: index_t, b: index_t, c: index_t, d: index_t, x: ui
     return v
 
 
+@typechecked
 def F(h: hash_vector_t, m: working_vector_t, t: uint64_t, flag: bool) -> hash_vector_t:
     v = array.create(16, uint32(0))
     v[0:8] = h
@@ -75,6 +77,7 @@ key_size_t = refine(nat, lambda x: x <= 32)
 out_size_t = refine(nat, lambda x: x <= 32)
 
 
+@typechecked
 def blake2s_internal(data: data_internal_t, input_bytes: uint64_t, kk: key_size_t, nn: out_size_t) \
         -> contract(vlbytes_t,
                     lambda data, input_bytes, kk, nn: True,
@@ -100,6 +103,7 @@ data_t = refine(vlbytes_t, lambda x: vlbytes.lenght(x)
                 < max_size_t - 2 * block_bytes)
 
 
+@typechecked
 def blake2s(data: data_t, key: key_t, nn: out_size_t) \
         -> contract(vlbytes_t,
                     lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn):
@@ -114,4 +118,4 @@ def blake2s(data: data_t, key: key_t, nn: out_size_t) \
         padded_data = array.create(padded_data_length + block_bytes, uint8(0))
         padded_data[0:kk] = key
         padded_data[block_bytes:block_bytes + ll] = key
-    return blake2s_internal(padded_data, ll, kk, nn)
+    return blake2s_internal(padded_data, uint64(ll), key_size_t(kk), nn)

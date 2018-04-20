@@ -6,6 +6,10 @@ from math import ceil, log
 from importlib import import_module
 import builtins
 from typeguard import typechecked
+from inspect import getfullargspec
+from os import environ
+
+DEBUG = environ.get('HACSPEC_DEBUG')
 
 class Error(Exception):
     pass
@@ -41,8 +45,6 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> Tuple[T, U, V, W, X]:
 def refine(t: type, f: Callable[[T], bool]) -> type:
     return t
 
-from inspect import getfullargspec, getsource
-
 def refine3(t: type, f: Callable[[T], bool]) -> type:
     __class__ = t
     def init(self, x:t) -> None:
@@ -57,10 +59,14 @@ def refine3(t: type, f: Callable[[T], bool]) -> type:
             else:
                 fail("refine3 super.init has more args than we expected (" + str(num_init_args) + ")")
             t(x)
+    def string(self) -> str:
+        return self.__origin__
     # We use a random string as class name here. The result of refine3 has to
     # get assigend to a type alias, which can be used as class name.
     u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
-    cl = type(u_rand, (t,), {'__init__': init , '__origin__': t})
+    if DEBUG:
+        print("new class " + u_rand + " - " + str(t))
+    cl = type(u_rand, (t,), {'__init__': init , '__origin__': t, '__str__': string})
     __class__ = cl
     return cl
 
