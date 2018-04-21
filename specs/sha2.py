@@ -6,6 +6,7 @@ variant = refine3(nat_t, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 
 # Generic SHA-2 spec parameterized by variant
 
+@typechecked
 def sha2(v:variant):
     # Initializing types and constants for different variants 
     if v == 224 or v == 256:
@@ -106,12 +107,17 @@ def sha2(v:variant):
 
     # Initialization complete: SHA-2 spec begins 
 
+    @typechecked
     def ch(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((~ x) & z)
+
+    @typechecked
     def maj(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((x & z) ^ (y & z))
     i_range = range_t(0, 4)
     op_range = range_t(0, 1)
+
+    @typechecked
     def sigma(x:word_t,i:i_range,op:op_range) -> word_t:
         if op == 0:
             tmp = x >> opTable[3*i+2]
@@ -120,6 +126,8 @@ def sha2(v:variant):
         return (word_t.rotate_right(x,opTable[3*i]) ^
                 word_t.rotate_right(x,opTable[3*i+1]) ^
                 tmp)
+
+    @typechecked
     def schedule(block:block_t) -> k_t:
         b = bytes_to_words(block)
         s = array.create(kSize,to_word(0))
@@ -135,6 +143,7 @@ def sha2(v:variant):
             s[i] = s1 + t7 + s0 + t16
         return s
 
+    @typechecked
     def shuffle(ws:k_t,hashi:hash_t) -> hash_t:
         h = array.copy(hashi)
         for i in range(kSize):
@@ -160,6 +169,7 @@ def sha2(v:variant):
             h[7] = g0
         return h
 
+    @typechecked
     def compress(block:block_t,hIn:hash_t) -> hash_t:
         s = schedule(block)
         h = shuffle(s,hIn)
@@ -167,12 +177,14 @@ def sha2(v:variant):
             h[i] += hIn[i]
         return h
 
+    @typechecked
     def truncate(b:bytes_t(v)) -> digest_t:
         result = array.create(hashSize, uint8(0))
         for i in range(0, hashSize):
             result[i] = b[i]
         return digest_t(bytes(result))
 
+    @typechecked
     def hash(msg:vlbytes_t) -> digest_t:
         blocks,last = vlarray.split_blocks(msg, blockSize)
         nblocks = array.length(blocks)
@@ -181,7 +193,7 @@ def sha2(v:variant):
             h = compress(blocks[i],h)
         last_len = array.length(last)
         len_bits = array.length(msg) * 8
-        pad = array.create(2*blockSize,uint8(0))
+        pad = bytes(array.create(2*blockSize,uint8(0)))
         pad[0:last_len] = last
         pad[last_len] = uint8(0x80)
         if last_len < blockSize - lenSize:
@@ -191,7 +203,7 @@ def sha2(v:variant):
             pad[(2*blockSize)-lenSize:2*blockSize] = len_to_bytes(len_t(len_bits))
             h = compress(pad[0:blockSize],h)
             h = compress(pad[blockSize:2*blockSize],h)
-        result = (words_to_bytes(h))
+        result = words_to_bytes(h)
         return truncate(result)
     return hash
 
