@@ -5,7 +5,7 @@ from sys import argv
 from sys import exit
 import builtins
 
-DEBUG_PRINT = True
+DEBUG_PRINT = False
 
 
 def print(*args, **kwargs):

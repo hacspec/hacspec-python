@@ -6,29 +6,36 @@ from ed25519 import *
 
 n = 16
 
+@typechecked
 def normalise_point(s:extended_point_t) -> extended_point_t:
 	(x,y,z,t) = s
-	return (fmul(x, finv(z)), fmul(y, finv(z)), 1, fmul(t, finv (z)))
+	return extended_point(fmul(x, finv(z)), fmul(y, finv(z)), felem(nat(1)), fmul(t, finv (z)))
 
+@typechecked
 def OS2ECP(s:serialized_point_t) -> extended_point_t:
 	return point_decompress(s)
 
+@typechecked
 def ECP2OS(p:extended_point_t) -> serialized_point_t :
 	return point_compress(p)
 
+@typechecked
 def I2OSP(value: nat) -> bytes_t(32):
 	return bytes.from_nat_le(nat(value))
 
+@typechecked
 def OS2IP(s: serialized_scalar_t) -> felem_t:
-	return (bytes.to_nat_le(s))
+	return bytes.to_nat_le(s)
 
-def hash (msg:vlbytes) -> nat:
+@typechecked
+def hash (msg:vlbytes) -> serialized_point_t:
 	return sha256(msg)
 
 curveOrder = (7237005577332262213973186563042994240857116359379907606001950938285454250989)
 
+@typechecked
 def ECVRF_hash_to_curve(ctr: nat, pub: serialized_point_t, input: bytes_t(uint32)) -> extended_point_t:
-	tmp = array.create(array.length(input)+64,uint8(0))
+	tmp = bytes(array.create(array.length(input)+64,uint8(0)))
 	lenMessage = array.length(input)
 	tmp[:lenMessage] = input
 	tmp[lenMessage:lenMessage + 32] = pub
@@ -43,19 +50,22 @@ def ECVRF_hash_to_curve(ctr: nat, pub: serialized_point_t, input: bytes_t(uint32
 		else:
 			return ECVRF_hash_to_curve(ctr + 1, pub, input)
 	else:
-		cofactorCheck = normalise_point (point_mul(I2OSP(curveOrder), possiblePoint))
+		tmp = point_mul(I2OSP(curveOrder), possiblePoint)
+		cofactorCheck = normalise_point(tmp)
 		pointAtInfinity = normalise_point(point_mul(I2OSP(curveOrder), g_ed25519))
 		if not (normalise_point(cofactorCheck)== pointAtInfinity):
 			return ECVRF_hash_to_curve(ctr+1, pub, input)
 		return possiblePoint		
 
 
+@typechecked
 def ECVRF_decode_proof(pi: bytes_t(5*n)) -> (extended_point_t, bytes_t(n), bytes_t(2*n)):
 	gamma = pi[:2*n]
 	c = pi[2*n: 3*n]
 	s = pi[3*n: 5*n]
 	return (OS2ECP(gamma), c, s)
 
+@typechecked
 def ECVRF_hash_points (g: extended_point_t, h: extended_point_t, pub: extended_point_t, gamma: extended_point_t, gk: extended_point_t, hk: extended_point_t) -> felem_t:
 	tmp = array.create(32*6, uint8(0))
 	tmp[0:32] = ECP2OS(g)
@@ -68,6 +78,7 @@ def ECVRF_hash_points (g: extended_point_t, h: extended_point_t, pub: extended_p
 	result = felem(hashed)
 	return result
 
+@typechecked
 def ECVRF_prove (input: bytes_t(uint32), pub: serialized_point_t, priv: serialized_scalar_t, k:felem_t) -> (bytes_t(5*n)):
 	ap = point_decompress(pub)
 	if ap is None:
@@ -93,11 +104,13 @@ def ECVRF_prove (input: bytes_t(uint32), pub: serialized_point_t, priv: serializ
 	tmp[48:80] = I2OSP(s)
 	return tmp
 
+@typechecked
 def ECVRF_proof_to_hash (pi: bytes_t(5*n)) -> (bytes_t(2*n)):
 	(gamma, c, s) = ECVRF_decode_proof(pi)
 	h = hash(ECP2OS(gamma))
 	return I2OSP(h)
 
+@typechecked
 def ECVRF_verify (pub: serialized_point_t, pi: bytes_t(5*n), input: bytes_t(uint32)) -> bool:
 	ap = point_decompress(pub)
 	if ap is None:
