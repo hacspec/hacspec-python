@@ -48,6 +48,8 @@ def refine(t: type, f: Callable[[T], bool]) -> type:
 def refine3(t: type, f: Callable[[T], bool]) -> type:
     __class__ = t
     def init(self, x:t) -> None:
+        if not isinstance(x, t):
+            print("ref "+str(type(x)))
         if not isinstance(x, t) or not f(x):
             fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(t) + ".")
         else:
@@ -60,13 +62,13 @@ def refine3(t: type, f: Callable[[T], bool]) -> type:
                 fail("refine3 super.init has more args than we expected (" + str(num_init_args) + ")")
             t(x)
     def string(self) -> str:
-        return self.__origin__
+        return str(self.__origin__)
     # We use a random string as class name here. The result of refine3 has to
     # get assigend to a type alias, which can be used as class name.
     u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
     if DEBUG:
         print("new class " + u_rand + " - " + str(t))
-    cl = type(u_rand, (t,), {'__init__': init , '__origin__': t, '__str__': string})
+    cl = type(u_rand, (t,), {'__init__': init , '__origin__': t})
     __class__ = cl
     return cl
 
@@ -555,6 +557,10 @@ class bitvector(_uintn):
         else:
             super().__init__(_uintn.to_int(v), bits)
 
+    @staticmethod
+    def init(v: Union[int, _uintn]) -> 'bitvector':
+        return bitvector(v, 0)
+
     def __add__(self, other: 'bitvector') -> 'bitvector':
         if (other.bits == self.bits):
             return bitvector(self.v + other.v, self.bits)
@@ -798,9 +804,13 @@ class vlbytes(vlarray):
         return vlbytes([uint8(i) for i in b])
 
     @staticmethod
-    def to_nat_le(x: 'vlbytes') -> nat_t:
+    def to_int_le(x: 'vlbytes') -> int:
         b = builtins.bytes([uint8.to_int(u) for u in x])
-        return nat(int.from_bytes(b, 'little'))
+        return int.from_bytes(b, 'little')
+
+    @staticmethod
+    def to_nat_le(x: 'vlbytes') -> nat_t:
+        return nat(vlbytes.to_int_le(x))
 
     @staticmethod
     def from_nat_be(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes':
@@ -936,7 +946,7 @@ class vlbytes(vlarray):
     @staticmethod
     def from_uint32s_be(x: vlarray) -> 'vlbytes':
         by = vlarray([vlbytes.from_uint32_be(i) for i in x])
-        return(vlarray.concat_blocks(by, vlarray([])))
+        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
     def to_uint32s_be(x: 'vlbytes') -> vlarray:
@@ -944,12 +954,12 @@ class vlbytes(vlarray):
         if len(x) > 0:
             fail("array length not a multiple of 4")
         else:
-            return(vlarray([vlbytes.to_uint32_be(i) for i in nums]))
+            return vlarray([vlbytes.to_uint32_be(i) for i in nums])
 
     @staticmethod
     def from_uint64s_be(x: vlarray) -> 'vlbytes':
         by = vlarray([vlbytes.from_uint64_be(i) for i in x])
-        return(vlarray.concat_blocks(by, vlarray([])))
+        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
     def to_uint64s_be(x: 'vlbytes') -> vlarray:
@@ -962,7 +972,7 @@ class vlbytes(vlarray):
     @staticmethod
     def from_uint64s_le(x: vlarray) -> 'vlbytes':
         by = vlarray([vlbytes.from_uint64_le(i) for i in x])
-        return bytes(vlarray.concat_blocks(by, vlarray([])))
+        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
     def to_uint64s_le(x: 'vlbytes') -> vlarray:
@@ -984,11 +994,31 @@ def vlbytes_t(T):
 
 def bytes_t(l:int):
     return refine3(vlbytes, lambda x: vlbytes.length(x) <= l)
-    # return vlbytes
 
 
-def bitvector_t(len: nat):
-    return bitvector
+def bitvector_t(l:int):
+    def refine_bitvec() -> type:
+        __class__ = bitvector
+        def f(x:Union[int, _uintn]):
+            return int(x) <= ((1 << l) - 1)
+        def init(self, x:Union[int, _uintn]) -> None:
+            if not (isinstance(x, int) or isinstance(x, _uintn)) or not f(x):
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of bitvector.")
+            else:
+                super().__init__(x, l)
+                bitvector(x, l)
+        def string(self) -> str:
+            return str(self.__origin__)
+        # We use a random string as class name here. The result of refine3 has to
+        # get assigend to a type alias, which can be used as class name.
+        u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+        if DEBUG:
+            print("new class " + u_rand + " - " + str(bitvector))
+        cl = type(u_rand, (bitvector,), {'__init__': init , '__origin__': bitvector, '__str__': string})
+        __class__ = cl
+        return cl
+    refinement = refine_bitvec()
+    return refinement
 
 
 def vlarray_t(t: type):

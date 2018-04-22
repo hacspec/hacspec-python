@@ -62,7 +62,7 @@ def decodeScalar(s: serialized_scalar_t) -> scalar_t:
     k = vlbytes.copy(s)
     k[0] &= uint8(252)
     k[55] |= uint8(128)
-    return scalar_t(bytes.to_nat_le(k), 448)
+    return scalar_t(bytes.to_nat_le(k))
 
 
 @typechecked

@@ -41,7 +41,7 @@ chain_t = Tuple[address_t, vlbytes_t]
 def hash(prefix: key_t, key: key_t, m: vlbytes_t) -> digest_t:
     h_in = bytes.concat(prefix, key)
     h_in = bytes.concat(h_in, m)
-    return sha256(h_in)
+    return sha256(bytes(h_in))
 
 
 def F(key: key_t, m: vlbytes_t) -> digest_t:

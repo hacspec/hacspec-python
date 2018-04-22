@@ -66,7 +66,7 @@ def decodeScalar(s: serialized_scalar_t) -> scalar_t:
     k[0] &= uint8(248)
     k[31] &= uint8(127)
     k[31] |= uint8(64)
-    return scalar_t(bytes.to_nat_le(k), 256)
+    return scalar_t(bytes.to_int_le(k))
 
 
 @typechecked
