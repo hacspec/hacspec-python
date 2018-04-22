@@ -38,24 +38,29 @@ chain_t = Tuple[address_t, vlbytes_t]
 # PRF: SHA2-256(toByte(3, 32) || KEY || M).
 
 
+@typechecked
 def hash(prefix: key_t, key: key_t, m: vlbytes_t) -> digest_t:
     h_in = bytes.concat(prefix, key)
     h_in = bytes.concat(h_in, m)
     return sha256(bytes(h_in))
 
 
+@typechecked
 def F(key: key_t, m: vlbytes_t) -> digest_t:
     return hash(bytes.from_nat_be(nat(0), nat(32)), key, m)
 
 
+@typechecked
 def H(key: key_t, m: vlbytes_t) -> digest_t:
     return hash(bytes.from_nat_be(nat(1), nat(32)), key, m)
 
 
+@typechecked
 def H_msg(key: key_t, m: vlbytes_t) -> digest_t:
     return hash(bytes.from_nat_be(nat(2), nat(32)), key, m)
 
 
+@typechecked
 def PRF(key: key_t, m: address_t) -> digest_t:
     m_ = vlbytes.from_uint32_be(m[0])
     m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[1]))
@@ -77,18 +82,21 @@ def PRF(key: key_t, m: address_t) -> digest_t:
 # 4-byte: hash address, tree index, tree index
 # 4-byte: key and mask
 
+@typechecked
 def set_chain_address(adr: address_t, h_adr: uint32_t) -> address_t:
     result = adr[:]
     result[-3] = h_adr
     return result
 
 
+@typechecked
 def set_hash_address(adr: address_t, h_adr: uint32_t) -> address_t:
     result = adr[:]
     result[-2] = h_adr
     return result
 
 
+@typechecked
 def set_key_and_mask(adr: address_t, kam: uint32_t) -> address_t:
     result = adr[:]
     result[-1] = kam
@@ -98,6 +106,7 @@ def set_key_and_mask(adr: address_t, kam: uint32_t) -> address_t:
 # Output: value of F iterated s times on X
 
 
+@typechecked
 def wots_chain(x: bytes_t, start: int, steps: int, seed: seed_t, adr: address_t) -> chain_t:
     hmo = bytes.copy(x)
     for i in range(start, start + steps):
@@ -113,6 +122,7 @@ def wots_chain(x: bytes_t, start: int, steps: int, seed: seed_t, adr: address_t)
     return adr, hmo
 
 
+@typechecked
 def key_gen(adr: address_t, seed: seed_t) -> key_pair_t:
     # TODO: we need separate functions here for xmss later.
     sk: sk_t = vlarray.create_type([], bytes)
@@ -126,6 +136,7 @@ def key_gen(adr: address_t, seed: seed_t) -> key_pair_t:
     return (sk, pk, adr)
 
 
+@typechecked
 def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
     i = 0
     out = 0
@@ -143,6 +154,7 @@ def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
         out = out + 1
     return basew
 
+@typechecked
 def wots_msg(msg: digest_t) -> vlbytes_t:
     csum = 0
     m = base_w(msg, length1)
@@ -155,6 +167,7 @@ def wots_msg(msg: digest_t) -> vlbytes_t:
     return m
 
 
+@typechecked
 def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
     m = wots_msg(msg, )
     sig = vlarray.create_type([], bytes)
@@ -165,6 +178,7 @@ def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
     return sig
 
 
+@typechecked
 def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> Tuple[pk_t, address_t]:
     m = wots_msg(msg)
     pk2: pk_t = vlarray.create_type([], bytes)

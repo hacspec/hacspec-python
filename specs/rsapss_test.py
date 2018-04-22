@@ -6,7 +6,7 @@ import json
 
 def main (x: int) -> None :
     for i in range(len(rsapss_test_vectors)):
-        modBits = rsapss_test_vectors[i]['modBits']
+        modBits = nat(rsapss_test_vectors[i]['modBits'])
         nBytes = bytes.from_hex(rsapss_test_vectors[i]['n'])
         eBytes = bytes.from_hex(rsapss_test_vectors[i]['e'])
         dBytes = bytes.from_hex(rsapss_test_vectors[i]['d'])
@@ -18,7 +18,7 @@ def main (x: int) -> None :
         pkey = (os2ip(nBytes), os2ip(eBytes))
         skey = (pkey, os2ip(dBytes))
 
-        sLen = array.length(salt)
+        sLen = nat(array.length(salt))
         sgnt_computed = rsapss_sign(modBits, skey, salt, msg)
         vrfy = rsapss_verify(modBits, pkey, sLen, msg, sgnt_computed)
 

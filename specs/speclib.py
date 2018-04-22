@@ -821,7 +821,7 @@ class vlbytes(vlarray):
         b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
         pad = vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
         result = vlarray([uint8(i) for i in b])
-        return array.concat(pad, result)
+        return bytes(array.concat(pad, result))
 
     @staticmethod
     def to_nat_be(x: 'vlbytes') -> nat_t:
