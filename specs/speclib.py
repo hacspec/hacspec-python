@@ -42,9 +42,6 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> Tuple[T, U, V, W, X]:
     return Tuple[T, U, V, W, X]
 
 
-def refine(t: type, f: Callable[[T], bool]) -> type:
-    return t
-
 def refine3(t: type, f: Callable[[T], bool]) -> type:
     __class__ = t
     def init(self, x:t) -> None:

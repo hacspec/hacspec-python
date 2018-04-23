@@ -15,7 +15,7 @@ output_size_t = output_size
 j_range = range_t(0, 8)
 lanes_t = range_t(1, 2**24)
 segment_t = range_t(0, 4)
-t_len_t = range(1, max_size_t - 65)
+t_len_t = range_t(1, max_size_t - 65)
 idx_t = refine3(size_nat, lambda x: x <= 15)
 working_vector_t = array_t(uint64_t, 16)
 
@@ -36,7 +36,7 @@ def ceil32(x: size_nat) -> size_nat:
 
 
 @typechecked
-def compute_variable_length_output_size(t_len: refine(size_nat, lambda x: x + 64 <= max_size_t)) -> size_nat:
+def compute_variable_length_output_size(t_len: refine3(size_nat, lambda x: x + 64 <= max_size_t)) -> size_nat:
     if t_len <= 64:
         return t_len
     else:
@@ -45,8 +45,8 @@ def compute_variable_length_output_size(t_len: refine(size_nat, lambda x: x + 64
 
 
 @typechecked
-def h_prime(t_len: refine(size_nat, lambda x: 1 <= t_len and t_len + 64 <= max_size_t),
-            x: refine(vlbytes_t, lambda x: array.length(x) + 4 <= max_size_t - 2 * line_size)) \
+def h_prime(t_len: refine3(size_nat, lambda x: 1 <= t_len and t_len + 64 <= max_size_t),
+            x: refine3(vlbytes, lambda x: array.length(x) + 4 <= max_size_t - 2 * line_size)) \
         -> contract(vlbytes_t,
                     lambda t_len, x: True,
                     lambda t_len, x, res: array.length(x) == compute_variable_length_output_size(t_len)):
@@ -154,7 +154,7 @@ def G(X: bytes_t(block_size), Y: bytes_t(block_size)) -> bytes_t(block_size):
 
 
 @typechecked
-def extend_to_block(input: refine(vlbytes_t, lambda x: array.length(x) <= block_size)) -> bytes_t(block_size):
+def extend_to_block(input: refine3(vlbytes, lambda x: array.length(x) <= block_size)) -> bytes_t(block_size):
     output = array.create(block_size, uint8(0))
     output[:array.length(intput)] = input
     return output
@@ -293,13 +293,13 @@ def fill_segment(h0: bytes_t(64), iterations: size_nat, segment: segment_t, t_le
     pseudo_rands_size = seeds_length(lanes, columns)
     pseudo_rands = generate_seeds(lanes, columns, i, iterations, t, segment)
     for idx in range(segment_length):
-        j = nat(segment * segment_length + idx)
+        j = size_nat(nat(segment * segment_length + idx))
         if t == 0 and j < 2:
-            h0_i_j = array.create(72, uint8(0))
+            h0_i_j = bytes(array.create(72, uint8(0)))
             h0_i_j[0:64] = h0
             h0_i_j[64:68] = vlbytes.from_uint32_le(uint32(j))
             h0_i_j[68:72] = vlbytes.from_uint32_le(uint32(i))
-            new_block = h_prime(block_size, h0_i_j)
+            new_block = h_prime(size_nat(block_size), h0_i_j)
             offset = block_offset(lanes, columns, i, j)
             output[offset:offset + block_size] = new_block
         else:
@@ -358,14 +358,14 @@ def argon2i(p: vlbytes, s: vlbytes, lanes: lanes_t, t_len: t_len_t, m: size_nat,
     h0_arg[offset + 4:offset + 4 + array.length(x)] = x
     offset = offset + 4 + array.length(x)
     h0 = h(h0_arg, nat(64))
-    columns = nat(4 * (m // (4 * lanes)))
+    columns = size_nat(nat(4 * (m // (4 * lanes))))
     number_of_blocks = lanes * columns
     memory_size = block_size * number_of_blocks
     memory = array.create(memory_size, uint8(0))
     for t in range(iterations):
         for segment in range(4):
             for i in range(lanes):
-                memory = fill_segment(h0, iterations, segment,
-                                      t_len, lanes, columns, nat(t), nat(i), memory)
+                memory = fill_segment(h0, iterations, segment_t(nat(segment)),
+                                      t_len, lanes, columns, size_nat(nat(t)), size_nat(nat(i)), memory)
     final_block = xor_last_column(lanes, columns, bytes(memory))
-    return h_prime(t_len, final_block)
+    return h_prime(size_nat(nat(t_len)), final_block)

@@ -11,6 +11,14 @@ R4 = 7
 working_vector_t = array_t(uint32_t, 16)
 hash_vector_t = array_t(uint32_t, 8)
 index_t = range_t(0, 16)
+data_internal_t = refine3(vlbytes, lambda x: array.length(
+    x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
+key_t = refine3(vlbytes, lambda x: array.length(x) <= 32)
+key_size_t = refine3(int, lambda x: x <= 32 and x >= 0)
+out_size_t = refine3(int, lambda x: x <= 32 and x >= 0)
+max_size_t = 2**32 - 1
+data_t = refine3(vlbytes, lambda x: vlbytes.lenght(x)
+                 < max_size_t - 2 * block_bytes)
 
 SIGMA: array_t(index_t, 16 * 12) = array([
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -70,13 +78,6 @@ def F(h: hash_vector_t, m: working_vector_t, t: uint64_t, flag: bool) -> hash_ve
     return h
 
 
-data_internal_t = refine(bytes_t, lambda x: array.length(
-    x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
-key_t = refine(vlbytes_t, lambda x: array.length(x) <= 32)
-key_size_t = refine(nat, lambda x: x <= 32)
-out_size_t = refine(nat, lambda x: x <= 32)
-
-
 @typechecked
 def blake2s_internal(data: data_internal_t, input_bytes: uint64_t, kk: key_size_t, nn: out_size_t) \
         -> contract(vlbytes_t,
@@ -98,11 +99,6 @@ def blake2s_internal(data: data_internal_t, input_bytes: uint64_t, kk: key_size_
     return vlbytes.from_uint32s_le(h)[:nn]
 
 
-max_size_t = 2**32 - 1
-data_t = refine(vlbytes_t, lambda x: vlbytes.lenght(x)
-                < max_size_t - 2 * block_bytes)
-
-
 @typechecked
 def blake2s(data: data_t, key: key_t, nn: out_size_t) \
         -> contract(vlbytes_t,
@@ -112,10 +108,11 @@ def blake2s(data: data_t, key: key_t, nn: out_size_t) \
     data_blocks = (ll - 1) // block_bytes + 1
     padded_data_length = data_blocks * block_bytes
     if kk == 0:
-        padded_data = array.create(padded_data_length, uint8(0))
+        padded_data = bytes(array.create(padded_data_length, uint8(0)))
         padded_data[:ll] = data
     else:
-        padded_data = array.create(padded_data_length + block_bytes, uint8(0))
+        padded_data = bytes(array.create(
+            padded_data_length + block_bytes, uint8(0)))
         padded_data[0:kk] = key
         padded_data[block_bytes:block_bytes + ll] = key
     return blake2s_internal(padded_data, uint64(ll), key_size_t(kk), nn)

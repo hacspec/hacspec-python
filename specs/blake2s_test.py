@@ -7,7 +7,7 @@ def main(x:int) -> None:
     for i, vec in enumerate(blake2s_test_vectors):
         data = bytes.from_hex(vec['data'])
         key = bytes.from_hex(vec['key'])
-        nn = vec['nn']
+        nn = out_size_t(vec['nn'])
         expected = bytes.from_hex(vec['output'])
         computed = blake2s(data,key,nn)
         if computed == expected:
