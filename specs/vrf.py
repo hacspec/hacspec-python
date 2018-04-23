@@ -82,7 +82,7 @@ def ECVRF_hash_points (g: extended_point_t, h: extended_point_t, pub: extended_p
 def ECVRF_prove (input: bytes_t(uint32), pub: serialized_point_t, priv: serialized_scalar_t, k:felem_t) -> (bytes_t(5*n)):
 	ap = point_decompress(pub)
 	if ap is None:
-		return False	
+		return None	
 
 	h = ECVRF_hash_to_curve(0, pub, input)
 	if h is None:
