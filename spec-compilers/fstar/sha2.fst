@@ -4,7 +4,7 @@ open Spec.Lib.IntTypes
 open Spec.Lib.RawIntTypes
 open Spec.Lib.IntSeq
 open Speclib
-let variant = refine3 "variant_t" nat_t Lambda(args=arguments(args=arg(arg='x',
+let variant = refine3 nat_t Lambda(args=arguments(args=arg(arg='x',
               annotation=None,
               type_comment=None),
               vararg=None,

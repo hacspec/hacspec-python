@@ -8,7 +8,7 @@ let blocksize = 0x10
 let block_t = bytes_t 0x10 
 let key_t = bytes_t 0x20 
 let tag_t = bytes_t 0x10 
-let subblock = refine3 "subblock_t" vlbytes Lambda(args=arguments(args=arg(arg='x',
+let subblock = refine3 vlbytes Lambda(args=arguments(args=arg(arg='x',
                annotation=None,
                type_comment=None),
                vararg=None,
@@ -19,7 +19,7 @@ let subblock = refine3 "subblock_t" vlbytes Lambda(args=arguments(args=arg(arg='
                body=((length x) <= 0x10)) 
 let subblock_t = subblock 
 let p130m5 = ((0x2 **. 0x82) -. 0x5) 
-let felem = refine3 "felem_t" nat Lambda(args=arguments(args=arg(arg='x',
+let felem = refine3 nat Lambda(args=arguments(args=arg(arg='x',
             annotation=None,
             type_comment=None),
             vararg=None,

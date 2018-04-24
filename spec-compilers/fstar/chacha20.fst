@@ -11,7 +11,7 @@ let state_t = array_t uint32_t 0x10
 let key_t = bytes_t 0x20 
 let nonce_t = bytes_t 0xc 
 let block_t = bytes_t 0x40 
-let subblock = refine3 "subblock_t" vlbytes Lambda(args=arguments(args=arg(arg='x',
+let subblock = refine3 vlbytes Lambda(args=arguments(args=arg(arg='x',
                annotation=None,
                type_comment=None),
                vararg=None,
@@ -84,13 +84,13 @@ let chacha20_counter_mode (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vl
   let (blocks,last) = split_blocks msg blocksize in 
   let keyblock = create blocksize (u8 0x0) in 
   let ctr = counter in 
-  let (blocks,ctr) = repeati (range (length blocks))
-    (fun i (blocks,ctr) ->
+  let (ctr,blocks) = repeati (range (length blocks))
+    (fun i (ctr,blocks) ->
       let keyblock = chacha20_block key ctr nonce in 
       let blocks = blocks.[i] <- xor_block blocks.[i] keyblock in 
       let ctr = ctr +. u32 0x1 in 
-      (blocks,ctr))
-    (blocks,ctr) in 
+      (ctr,blocks))
+    (ctr,blocks) in 
   let keyblock = chacha20_block key ctr nonce in 
   let last = xor_block last keyblock in 
   array.concat_blocks blocks last 

@@ -5,7 +5,7 @@ open Spec.Lib.RawIntTypes
 open Spec.Lib.IntSeq
 open Speclib
 let p25519 = ((0x2 **. 0xff) -. 0x13) 
-let felem = refine3 "felem_t" nat Lambda(args=arguments(args=arg(arg='x',
+let felem = refine3 nat Lambda(args=arguments(args=arg(arg='x',
             annotation=None,
             type_comment=None),
             vararg=None,
