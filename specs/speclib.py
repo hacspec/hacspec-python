@@ -263,17 +263,17 @@ class uint16(_uintn):
             super().__init__(_uintn.to_int(v), 16)
 
     def __add__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("+ is only valid for two uint16_t.")
         return uint16(self.v + other.v)
 
     def __sub__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("- is only valid for two uint16_t.")
         return uint16(self.v - other.v)
 
     def __mul__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("* is only valid for two uint16_t.")
         return uint16(self.v * other.v)
 
@@ -281,17 +281,17 @@ class uint16(_uintn):
         return uint16(~ self.v)
 
     def __or__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("| is only valid for two uint16_t.")
         return uint16(self.v | other.v)
 
     def __and__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("& is only valid for two uint16_t.")
         return uint16(self.v & other.v)
 
     def __xor__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("^ is only valid for two uint16_t.")
         return uint16(self.v ^ other.v)
 
