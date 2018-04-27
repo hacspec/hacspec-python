@@ -6,14 +6,12 @@ blocksize = 16
 block_t = bytes_t(16)
 key_t = bytes_t(32)
 tag_t = bytes_t(16)
-subblock = refine3(vlbytes, lambda x: vlbytes.length(x) <= 16)
-subblock_t = subblock
+subblock_t = refine(vlbytes_t, lambda x: vlbytes.length(x) <= 16)
 
 # Define prime field
 
 p130m5 = (2 ** 130) - 5
-felem = refine3(nat, lambda x: x < p130m5)
-felem_t = felem
+felem_t = refine(nat, lambda x: x < p130m5)
 def felem(x:nat) -> felem_t:
     return (x % p130m5)
 def fadd(x:felem_t,y:felem_t) -> felem_t:

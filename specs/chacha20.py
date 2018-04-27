@@ -9,8 +9,7 @@ state_t  = array_t(uint32_t,16)
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 block_t  = bytes_t(64)
-subblock  = refine3(vlbytes, lambda x: array.length(x) <= blocksize)
-subblock_t = subblock
+subblock_t  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
 
 def line(a: index_t, b: index_t, d: index_t, s: rotval_t, m: state_t) -> state_t:
     m    = array.copy(m)
@@ -86,7 +85,7 @@ def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlb
         ctr += uint32(1)
     keyblock = chacha20_block(key,ctr,nonce)
     last = xor_block(last,keyblock)
-    return array.concat_blocks(blocks,last)
+    return vlarray.concat_blocks(blocks,last)
 
 def chacha20_encrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
     return chacha20_counter_mode(key,counter,nonce,msg)

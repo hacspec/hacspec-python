@@ -1,6 +1,6 @@
 from speclib import *
 
-variant = refine3(nat_t, lambda x: x == 0 or x == 1)
+variant = refine(nat_t, lambda x: x == 0 or x == 1)
 
 
 def blake2(v:variant):

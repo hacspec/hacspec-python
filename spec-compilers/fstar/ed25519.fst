@@ -111,7 +111,7 @@ let recover_x_coordinate (y:nat) (sign:bool) : felem_t =
     let p1 = fmul d25519 (fsqr y) in 
     let p1_1 = fadd p1 0x1 in 
     let x2 = fmul (fsub (fsqr y) 0x1) (finv p1_1) in 
-    let () = if ((x2 = 0x0) && sign) then (None() )else (let () = if ((x2 = 0x0) && (unknown op: <_ast3.Not object at 0x000001C4E96880F0> sign)) then (felem 0x0() )else (let x = pow x2 ((p25519 +. 0x3) /. 0x8) p25519 in 
+    let () = if ((x2 = 0x0) && sign) then (None() )else (let () = if ((x2 = 0x0) && (unknown op: <_ast3.Not object at 0x10e4a40f0> sign)) then (felem 0x0() )else (let x = pow x2 ((p25519 +. 0x3) /. 0x8) p25519 in 
         let () = if ((fsub (fsqr x) x2 != 0x0)) then (let x = fmul x fsqrt_m1 in () )else (()) in 
         let () = if ((fsub (fsqr x) x2 != 0x0)) then (None() )else (let () = if ((((x %. 0x2) = 0x1) != sign)) then (felem (p25519 -. x)() )else (x()) in ()) in ()) in ()) in ()) in  
 let point_decompress (s:serialized_point_t) : extended_point_t =

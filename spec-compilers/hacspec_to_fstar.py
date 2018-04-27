@@ -246,6 +246,16 @@ def dump(node, annotate_fields=True, include_attributes=False):
         if (isinstance(node, Assign) and
             isinstance(node.value,Call) and
             isinstance(node.value.func,Name) and
+            node.value.func.id == 'refine3'):
+            vs = [_format(x,False,ind,paren) for x in node.targets]
+            ty = node.value.args[1].id
+            nty = vs[0]
+            x = node.value.args[2].args.args[0].arg
+            b = _format(node.value.args[2].body,False,ind,False)
+            return ("type "+nty+" = "+x+":"+ty+"{"+b+"}\n")
+        if (isinstance(node, Assign) and
+            isinstance(node.value,Call) and
+            isinstance(node.value.func,Name) and
             node.value.func.id == 'prime_field'):
             nty = node.targets[0].elts[0].id
             con = node.targets[0].elts[1].id

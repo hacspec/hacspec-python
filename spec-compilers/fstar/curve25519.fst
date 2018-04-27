@@ -5,16 +5,8 @@ open Spec.Lib.RawIntTypes
 open Spec.Lib.IntSeq
 open Speclib
 let p25519 = ((0x2 **. 0xff) -. 0x13) 
-let felem = refine3 nat Lambda(args=arguments(args=arg(arg='x',
-            annotation=None,
-            type_comment=None),
-            vararg=None,
-            kwonlyargs=,
-            kw_defaults=,
-            kwarg=None,
-            defaults=),
-            body=(x < p25519)) 
-let felem_t = felem 
+type felem_t = x:nat{(x < p25519)}
+
 let to_felem (x:nat_t) : felem_t =
   felem (x %. p25519) 
 let fadd (x:felem_t) (y:felem_t) : felem_t =

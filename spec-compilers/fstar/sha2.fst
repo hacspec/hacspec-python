@@ -4,15 +4,8 @@ open Spec.Lib.IntTypes
 open Spec.Lib.RawIntTypes
 open Spec.Lib.IntSeq
 open Speclib
-let variant = refine3 nat_t Lambda(args=arguments(args=arg(arg='x',
-              annotation=None,
-              type_comment=None),
-              vararg=None,
-              kwonlyargs=,
-              kw_defaults=,
-              kwarg=None,
-              defaults=),
-              body=(x = 0xe0) || (x = 0x100) || (x = 0x180) || (x = 0x200)) 
+type variant = x:nat_t{(x = 0xe0) || (x = 0x100) || (x = 0x180) || (x = 0x200)}
+
 let sha2 (v:variant) : None =
   let () = if ((v = 0xe0) || (v = 0x100)) then (let blockSize = 0x40 in 
     let block_t = bytes_t blockSize in 

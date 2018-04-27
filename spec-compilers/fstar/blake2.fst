@@ -4,15 +4,8 @@ open Spec.Lib.IntTypes
 open Spec.Lib.RawIntTypes
 open Spec.Lib.IntSeq
 open Speclib
-let variant = refine3 nat_t Lambda(args=arguments(args=arg(arg='x',
-              annotation=None,
-              type_comment=None),
-              vararg=None,
-              kwonlyargs=,
-              kw_defaults=,
-              kwarg=None,
-              defaults=),
-              body=(x = 0x0) || (x = 0x1)) 
+type variant = x:nat_t{(x = 0x0) || (x = 0x1)}
+
 let blake2 (v:variant) : None =
   let () = if ((v = 0x1)) then (let bits_in_word = 0x40 in 
     let rounds_in_f = 0xc in 

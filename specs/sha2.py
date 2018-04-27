@@ -2,7 +2,7 @@ from speclib import *
 
 # Four variants of SHA-2
 
-variant = refine3(nat_t, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
+variant = refine(nat_t, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 
 # Generic SHA-2 spec parameterized by variant
 

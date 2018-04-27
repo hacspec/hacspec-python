@@ -14,14 +14,18 @@ let vlcopy (s:seq 'a) = to_lseq s
 let copy #len (s:lseq 'a len) = s
 
 let uint32_v x = uint_v #U32 x
-let range i = i
+unfold let range i = i
 
-let split_blocks (a:seq 'a) (bs:size_nat{bs > 0}) = 
-  let (bl,l) = split_blocks (to_lseq a) bs in
+val split_blocks: #a:Type -> s:seq a -> bs:size_nat{bs > 0} -> (bl:seq (lseq a bs){length bl == length s / bs} * l:seq a{length l == length s % bs})
+let split_blocks #a (s:seq a) (bs:size_nat{bs > 0}) = 
+  let (bl,l) = split_blocks (to_lseq s) bs in
   (to_seq bl, to_seq l)
 
-let concat_blocks #a (#len:size_nat) (#bs:size_nat{bs > 0}) (bl:seq (lseq 'a bs){length bl = len / bs}) (l:seq 'a{length l = len % bs}) = 
-  concat_blocks #_ #len #bs (to_lseq bl) (to_lseq l)
+val concat_blocks: #a:Type -> #len:size_nat -> #bs:size_nat{bs > 0} -> 
+  bl:seq (lseq a bs){length bl == len / bs} -> l:seq a{length l == len % bs} ->
+  r:seq a{length r == len}
+let concat_blocks #_ #len #bs bl l =
+  to_seq (concat_blocks #_ #len #bs (to_lseq bl) (to_lseq l))
 
 let rec exp (x:nat) (y:nat) = 
     if y = 0 then 1

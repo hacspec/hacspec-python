@@ -11,16 +11,8 @@ let state_t = array_t uint32_t 0x10
 let key_t = bytes_t 0x20 
 let nonce_t = bytes_t 0xc 
 let block_t = bytes_t 0x40 
-let subblock = refine3 vlbytes Lambda(args=arguments(args=arg(arg='x',
-               annotation=None,
-               type_comment=None),
-               vararg=None,
-               kwonlyargs=,
-               kw_defaults=,
-               kwarg=None,
-               defaults=),
-               body=((length x) <= blocksize)) 
-let subblock_t = subblock 
+type subblock_t = x:vlbytes_t{(length x <= blocksize)}
+
 let line (a:index_t) (b:index_t) (d:index_t) (s:rotval_t) (m:state_t) : state_t =
   let m = copy m in 
   let m = m.[a] <- (m.[a] +. m.[b]) in 
@@ -93,7 +85,7 @@ let chacha20_counter_mode (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vl
     (ctr,blocks) in 
   let keyblock = chacha20_block key ctr nonce in 
   let last = xor_block last keyblock in 
-  array.concat_blocks blocks last 
+  concat_blocks blocks last 
 let chacha20_encrypt (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =
   chacha20_counter_mode key counter nonce msg 
 let chacha20_decrypt (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =
