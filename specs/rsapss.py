@@ -25,9 +25,10 @@ def eq_bytes(b1:vlbytes_t, b2:vlbytes_t) -> bool:
 
 max_input_len_sha256 = 2 ** 61
 hLen = 32
+hash_t = bytes_t(hLen)
 
 def hash_sha256(msg:vlbytes_t) \
-    -> contract(bytes_t(hLen),
+    -> contract(hash_t,
                 lambda msg: array.length(msg) < max_input_len_sha256,
                 lambda msg, res: True):
     return sha256(msg)

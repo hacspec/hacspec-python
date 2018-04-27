@@ -65,7 +65,7 @@ def ECVRF_hash_points (g: extended_point_t, h: extended_point_t, pub: extended_p
 	tmp[128:160] = ECP2OS(gk)
 	tmp[160:192] = ECP2OS(hk)
 	hashed = bytes.to_nat_le(hash(tmp))
-	result = felem(hashed)
+	result = to_felem(hashed)
 	return result
 
 def ECVRF_prove (input: bytes_t(uint32), pub: serialized_point_t, priv: serialized_scalar_t, k:felem_t) -> (bytes_t(5*n)):

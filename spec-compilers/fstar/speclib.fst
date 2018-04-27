@@ -7,6 +7,8 @@ let array_t t len = lseq t len
 let vlarray_t t = seq t
 let uint32_t = uint32
 let uint8_t = uint8
+let uint128_t = uint128
+let uint64_t = uint64
 let bytes_t len = lbytes len
 let vlbytes_t = bytes
 
@@ -38,3 +40,4 @@ let pfelem (p:pos) (x:nat): pfelem_t p = x % p
 let pfelem_to_int x = x
 let pfadd #p (x:pfelem_t p) (y:pfelem_t p) : pfelem_t p = pfelem p (x + y) 
 let ( -. ) x y = x - y
+

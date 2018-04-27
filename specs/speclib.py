@@ -436,7 +436,7 @@ class uint64(_uintn):
 
     def __xor__(self, other: 'uint64') -> 'uint64':
         if not isinstance(other, uint64):
-            fail("^ is only valid for two uint64_t.")
+            fail("^ is only valid for two uint64_t. other is "+str(other))
         return uint64(self.v ^ other.v)
 
     def __lshift__(self, other: int) -> 'uint64':

@@ -8,7 +8,7 @@ p25519 = (2 ** 255) - 19
 felem_t = refine(nat, lambda x: x < p25519)
 
 def to_felem(x:nat_t) -> felem_t:
-    return felem(x % p25519)
+    return felem_t(x % p25519)
 
 def fadd(x:felem_t,y:felem_t) -> felem_t:
     return to_felem(x + y)
@@ -68,7 +68,7 @@ def point_add_and_double(q:point_t,nq:point_t,nqp1:point_t) -> tuple2(point_t,po
   x_3 = fsqr(fadd(da,cb))
   z_3 = fmul(x_1,(fsqr(fsub(da,cb))))
   x_2 = fmul(aa,bb)
-  z_2 = fmul(e,fadd(aa,fmul(felem(121665),e)))
+  z_2 = fmul(e,fadd(aa,fmul(felem_t(121665),e)))
   return ((x_2, z_2), (x_3, z_3))
 
 def montgomery_ladder(k:scalar_t,init:point_t) -> point_t :
