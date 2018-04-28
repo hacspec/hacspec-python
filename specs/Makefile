@@ -8,6 +8,9 @@ test:
 	$(PYTHON) poly1305_test.py
 	$(PYTHON) chacha20_test.py
 	$(PYTHON) aead_chacha20poly1305_test.py
+	$(PYTHON) gf128_test.py
+	$(PYTHON) aes_test.py
+	$(PYTHON) aead_aes128gcm_test.py
 	$(PYTHON) sha2_test.py
 	$(PYTHON) keccak_test.py
 	$(PYTHON) blake2_test.py
@@ -25,6 +28,9 @@ check-specs:
 	$(PYTHON) ../spec-checker/spec-checker.py chacha20.py
 	$(PYTHON) ../spec-checker/spec-checker.py poly1305.py
 	$(PYTHON) ../spec-checker/spec-checker.py aead_chacha20poly1305.py
+	$(PYTHON) ../spec-checker/spec-checker.py aes.py
+	$(PYTHON) ../spec-checker/spec-checker.py gf128.py
+	$(PYTHON) ../spec-checker/spec-checker.py aead_aes128gcm.py
 	$(PYTHON) ../spec-checker/spec-checker.py sha2.py
 	$(PYTHON) ../spec-checker/spec-checker.py keccak.py
 	$(PYTHON) ../spec-checker/spec-checker.py curve25519.py
