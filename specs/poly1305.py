@@ -9,7 +9,6 @@ tag_t = bytes_t(16)
 subblock_t = refine(vlbytes_t, lambda x: vlbytes.length(x) <= 16)
 
 # Define prime field
-
 p130m5 = (2 ** 130) - 5
 felem_t = refine(nat, lambda x: x < p130m5)
 def felem(x:nat) -> felem_t:

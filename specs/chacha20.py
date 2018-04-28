@@ -38,7 +38,7 @@ def double_round(m: state_t) -> state_t :
     return m
 
 
-constants : array_t(uint32,4) =array(
+constants : array_t(uint32_t,4) =array(
     [uint32(0x61707865), uint32(0x3320646e),
      uint32(0x79622d32), uint32(0x6b206574)])
 
