@@ -142,6 +142,9 @@ class bit(_uintn):
     def __inv__(self) -> 'bit':
         return bit(~ self.v)
 
+    def __invert__(self) -> 'bit':
+        return bit(~ self.v & self.max)
+
     def __or__(self, other: 'bit') -> 'bit':
         if not isinstance(other, bit):
             fail("| is only valid for two bit.")
@@ -211,6 +214,10 @@ class uint8(_uintn):
     def __inv__(self) -> 'uint8':
         return uint8(~ self.v)
 
+    def __invert__(self) -> 'uint8':
+        return uint8(~ self.v & self.max)
+
+
     def __or__(self, other: 'uint8') -> 'uint8':
         if not isinstance(other, uint8):
             fail("| is only valid for two uint8_t.")
@@ -279,6 +286,9 @@ class uint16(_uintn):
 
     def __inv__(self) -> 'uint16':
         return uint16(~ self.v)
+
+    def __invert__(self) -> 'uint16':
+        return uint16(~ self.v & self.max)
 
     def __or__(self, other: 'uint16') -> 'uint16':
         if not isinstance(other, uint16):
@@ -493,6 +503,10 @@ class uint128(_uintn):
     def __inv__(self) -> 'uint128':
         return uint128(~ self.v)
 
+    def __invert__(self) -> 'uint128':
+        return uint128(~ self.v & self.max)
+
+
     def __or__(self, other: 'uint128') -> 'uint128':
         if not isinstance(other, uint128):
             fail("| is only valid for two uint128_t.")
@@ -558,6 +572,9 @@ class bitvector(_uintn):
 
     def __inv__(self) -> 'bitvector':
         return bitvector(~self.v, self.bits)
+
+    def __invert__(self) -> 'bitvector':
+        return bitvector(~self.v & self.max, self.bits)
 
     def __or__(self, other: 'bitvector') -> 'bitvector':
         if (other.bits == self.bits):

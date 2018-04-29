@@ -86,35 +86,39 @@ def mixColumns(state:block_t) -> block_t:
     state = mixColumn(3,state)
     return state
 
-def addRoundKey(key:block_t,state:block_t) -> block_t:
+def addRoundKey(state:block_t,key:block_t) -> block_t:
     out = array.copy(state)
     for i in range(16):
         out[i] ^= key[i]
     return out
 
-def round(key:block_t,state:block_t) -> block_t:
+def aes_enc(state:block_t,round_key:block_t) -> block_t:
     state = subBytes(state)
     state = shiftRows(state)
     state = mixColumns(state)
-    state = addRoundKey(key,state)
+    state = addRoundKey(state,round_key)
     return state
 
-def rounds(key:bytes_t(9*16),state:block_t) -> block_t:
+def aes_enc_last(state:block_t,round_key:block_t) -> block_t:
+    state = subBytes(state)
+    state = shiftRows(state)
+    state = addRoundKey(state,round_key)
+    return state
+
+def rounds(state:block_t,key:bytes_t(9*16)) -> block_t:
     out = array.copy(state)
     for i in range(9):
-        out = round(key[16*i:16*i+16],out)
+        out = aes_enc(out,key[16*i:16*i+16])
     return out
 
-def block_cipher(key:bytes_t(11*16),input:block_t) -> block_t:
+def block_cipher(input:block_t,key:bytes_t(11*16)) -> block_t:
     state = array.copy(input)
     k0 = key[0:16]
     k  = key[16:10*16]
     kn = key[10*16:11*16]
-    state = addRoundKey(k0,state)
-    state = rounds(k,state)
-    state = subBytes(state)
-    state = shiftRows(state)
-    state = addRoundKey(kn,state)
+    state = addRoundKey(state,k0)
+    state = rounds(state,k)
+    state = aes_enc_last(state,kn)
     return state
 
 def rotate_word(w:word_t) -> word_t:
@@ -135,12 +139,16 @@ def sub_word(w:word_t) -> word_t:
 
 rcon : bytes_t(11) = array([uint8(0x8d), uint8(0x01), uint8(0x02), uint8(0x04), uint8(0x08), uint8(0x10), uint8(0x20), uint8(0x40), uint8(0x80), uint8(0x1b), uint8(0x36)])
 
+def aes_keygen_assist(w:word_t,rcon:uint8_t) -> word_t:
+    k = rotate_word(w)
+    k = sub_word(k)
+    k[0] ^= rcon
+    return k
+
 def key_expansion_word(w0:word_t, w1:word_t, i:expindex_t) -> word_t:
     k = array.copy(w1)
     if i % 4 == 0:
-        k = rotate_word(k)
-        k = sub_word(k)
-        k[0] ^= rcon[i//4]
+        k = aes_keygen_assist(k,rcon[i//4])
     for i in range(4):
         k[i] ^= w0[i]
     return k
@@ -158,7 +166,7 @@ def aes128_block(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
     input[0:12] = n
     input[12:16] = bytes.from_uint32_be(c)
     key_ex = key_expansion(k)
-    out = block_cipher(key_ex,input)
+    out = block_cipher(input,key_ex)
     return out
 
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
