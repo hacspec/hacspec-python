@@ -1,5 +1,5 @@
 from speclib import *
-from blake2b import blake2b
+from blake2 import blake2b
 
 version_number = uint8(0x13)
 argon_type = nat(1)
