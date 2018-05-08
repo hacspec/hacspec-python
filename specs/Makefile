@@ -2,8 +2,8 @@
 PYTHON?=python3.6
 
 SPECS=speclib poly1305 chacha20 aead_chacha20poly1305 sha2 keccak blake2 \
-argon2i curve25519 ed25519 p256 curve448 rsapss wots aes
-# vrf and aead_aes128gcm are currently broken
+argon2i curve25519 ed25519 p256 curve448 rsapss wots aes aead_aes128gcm
+# vrf is currently broken
 
 .PHONY: test $(SPECS) all test
 
