@@ -19,6 +19,17 @@ def main(x: int) -> None:
             print("expected ciphertext:",expected)
             print("computed ciphertext:",computed)
             exit(1)
+    # rng = open("/dev/urandom","rb")
+    # msgs = bytes.from_hex(rng.read(16 * 1024).hex())
+    # key = bytes.from_hex(rng.read(16).hex())
+    # nonce = bytes.from_hex(rng.read(12).hex())
+    # ctr = uint32(1)
+    # res = uint8(0)
+    # for i in range(16):
+    #     msg = msgs[i*1024:i*1024+1024]
+    #     computed = aes128_encrypt(key,nonce,ctr,msg)
+    #     res ^= computed[0]
+    # print(res)
 
 
 if __name__ == "__main__":
