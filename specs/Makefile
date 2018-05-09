@@ -16,19 +16,19 @@ $(SPECS):
 	$(PYTHON) $@_test.py
 
 check-specs:
-	$(PYTHON) ../spec-checker/spec-checker.py blake2.py
-	$(PYTHON) ../spec-checker/spec-checker.py chacha20.py
-	$(PYTHON) ../spec-checker/spec-checker.py poly1305.py
-	$(PYTHON) ../spec-checker/spec-checker.py aead_chacha20poly1305.py
-	$(PYTHON) ../spec-checker/spec-checker.py aes.py
-	$(PYTHON) ../spec-checker/spec-checker.py gf128.py
-	$(PYTHON) ../spec-checker/spec-checker.py aead_aes128gcm.py
-	$(PYTHON) ../spec-checker/spec-checker.py sha2.py
-	$(PYTHON) ../spec-checker/spec-checker.py keccak.py
-	$(PYTHON) ../spec-checker/spec-checker.py curve25519.py
-	$(PYTHON) ../spec-checker/spec-checker.py curve448.py
-	$(PYTHON) ../spec-checker/spec-checker.py wots.py
-	$(PYTHON) ../spec-checker/spec-checker.py argon2i.py
-	$(PYTHON) ../spec-checker/spec-checker.py ed25519.py
-	$(PYTHON) ../spec-checker/spec-checker.py vrf.py
-	$(PYTHON) ../spec-checker/spec-checker.py rsapss.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py blake2.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py chacha20.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py poly1305.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py aead_chacha20poly1305.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py aes.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py gf128.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py aead_aes128gcm.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py sha2.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py keccak.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py curve25519.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py curve448.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py wots.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py argon2i.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py ed25519.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py vrf.py
+	$(PYTHON) ../spec-checker/python/spec-checker.py rsapss.py
