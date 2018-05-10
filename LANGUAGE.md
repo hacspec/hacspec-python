@@ -61,6 +61,12 @@ Statements s ::=
       | from x import x1,x2,...,xn (import from external module)
 ```
 
+## Conventions
+Hacspecs must adhere to the following coding conventions:
+* All functions arguments must be typed.
+* All functions must have a return type.
+* Custom type names end with `_t`, e.g. `new_type_t`. If there exists a function casting to this type the function must us the type name, e.g. `new_type()`.
+
 ## Library functions
 
 Builtin functions (hacspec library in speclib.py):

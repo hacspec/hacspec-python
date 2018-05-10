@@ -1,15 +1,18 @@
 from speclib import *
 
 variant = refine3(nat, lambda x: x == 0 or x == 1)
-
-def highbits_128(x:uint128_t):
-    return uint64(x >> 64)
-def highbits_64(x:uint64_t):
-    return uint32(x >> 32)
-
 out_size_t = refine3(nat, lambda x: x <= 32)
 
-def blake2(v:variant):
+@typechecked
+def highbits_128(x:uint128_t) -> uint64_t:
+    return uint64(x >> 64)
+
+@typechecked
+def highbits_64(x:uint64_t) -> uint32_t:
+    return uint32(x >> 32)
+
+@typechecked
+def blake2(v:variant) -> FunctionType:
     if v == 1:
         bits_in_word = 64
         rounds_in_f = 12
@@ -104,6 +107,7 @@ def blake2(v:variant):
         return v
 
 
+    @typechecked
     def _F(h: hash_vector_t, m: working_vector_t, t: uint128_t, flag: bool) -> hash_vector_t:
         v = array.create(16, to_word(0))
         v[0:8] = h
@@ -127,6 +131,7 @@ def blake2(v:variant):
         return h
 
 
+    @typechecked
     def blake2_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size_t, nn: out_size_t) \
             -> contract(vlbytes_t,
                         lambda data, input_bytes, kk, nn: True,
@@ -147,6 +152,7 @@ def blake2(v:variant):
         return from_words_le(h)[:nn]
 
 
+    @typechecked
     def blake2(data: data_t, key: key_t, nn: out_size_t) \
             -> contract(vlbytes_t,
                         lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn):
@@ -155,13 +161,13 @@ def blake2(v:variant):
         data_blocks = (ll - 1) // block_bytes + 1
         padded_data_length = data_blocks * block_bytes
         if kk == 0:
-            padded_data = array.create(padded_data_length, uint8(0))
+            padded_data = bytes(array.create(padded_data_length, uint8(0)))
             padded_data[:ll] = data
         else:
-            padded_data = array.create(padded_data_length + block_bytes, uint8(0))
+            padded_data = bytes(array.create(padded_data_length + block_bytes, uint8(0)))
             padded_data[0:kk] = key
             padded_data[block_bytes:block_bytes+ll] = key
-        return blake2_internal(padded_data, ll, kk, nn)
+        return blake2_internal(padded_data, uint128(ll), key_size_t(nat(kk)), nn)
 
     return blake2
 

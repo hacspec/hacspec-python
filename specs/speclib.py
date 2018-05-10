@@ -1,4 +1,5 @@
 from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type, cast
+from types import FunctionType
 from random import SystemRandom as rand
 from random import choices as random_string
 from string import ascii_uppercase, ascii_lowercase
@@ -932,7 +933,7 @@ class vlbytes(vlarray):
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = vlarray.create(16, uint8(0))
+        a = bytes(vlarray.create(16, uint8(0)))
         a[0:8] = vlbytes.from_uint64_be(x1)
         a[8:16] = vlbytes.from_uint64_be(x0)
         return a

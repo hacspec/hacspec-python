@@ -11,6 +11,5 @@ install:
 
 script:
   - travis_wait 40 make -C specs -j10
-  - make -C specs check-specs
   - make -C spec-compilers
   - make -C rfc
