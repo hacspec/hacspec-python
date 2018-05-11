@@ -102,12 +102,10 @@ def point_compress(p: extended_point_t) -> serialized_point_t:
     r = nat_t(2**255 * (x % 2) + y)
     return bytes.from_nat_le(r)
 
-
 fsqrt_m1: felem_t = felem(nat(pow(2, ((p25519 - 1) // 4), p25519)))
+  
 
-
-@typechecked
-def recover_x_coordinate(y: nat, sign: bool) -> felem_t:
+def recover_x_coordinate(y:nat,sign:bool) -> Union[felem_t, None]:
     if y >= p25519:
         return None
     else:
@@ -132,8 +130,7 @@ def recover_x_coordinate(y: nat, sign: bool) -> felem_t:
                     return x
 
 
-@typechecked
-def point_decompress(s: serialized_point_t) -> extended_point_t:
+def point_decompress(s:serialized_point_t) ->Union[extended_point_t, None] :
     y = bytes.to_nat_le(s)
     sign = (y // (1 << 255)) % 2 == 1
     y = to_felem(nat(y % (1 << 255)))

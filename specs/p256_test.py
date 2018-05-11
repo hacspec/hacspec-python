@@ -5,6 +5,7 @@ from sys import exit
 def main (x: int) -> None :
     # Safe Curve test vectors
 
+
 	sk0 = scalar_t(0x14)
 	point_computed0 = point_mul(sk0)
 	point_expected0 = (0x83A01A9378395BAB9BCD6A0AD03CC56D56E6B19250465A94A234DC4C6B28DA9A, 0x76E49B6DE2F73234AE6A5EB9D612B75C9F2202BB6923F54FF8240AAA86F640B8)	
