@@ -3,6 +3,7 @@ from speclib import *
 prime = 2**256 - 2**224 + 2**192 + 2**96 - 1
 
 
+
 felem = refine3(nat, lambda x: x < prime)
 felem_t = felem
 
@@ -53,7 +54,6 @@ def jacobian(a: int, b: int, c: int) -> jacobian_t:
 
 
 scalar_t = bitvector_t(256)
-
 serialized_point_t = bytes_t(33)
 serialized_scalar_t = bytes_t(32)
 
