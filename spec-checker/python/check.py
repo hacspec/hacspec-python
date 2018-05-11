@@ -277,7 +277,7 @@ class AstBinOp(AstItem):
 
 def read_function_signature(f):
     fun_name = f.name
-    rt = None
+    rt = -1
     arg_names = []
     arg_types = []
     if f.args.args is not None:
@@ -288,6 +288,8 @@ def read_function_signature(f):
                 arg_types.append(x.annotation.id)
             elif x.annotation and isinstance(x.annotation, Str):
                 arg_types.append(x.annotation.s)
+            elif x.annotation and isinstance(x.annotation, Call):
+                arg_types.append(x.annotation.func.id)
             arg_names.append(x.arg)
     if f.returns is not None:
         if isinstance(f.returns, Name):
@@ -309,10 +311,27 @@ def read_function_signature(f):
                 rt += str(tmp2)
             else:
                 rt += str(tmp)
+        elif isinstance(f.returns, NameConstant):
+            rt = f.returns.value
+        elif isinstance(f.returns, Call):
+            rt = f.returns.func.id
+    decorators = [read(x, fun_name) for x in f.decorator_list]
+    # Every function must have a typechecked decorator.
+    if len(decorators) != 1 or decorators[0].get_name() != "typechecked":
+        print("Every hacpsec function must have a @typechecked decorator: \"" + fun_name+"\"")
+        exit(1)
     try:
         arg_names.remove("self")
     except:
         pass
+    # Every argument must be typed.
+    if len(arg_types) != len(arg_names):
+        print("Every hacpsec function argument must be typed: \"" + fun_name+"\"")
+        exit(1)
+    # Every function must have a return type.
+    if rt is -1:
+        print("Every hacpsec function must have a return type: \"" + fun_name+"\"")
+        exit(1)
     return FunctionSignature.create(fun_name, arg_types, arg_names, rt)
 
 
@@ -446,10 +465,10 @@ def read(node, cl=None):
     if isinstance(node, FunctionDef):
         sig = read_function_signature(node)
         body = read(node.body)
-        if cl:
-            print(str(cl) + "::" + str(sig))
-        else:
-            print(sig)
+        # if cl:
+        #     print(str(cl) + "::" + str(sig))
+        # else:
+        #     print(sig)
         return AstItem(FunctionDef, [sig, body])
 
     if isinstance(node, ClassDef):
@@ -540,6 +559,7 @@ def filter(parsed, obj, to_find):
                 if isinstance(x.t, type) and x.t.__name__ == to_find:
                     if item not in filtered:
                         filtered.append(x)
+                        return
                 rec(y, obj, x)
         elif isinstance(x, list):
             for y in x:
@@ -548,6 +568,7 @@ def filter(parsed, obj, to_find):
             if item and isinstance(item.t, type) and item.t.__name__ == to_find:
                 if item not in filtered:
                     filtered.append(item)
+                    return
     for a in parsed.args:
         rec(a, obj)
     return filtered
@@ -568,9 +589,20 @@ def main(path):
     with open(path, 'r', encoding='utf-8') as py_file:
         code = py_file.read()
         ast = parse(source=code, filename=path)
+
+        imports = read_objects(ast, ImportFrom)
+        # TODO: this doesn't read nested functions properly.
         functions = read_objects(ast, FunctionDef)
-        # for f in functions:
-        #     print(f.get_function_signature())
+
+        PRINT = False
+        if PRINT:
+            print("\nFile: " + path)
+            print("\nImports: ")
+            for i in imports:
+                print(i)
+            print("\nFunctions: ")
+            for f in functions:
+                print(f.get_function_signature())
 
 
 if __name__ == "__main__":

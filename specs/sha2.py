@@ -7,7 +7,7 @@ variant = refine3(nat, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 # Generic SHA-2 spec parameterized by variant
 
 @typechecked
-def sha2(v:variant):
+def sha2(v:variant) -> FunctionType:
     # Initializing types and constants for different variants 
     if v == 224 or v == 256:
         blockSize = 64

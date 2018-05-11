@@ -1,19 +1,23 @@
 #To run these specs in Python you need to install Python >= 3.6
 PYTHON?=python3.6
 
-SPECS=speclib poly1305 chacha20 aead_chacha20poly1305 sha2 keccak \
+SPECS=poly1305 chacha20 aead_chacha20poly1305 sha2 keccak \
 argon2i curve25519 ed25519 p256 curve448 rsapss wots aes aead_aes128gcm
 # vrf and blake2 are currently broken
+TESTS=speclib $(SPECS)
 
-.PHONY: test $(SPECS) all test
+.PHONY: test $(TESTS) all test
 
-all: test
+all: check test
 
-test: $(SPECS)
+test: $(TESTS)
+check: $(addsuffix -check, $(SPECS))
 
-$(SPECS):
-	@echo $@
+$(TESTS):
 	$(PYTHON) $@_test.py
+
+%-check: %.py
+	$(PYTHON) ../spec-checker/python/check.py $<
 
 # This isn't doing anything useful right now. It should be enabled again when
 # the speck-checker does something.
