@@ -11,8 +11,7 @@ let state_t = array_t uint32_t 0x10
 let key_t = bytes_t 0x20 
 let nonce_t = bytes_t 0xc 
 let block_t = bytes_t 0x40 
-let subblock = x:bytes{(length x <= blocksize)} 
-type subblock_t = subblock 
+type subblock_t = x:vlbytes_t{(length x <= blocksize)}
 
 let line (a:index_t) (b:index_t) (d:index_t) (s:rotval_t) (m:state_t) : state_t =
   let m = copy m in 
@@ -48,11 +47,11 @@ let chacha20_init (k:key_t) (counter:uint32_t) (nonce:nonce_t) : state_t =
   st 
 let chacha20_core (st:state_t) : state_t =
   let working_state = copy st in 
-  let working_state = repeati (range 0xa)
-    (fun x working_state ->
+  let () = repeati (range 0xa)
+    (fun x () ->
       let working_state = double_round working_state in 
-      working_state)
-    working_state in 
+      ())
+    () in 
   let working_state = repeati (range 0x10)
     (fun i working_state ->
       let working_state = working_state.[i] <- working_state.[i] +. st.[i] in 
@@ -75,18 +74,21 @@ let xor_block (block:subblock_t) (keyblock:block_t) : subblock_t =
   out 
 let chacha20_counter_mode (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =
   let (blocks,last) = split_blocks msg blocksize in 
+  let lb = length blocks in 
   let keyblock = create blocksize (u8 0x0) in 
   let ctr = counter in 
-  let (ctr,blocks,keyblock) = repeati (range (length blocks))
-    (fun i (ctr,blocks,keyblock) ->
+  let (ctr,blocks) = repeati #(uint32_t * s:seq block_t{length s == lb}) 
+    lb
+    (fun i (ctr,blocks) ->
       let keyblock = chacha20_block key ctr nonce in 
-      let blocks = blocks.[i] <- xor_block (blocks.[i]) keyblock in 
+      let blocks = (to_lseq blocks).[i] <- xor_block (to_lseq blocks).[i] keyblock in
       let ctr = ctr +. u32 0x1 in 
-      (ctr,blocks,keyblock))
-    (ctr,blocks,keyblock) in 
+      (ctr,blocks))
+    (ctr,blocks) in 
   let keyblock = chacha20_block key ctr nonce in 
-  let last = xor_block (last) keyblock in 
-  concat_blocks blocks last 
+  let last = xor_block last keyblock in 
+  concat_blocks #_ #(length blocks `op_Multiply` blocksize + length last) blocks last 
+  
 let chacha20_encrypt (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =
   chacha20_counter_mode key counter nonce msg 
 let chacha20_decrypt (key:key_t) (counter:uint32_t) (nonce:nonce_t) (msg:vlbytes_t) : vlbytes_t =

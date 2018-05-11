@@ -1,9 +1,16 @@
 from typing import Any, NewType, List, TypeVar, Generic, Iterator, Iterable, Union, Generator, Sequence, Tuple, Callable, Type, cast
+from types import FunctionType
 from random import SystemRandom as rand
+from random import choices as random_string
+from string import ascii_uppercase, ascii_lowercase
 from math import ceil, log
 from importlib import import_module
 import builtins
+from typeguard import typechecked
+from inspect import getfullargspec
+from os import environ
 
+DEBUG = environ.get('HACSPEC_DEBUG')
 
 class Error(Exception):
     pass
@@ -36,36 +43,41 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> Tuple[T, U, V, W, X]:
     return Tuple[T, U, V, W, X]
 
 
-def refine(t: type, f: Callable[[T], bool]) -> type:
-    return t
-
-
-def refine2(u: str, t: type, f: Callable[[T], bool]) -> Callable[[T], T]:
-    def check(x) -> t:
-        if not (isinstance(x, t) or f(x)):
-            fail("Type error. You tried to use " + str(x) + " with " + u + ".")
+def refine3(t: type, f: Callable[[T], bool]) -> type:
+    __class__ = t
+    def init(self, x:t) -> None:
+        if not isinstance(x, t):
+            print("ref "+str(type(x)))
+        if not isinstance(x, t) or not f(x):
+            fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(t) + ".")
         else:
-            class_ = getattr(import_module("speclib"), u)
-            return class_(x)
-    return check
-
-def refine3(u: str, t: type, f: Callable[[T], bool]) -> type:
-    def init(s, x:t) -> None:
-        if not (isinstance(x, t) or f(x)):
-            fail("Type error. You tried to use " + str(x) + " with " + u + ".")
-        else:
+            num_init_args = len(getfullargspec(super().__init__).args)
+            if num_init_args == 1:
+                super().__init__()
+            elif num_init_args == 2:
+                super().__init__(x)
+            else:
+                fail("refine3 super.init has more args than we expected (" + str(num_init_args) + ")")
             t(x)
-    cl = type(u, (t,), {'__init__': init})
+    def string(self) -> str:
+        return str(self.__origin__)
+    # We use a random string as class name here. The result of refine3 has to
+    # get assigend to a type alias, which can be used as class name.
+    u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+    if DEBUG:
+        print("new class " + u_rand + " - " + str(t))
+    cl = type(u_rand, (t,), {'__init__': init , '__origin__': t})
+    __class__ = cl
     return cl
 
 # nat = refine2('nat_t', int, lambda x: x >= 0)
 # class nat_t(int): pass
-nat = refine3('nat_t', int, lambda x: x >= 0)
+nat = refine3(int, lambda x: x >= 0)
 nat_t = nat
 
 
-def range_t(range_name, min, max) -> type:
-    return refine3(range_name, int, lambda x: x >= min and x < max)
+def range_t(min, max) -> type:
+    return refine3(int, lambda x: x >= min and x < max)
 
 
 def contract(T: Type[T], pre, post):
@@ -109,6 +121,12 @@ class _uintn:
             fail("to_int is only valid for uintN.")
         return x.v
 
+    @staticmethod
+    def to_nat(x: '_uintn') -> nat_t:
+        if not isinstance(x, _uintn):
+            fail("to_int is only valid for uintN.")
+        return nat(x.v)
+
 
 class bit(_uintn):
     def __init__(self, v: Union[int, _uintn]) -> None:
@@ -136,6 +154,9 @@ class bit(_uintn):
 
     def __inv__(self) -> 'bit':
         return bit(~ self.v)
+
+    def __invert__(self) -> 'bit':
+        return bit(~ self.v & self.max)
 
     def __or__(self, other: 'bit') -> 'bit':
         if not isinstance(other, bit):
@@ -206,6 +227,10 @@ class uint8(_uintn):
     def __inv__(self) -> 'uint8':
         return uint8(~ self.v)
 
+    def __invert__(self) -> 'uint8':
+        return uint8(~ self.v & self.max)
+
+
     def __or__(self, other: 'uint8') -> 'uint8':
         if not isinstance(other, uint8):
             fail("| is only valid for two uint8_t.")
@@ -258,35 +283,38 @@ class uint16(_uintn):
             super().__init__(_uintn.to_int(v), 16)
 
     def __add__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("+ is only valid for two uint16_t.")
         return uint16(self.v + other.v)
 
     def __sub__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("- is only valid for two uint16_t.")
         return uint16(self.v - other.v)
 
     def __mul__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("* is only valid for two uint16_t.")
         return uint16(self.v * other.v)
 
     def __inv__(self) -> 'uint16':
         return uint16(~ self.v)
 
+    def __invert__(self) -> 'uint16':
+        return uint16(~ self.v & self.max)
+
     def __or__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("| is only valid for two uint16_t.")
         return uint16(self.v | other.v)
 
     def __and__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("& is only valid for two uint16_t.")
         return uint16(self.v & other.v)
 
     def __xor__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint8):
+        if not isinstance(other, uint16):
             fail("^ is only valid for two uint16_t.")
         return uint16(self.v ^ other.v)
 
@@ -431,7 +459,7 @@ class uint64(_uintn):
 
     def __xor__(self, other: 'uint64') -> 'uint64':
         if not isinstance(other, uint64):
-            fail("^ is only valid for two uint64_t.")
+            fail("^ is only valid for two uint64_t. other is "+str(other))
         return uint64(self.v ^ other.v)
 
     def __lshift__(self, other: int) -> 'uint64':
@@ -488,6 +516,10 @@ class uint128(_uintn):
     def __inv__(self) -> 'uint128':
         return uint128(~ self.v)
 
+    def __invert__(self) -> 'uint128':
+        return uint128(~ self.v & self.max)
+
+
     def __or__(self, other: 'uint128') -> 'uint128':
         if not isinstance(other, uint128):
             fail("| is only valid for two uint128_t.")
@@ -537,6 +569,10 @@ class bitvector(_uintn):
         else:
             super().__init__(_uintn.to_int(v), bits)
 
+    @staticmethod
+    def init(v: Union[int, _uintn]) -> 'bitvector':
+        return bitvector(v, 0)
+
     def __add__(self, other: 'bitvector') -> 'bitvector':
         if (other.bits == self.bits):
             return bitvector(self.v + other.v, self.bits)
@@ -553,6 +589,9 @@ class bitvector(_uintn):
 
     def __inv__(self) -> 'bitvector':
         return bitvector(~self.v, self.bits)
+
+    def __invert__(self) -> 'bitvector':
+        return bitvector(~self.v & self.max, self.bits)
 
     def __or__(self, other: 'bitvector') -> 'bitvector':
         if (other.bits == self.bits):
@@ -613,11 +652,16 @@ class bitvector(_uintn):
         return bitvector(self.v >> i, j - i)
 
 
-class vlarray(Iterable[T]):
-    def __init__(self, x: Union[Sequence[T], 'vlarray[T]'], t: Type=None) -> None:
+class vlarray():
+    # TODO: make t arg mandatory
+    def __init__(self, x: Union[Sequence[T], 'vlarray'], t: Type=None) -> None:
         if not (isinstance(x, Sequence) or isinstance(x, vlarray)):
             fail("vlarray() takes a sequence or vlarray as first argument.")
-        # TODO: check for T and t
+        if t:
+            for e in x:
+                if not isinstance(e, t):
+                    fail("vlarray() input element has wrong type. "+\
+                         "Got "+str(type(e))+" expected "+str(t)+".")
         self.l = list(x)
         self.t = t
 
@@ -634,14 +678,13 @@ class vlarray(Iterable[T]):
         return iter(self.l)
 
     def __eq__(self, other):
-        # TODO: this shouldn't be necessary if we type check.
         if not isinstance(self, vlarray) or not isinstance(other, vlarray):
             fail("vlarray.__eq__ only works on two vlarray.")
-        if str(other.t) == "speclib.vlbytes" or str(other.t) == "speclib.vlarray" \
-           or str(type(other)) == "speclib.vlbytes" or str(type(other)) == "speclib.vlarray":
-            return self.l == other.l
-        else:
-            return False
+        # if str(other.t) == "speclib.vlbytes" or str(other.t) == "speclib.vlarray" \
+        #    or isinstance(other, vlbytes) or isinstance(other, vlarray):
+        return self.l == other.l
+        # else:
+        #     return False
 
     def __ne__(self, other):
         if isinstance(other, self.__class__):
@@ -649,7 +692,7 @@ class vlarray(Iterable[T]):
         else:
             return True
 
-    def __getitem__(self, key: Union[int, slice]):
+    def __getitem__(self, key: Union[int, slice]) -> 'vlarray':
         try:
             if isinstance(key, slice):
                 return vlarray(self.l[key.start:key.stop])
@@ -660,7 +703,7 @@ class vlarray(Iterable[T]):
             print('vlarray index:', key)
             fail('vlarray index error')
 
-    def __getslice__(self, i: int, j: int) -> 'vlarray[T]':
+    def __getslice__(self, i: int, j: int) -> 'vlarray':
         return vlarray(self.l[i:j])
 
     def __setitem__(self, key: Union[int, slice], v) -> None:
@@ -670,41 +713,45 @@ class vlarray(Iterable[T]):
             self.l[key] = v
 
     @staticmethod
-    def create(len: int, default) -> 'vlarray[T]':
+    def create(len: int, default) -> 'vlarray':
         return vlarray([default] * len)
 
     @staticmethod
-    def create_type(x: Iterable[U], t: type) -> 'vlarray[T]':
+    def create_type(x: Iterable[U], t: type) -> 'vlarray':
         return vlarray(list([t(el) for el in x]), t)
 
     @staticmethod
-    def length(a: 'vlarray[T]') -> int:
+    def length(a: 'vlarray') -> int:
+        if not isinstance(a, vlarray):
+            fail("array.length takes a vlarray.")
         return len(a.l)
 
     @staticmethod
-    def copy(x: 'vlarray[T]') -> 'vlarray[T]':
+    def copy(x: 'vlarray') -> 'vlarray':
         return vlarray(x.l[:])
 
     @staticmethod
-    def concat(x: 'vlarray[T]', y: 'vlarray[U]') -> 'vlarray[T]':
-        if str(x.t) == "speclib.vlbytes" or str(x.t) == "speclib.vlarray":
+    def concat(x: 'vlarray', y: 'vlarray') -> 'vlarray':
+        if x.t and \
+           (str(x.t.__name__) == "vlbytes" or str(x.t.__name__) == "vlarray"):
             tmp = x.l[:]
-            tmp.append(vlarray(y.l[:], type(y)))
+            # TODO: only works with bytes
+            tmp.append(vlbytes(y.l[:]))
             return vlarray(tmp, x.t)
-        return vlarray(x.l[:]+y.l[:])
+        return vlarray(x.l[:]+y.l[:], x.t)
 
     @staticmethod
-    def zip(x: 'vlarray[T]', y: 'vlarray[U]') -> 'vlarray[Tuple[T,U]]':
+    def zip(x: 'vlarray', y: 'vlarray') -> 'vlarray':
         return vlarray(list(zip(x.l, y.l)))
 
     @staticmethod
-    def enumerate(x: 'vlarray[T]') -> 'vlarray[Tuple[int,T]]':
+    def enumerate(x: 'vlarray') -> 'vlarray':
         return vlarray(list(enumerate(x.l)))
 
     @staticmethod
-    def split_blocks(a: 'vlarray[T]', blocksize: int) -> 'Tuple[vlarray[vlarray[T]],vlarray[T]]':
+    def split_blocks(a: 'vlarray', blocksize: int) -> 'Tuple[vlarray,vlarray]':
         if not isinstance(a, vlarray):
-            fail("split_blocks takes a vlarray[T] as first argument.")
+            fail("split_blocks takes a vlarray as first argument.")
         if not isinstance(blocksize, int):
             fail("split_blocks takes an int as second argument.")
         nblocks = len(a) // blocksize
@@ -714,16 +761,16 @@ class vlarray(Iterable[T]):
         return (blocks, last)
 
     @staticmethod
-    def concat_blocks(blocks: 'vlarray[vlarray[T]]', last: 'vlarray[T]') -> 'vlarray[T]':
+    def concat_blocks(blocks: 'vlarray', last: 'vlarray') -> 'vlarray':
         return (vlarray.concat(vlarray([b for block in blocks for b in block]), last))
 
     # Only used in ctr. Maybe delete
     @staticmethod
-    def map(f: Callable[[T], U], a: 'vlarray[T]') -> 'vlarray[U]':
+    def map(f: Callable[[T], U], a: 'vlarray') -> 'vlarray':
         return vlarray(list(map(f, a.l)))
 
     @staticmethod
-    def create_random(l: nat_t, t: Type[_uintn]) -> 'vlarray[t]':
+    def create_random(l: nat_t, t: Type[_uintn]) -> 'vlarray':
         if not isinstance(l, nat_t):
             fail("array.create_random's first argument has to be of type nat_t.")
         r = rand()
@@ -731,22 +778,37 @@ class vlarray(Iterable[T]):
         return array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
 
 
-class vlbytes(vlarray[uint8]):
+class vlbytes(vlarray):
+    def __init__(self, x: Union[Sequence[T], 'vlbytes']) -> None:
+        super(vlbytes, self).__init__(x, uint8_t)
+
+    # TODO: this wouldn't be necessary if we could return the correct type in vlarray.
+    def __getitem__(self, key: Union[int, slice]) -> 'vlbytes':
+        try:
+            if isinstance(key, slice):
+                return vlbytes(self.l[key.start:key.stop])
+            return self.l[key]
+        except:
+            print('vlarray access error:')
+            print('vlarray content:', self.l)
+            print('vlarray index:', key)
+            fail('vlarray index error')
+
     @staticmethod
     def from_ints(x: List[int]) -> 'vlbytes':
-        return vlarray([uint8(i) for i in x])
+        return vlbytes([uint8(i) for i in x])
 
     @staticmethod
-    def concat_bytes(blocks: 'vlarray[vlbytes]') -> 'vlbytes':
+    def concat_bytes(blocks: 'vlarray') -> 'vlbytes':
         concat = [b for block in blocks for b in block]
-        return vlarray(concat)
+        return vlbytes(concat)
 
     @staticmethod
-    def from_hex(x: str) -> vlarray[uint8]:
-        return vlarray([uint8(int(x[i:i+2], 16)) for i in range(0, len(x), 2)])
+    def from_hex(x: str) -> 'vlbytes':
+        return vlbytes([uint8(int(x[i:i+2], 16)) for i in range(0, len(x), 2)])
 
     @staticmethod
-    def to_hex(a: vlarray[uint8]) -> str:
+    def to_hex(a: 'vlbytes') -> str:
         return "".join(['{:02x}'.format(uint8.to_int(x)) for x in a])
 
     @staticmethod
@@ -754,12 +816,16 @@ class vlbytes(vlarray[uint8]):
         if not isinstance(x, nat_t):
             fail("bytes.from_nat_le's argument has to be of type nat_t.")
         b = x.to_bytes((x.bit_length() + 7) // 8, 'little') or b'\0'
-        return vlarray([uint8(i) for i in b])
+        return vlbytes([uint8(i) for i in b])
 
     @staticmethod
-    def to_nat_le(x: vlarray[uint8]) -> nat_t:
+    def to_int_le(x: 'vlbytes') -> int:
         b = builtins.bytes([uint8.to_int(u) for u in x])
-        return nat(int.from_bytes(b, 'little'))
+        return int.from_bytes(b, 'little')
+
+    @staticmethod
+    def to_nat_le(x: 'vlbytes') -> nat_t:
+        return nat(vlbytes.to_int_le(x))
 
     @staticmethod
     def from_nat_be(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes':
@@ -770,15 +836,15 @@ class vlbytes(vlarray[uint8]):
         b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
         pad = vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
         result = vlarray([uint8(i) for i in b])
-        return array.concat(pad, result)
+        return bytes(array.concat(pad, result))
 
     @staticmethod
-    def to_nat_be(x: vlarray[uint8]) -> nat_t:
+    def to_nat_be(x: 'vlbytes') -> nat_t:
         b = builtins.bytes([uint8.to_int(u) for u in x])
         return int.from_bytes(b, 'big')
 
     @staticmethod
-    def from_uint32_le(x: uint32) -> vlarray[uint8]:
+    def from_uint32_le(x: uint32) -> 'vlbytes':
         xv = uint32.to_int(x)
         x0 = uint8(xv & 255)
         x1 = uint8((xv >> 8) & 255)
@@ -787,7 +853,7 @@ class vlbytes(vlarray[uint8]):
         return vlarray([x0, x1, x2, x3])
 
     @staticmethod
-    def to_uint32_le(x: vlarray[uint8]) -> uint32:
+    def to_uint32_le(x: 'vlbytes') -> uint32:
         x0 = uint8.to_int(x[0])
         x1 = uint8.to_int(x[1]) << 8
         x2 = uint8.to_int(x[2]) << 16
@@ -795,50 +861,50 @@ class vlbytes(vlarray[uint8]):
         return uint32(x0 + x1 + x2 + x3)
 
     @staticmethod
-    def from_uint64_le(x: uint64) -> vlarray[uint8]:
+    def from_uint64_le(x: uint64) -> 'vlbytes':
         xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlarray[uint8] = vlarray.create(8, uint8(0))
+        a: vlbytes = vlarray.create(8, uint8(0))
         a[0:4] = vlbytes.from_uint32_le(x0)
         a[4:8] = vlbytes.from_uint32_le(x1)
         return a
 
     @staticmethod
-    def to_uint64_le(x: vlarray[uint8]) -> uint64:
+    def to_uint64_le(x: 'vlbytes') -> uint64:
         x0 = vlbytes.to_uint32_le(x[0:4])
         x1 = vlbytes.to_uint32_le(x[4:8])
         return uint64(uint32.to_int(x0) +
                       (uint32.to_int(x1) << 32))
 
     @staticmethod
-    def from_uint128_le(x: uint128) -> vlarray[uint8]:
+    def from_uint128_le(x: uint128) -> 'vlbytes':
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
         a = vlarray.create(16, uint8(0))
         a[0:8] = vlbytes.from_uint64_le(x0)
         a[8:16] = vlbytes.from_uint64_le(x1)
-        return a
+        return bytes(a)
 
     @staticmethod
-    def to_uint128_le(x: vlarray[uint8]) -> uint128:
+    def to_uint128_le(x: 'vlbytes') -> uint128:
         x0 = vlbytes.to_uint64_le(x[0:8])
         x1 = vlbytes.to_uint64_le(x[8:16])
         return uint128(uint64.to_int(x0) +
                        (uint64.to_int(x1) << 64))
 
     @staticmethod
-    def from_uint32_be(x: uint32) -> vlarray[uint8]:
+    def from_uint32_be(x: uint32) -> 'vlbytes':
         xv = uint32.to_int(x)
         x0 = uint8(xv & 255)
         x1 = uint8((xv >> 8) & 255)
         x2 = uint8((xv >> 16) & 255)
         x3 = uint8((xv >> 24) & 255)
-        return vlarray([x3, x2, x1, x0])
+        return vlbytes([x3, x2, x1, x0])
 
     @staticmethod
-    def to_uint32_be(x: vlarray[uint8]) -> uint32:
+    def to_uint32_be(x: 'vlbytes') -> uint32:
         x0 = uint8.to_int(x[0]) << 24
         x1 = uint8.to_int(x[1]) << 16
         x2 = uint8.to_int(x[2]) << 8
@@ -846,46 +912,46 @@ class vlbytes(vlarray[uint8]):
         return uint32(x3 + x2 + x1 + x0)
 
     @staticmethod
-    def from_uint64_be(x: uint64) -> vlarray[uint8]:
+    def from_uint64_be(x: uint64) -> 'vlbytes':
         xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlarray[uint8] = vlarray.create(8, uint8(0))
+        a: vlbytes = vlarray.create(8, uint8(0))
         a[0:4] = vlbytes.from_uint32_be(x1)
         a[4:8] = vlbytes.from_uint32_be(x0)
         return a
 
     @staticmethod
-    def to_uint64_be(x: vlarray[uint8]) -> uint64:
+    def to_uint64_be(x: 'vlbytes') -> uint64:
         x0 = vlbytes.to_uint32_be(x[0:4])
         x1 = vlbytes.to_uint32_be(x[4:8])
         return uint64(uint32.to_int(x1) +
                       (uint32.to_int(x0) << 32))
 
     @staticmethod
-    def from_uint128_be(x: uint128) -> vlarray[uint8]:
+    def from_uint128_be(x: uint128) -> 'vlbytes':
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = vlarray.create(16, uint8(0))
+        a = bytes(vlarray.create(16, uint8(0)))
         a[0:8] = vlbytes.from_uint64_be(x1)
         a[8:16] = vlbytes.from_uint64_be(x0)
         return a
 
     @staticmethod
-    def to_uint128_be(x: vlarray[uint8]) -> uint128:
+    def to_uint128_be(x: 'vlbytes') -> uint128:
         x0 = vlbytes.to_uint64_be(x[0:8])
         x1 = vlbytes.to_uint64_be(x[8:16])
         return uint128(uint64.to_int(x1) +
                        (uint64.to_int(x0) << 64))
 
     @staticmethod
-    def from_uint32s_le(x: vlarray[uint32]) -> vlarray[uint8]:
+    def from_uint32s_le(x: vlarray) -> 'vlbytes':
         by = vlarray([vlbytes.from_uint32_le(i) for i in x])
-        return(vlarray.concat_blocks(by, vlarray([])))
+        return bytes(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
-    def to_uint32s_le(x: vlarray[uint8]) -> vlarray[uint32]:
+    def to_uint32s_le(x: 'vlbytes') -> vlarray:
         nums, x = vlarray.split_blocks(x, 4)
         if len(x) > 0:
             fail("array length not a multiple of 4")
@@ -893,25 +959,25 @@ class vlbytes(vlarray[uint8]):
             return(vlarray([vlbytes.to_uint32_le(i) for i in nums]))
 
     @staticmethod
-    def from_uint32s_be(x: vlarray[uint32]) -> vlarray[uint8]:
+    def from_uint32s_be(x: vlarray) -> 'vlbytes':
         by = vlarray([vlbytes.from_uint32_be(i) for i in x])
-        return(vlarray.concat_blocks(by, vlarray([])))
+        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
-    def to_uint32s_be(x: vlarray[uint8]) -> vlarray[uint32]:
+    def to_uint32s_be(x: 'vlbytes') -> vlarray:
         nums, x = vlarray.split_blocks(x, 4)
         if len(x) > 0:
             fail("array length not a multiple of 4")
         else:
-            return(vlarray([vlbytes.to_uint32_be(i) for i in nums]))
+            return vlarray([vlbytes.to_uint32_be(i) for i in nums])
 
     @staticmethod
-    def from_uint64s_be(x: vlarray[uint64]) -> vlarray[uint8]:
+    def from_uint64s_be(x: vlarray) -> 'vlbytes':
         by = vlarray([vlbytes.from_uint64_be(i) for i in x])
-        return(vlarray.concat_blocks(by, vlarray([])))
+        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
-    def to_uint64s_be(x: vlarray[uint8]) -> vlarray[uint64]:
+    def to_uint64s_be(x: 'vlbytes') -> vlarray:
         nums, x = vlarray.split_blocks(x, 8)
         if len(x) > 0:
             fail("array length not a multple of 8")
@@ -919,42 +985,63 @@ class vlbytes(vlarray[uint8]):
             return(vlarray([vlbytes.to_uint64_be(i) for i in nums]))
 
     @staticmethod
-    def from_uint64s_le(x: vlarray[uint64]) -> vlarray[uint8]:
+    def from_uint64s_le(x: vlarray) -> 'vlbytes':
         by = vlarray([vlbytes.from_uint64_le(i) for i in x])
-        return(vlarray.concat_blocks(by, vlarray([])))
+        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
-    def to_uint64s_le(x: vlarray[uint8]) -> vlarray[uint64]:
+    def to_uint64s_le(x: 'vlbytes') -> vlarray:
         nums, x = vlarray.split_blocks(x, 8)
         if len(x) > 0:
             fail("array length not a multple of 8")
         else:
-            return(vlarray([vlbytes.to_uint64_le(i) for i in nums]))
+            return vlarray([vlbytes.to_uint64_le(i) for i in nums])
 
     @staticmethod
-    def create_random_bytes(len: nat) -> 'vlarray[uint8]':
+    def create_random_bytes(len: nat) -> 'vlbytes':
         r = rand()
-        return array(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
+        return bytes(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
 
 def vlbytes_t(T):
     return vlbytes
 
 
-def bytes_t(len):
-    return vlbytes
+def bytes_t(l:int):
+    return refine3(vlbytes, lambda x: vlbytes.length(x) <= l)
 
 
-def bitvector_t(len: nat):
-    return bitvector
+def bitvector_t(l:int):
+    def refine_bitvec() -> type:
+        __class__ = bitvector
+        def f(x:Union[int, _uintn]):
+            return int(x) <= ((1 << l) - 1)
+        def init(self, x:Union[int, _uintn]) -> None:
+            if not (isinstance(x, int) or isinstance(x, _uintn)) or not f(x):
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of bitvector.")
+            else:
+                super().__init__(x, l)
+                bitvector(x, l)
+        def string(self) -> str:
+            return str(self.__origin__)
+        # We use a random string as class name here. The result of refine3 has to
+        # get assigend to a type alias, which can be used as class name.
+        u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+        if DEBUG:
+            print("new class " + u_rand + " - " + str(bitvector))
+        cl = type(u_rand, (bitvector,), {'__init__': init , '__origin__': bitvector, '__str__': string})
+        __class__ = cl
+        return cl
+    refinement = refine_bitvec()
+    return refinement
 
 
 def vlarray_t(t: type):
-    return vlarray[t]
+    return vlarray
 
 
-def array_t(t: type, len: int) -> vlarray[Any]:
-    return vlarray[t]
+def array_t(t: type, len: int) -> vlarray:
+    return vlarray
 
 
 bit_t = bit
@@ -965,12 +1052,10 @@ uint64_t = uint64
 uint128_t = uint128
 
 array = vlarray
-vlbytes = vlbytes
 bytes = vlbytes
 
+
 # The libraries below are experimental and need more thought
-
-
 class pfelem:
     def __init__(self, x: int, p: int) -> None:
         if x < 0:
@@ -1218,5 +1303,5 @@ class speclib:
     def ceil(x: int) -> nat_t:
         return nat(ceil(x))
 
-    def log(x: int, b: int) -> nat_t:
-        return nat(log(x, b))
+    def log(x: int, b: int) -> int:
+        return log(x, b)

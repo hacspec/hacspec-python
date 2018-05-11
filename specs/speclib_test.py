@@ -7,8 +7,8 @@ from sys import exit
 
 
 def test_bytes():
-    x: bytes_t = bytes([0x01, 0x02, 0x03, 0x04, 0x05])
-    y: bytes_t = bytes([0x01, 0x02, 0x03, 0x04, 0x05])
+    x: bytes_t = bytes.from_ints([0x01, 0x02, 0x03, 0x04, 0x05])
+    y: bytes_t = bytes.from_ints([0x01, 0x02, 0x03, 0x04, 0x05])
     if x != y:
         print("got      " + str(x))
         print("expected " + str(y))
@@ -17,12 +17,12 @@ def test_bytes():
 
 def test_2d_arrays():
     x: vlarray_t(bytes_t) = vlarray.create_type([], bytes)
-    x = array.concat(x, bytes([0x01, 0x02, 0x03]))
-    x = array.concat(x, bytes([0x04, 0x05]))
-    y: vlarray_t(bytes_t) = vlarray([bytes([0x01, 0x02, 0x03]), bytes([0x04, 0x05])], bytes)
+    x = array.concat(x, bytes.from_ints([0x01, 0x02, 0x03]))
+    x = array.concat(x, bytes.from_ints([0x04, 0x05]))
+    y: vlarray_t(bytes_t) = vlarray([bytes.from_ints([0x01, 0x02, 0x03]), bytes.from_ints([0x04, 0x05])], bytes)
     z: vlarray_t(bytes_t) = vlarray.create_type([], bytes)
-    z = array.concat(z, bytes([0x01, 0x02, 0x03]))
-    z = array.concat(z, bytes([0x04, 0x05]))
+    z = array.concat(z, bytes.from_ints([0x01, 0x02, 0x03]))
+    z = array.concat(z, bytes.from_ints([0x04, 0x05]))
     if x != y:
         print("got      " + str(x))
         print("expected " + str(y))

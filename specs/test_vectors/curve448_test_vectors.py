@@ -8,7 +8,7 @@ curve448_test = TypedDict('curve448_test', {
     'valid'  :  bool}
 )
 
-curve448_test_vectors : array[curve448_test] = array([
+curve448_test_vectors : array = array([
     {
         'private' : '3d262fddf9ec8e88495266fea19a34d28882acef045104d0d1aae121700a779c984c24f8cdd78fbff44943eba368f54b29259a4f1c600ad3',
         'public' : '06fce640fa3487bfda5f6cf2d5263f8aad88334cbd07437f020f08f9814dc031ddbdc38c19c6da2583fa5429db94ada18aa7a7fb4ef8a086',
