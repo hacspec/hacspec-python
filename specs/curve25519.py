@@ -5,13 +5,18 @@ from speclib import *
 # Define prime field
 p25519 = (2 ** 255) - 19
 
-felem = refine3(nat, lambda x: x < p25519)
-felem_t = felem
+felem_t = refine3(nat, lambda x: x < p25519)
+point_t = tuple2(felem_t, felem_t)  # projective coordinates
+scalar_t = bitvector_t(256)
+serialized_point_t = bytes_t(32)
+serialized_scalar_t = bytes_t(32)
+
+g25519: point_t = (9, 1)
 
 
 @typechecked
 def to_felem(x: nat_t) -> felem_t:
-    return felem(nat(x % p25519))
+    return felem_t(nat(x % p25519))
 
 
 @typechecked
@@ -44,20 +49,9 @@ def finv(x: felem_t) -> felem_t:
     return to_felem(pow(x, p25519-2, p25519))
 
 
-point_t = tuple2(felem_t, felem_t)  # projective coordinates
-
-
 @typechecked
 def point(a: int, b: int) -> point_t:
     return to_felem(nat(a)), to_felem(nat(b))
-
-
-scalar_t = bitvector_t(256)
-
-g25519: point_t = (9, 1)
-
-serialized_point_t = bytes_t(32)
-serialized_scalar_t = bytes_t(32)
 
 
 @typechecked
@@ -98,7 +92,7 @@ def point_add_and_double(q: point_t, nq: point_t, nqp1: point_t) -> tuple2(point
     x_3 = fsqr(fadd(da, cb))
     z_3 = fmul(x_1, (fsqr(fsub(da, cb))))
     x_2 = fmul(aa, bb)
-    z_2 = fmul(e, fadd(aa, fmul(felem(nat(121665)), e)))
+    z_2 = fmul(e, fadd(aa, fmul(felem_t(nat(121665)), e)))
     return ((x_2, z_2), (x_3, z_3))
 
 

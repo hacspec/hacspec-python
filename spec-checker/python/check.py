@@ -1,6 +1,9 @@
 from typed_ast.ast3 import *
 from sys import argv
+from os import environ
+import os
 
+file_dir = None
 
 class FunctionSignature():
     def __init__(self):
@@ -341,6 +344,22 @@ def read_function_signature(f):
     return FunctionSignature.create(fun_name, arg_types, arg_names, rt)
 
 
+def import_is_hacspec(filename):
+    if filename == "speclib":
+        # speclib can always be used.
+        return True
+    if not file_dir:
+        print("No file_dir set :/ Something is wrong.")
+        exit(1)
+    filename = os.path.join(file_dir, filename + ".py")
+    try:
+        with open(filename, 'r', encoding='utf-8') as py_file:
+            return True
+    except:
+        print("File is not a valid hacspec. Import \"" + filename + "\" is not a local spec.")
+        exit(1)
+    return True
+
 def read(node, cl=None):
     # FIXME: this shouldn't be allowed
     if node is None:
@@ -351,6 +370,10 @@ def read(node, cl=None):
         return AstItem(Module, [read(node.body)])
 
     if isinstance(node, ImportFrom):
+        # Check that the imported file is a local hacspec or speclib.
+        if not import_is_hacspec(node.module):
+            print("Import " + f + " is not a local hacspec file or speclib.")
+            exit(1)
         return AstItem(ImportFrom, [node.module])
 
     if isinstance(node, Tuple):
@@ -402,6 +425,8 @@ def read(node, cl=None):
 
     if isinstance(node, Name):
         return AstName(node.id)
+    if isinstance(node, NameConstant):
+        return AstName(node.value)
 
     if isinstance(node, Load):
         return AstItem(Load)
@@ -477,13 +502,13 @@ def read(node, cl=None):
         #     print(sig)
         return AstItem(FunctionDef, [sig, body])
 
-    if isinstance(node, ClassDef):
-        bases = [read(x, node.name) for x in node.bases]
-        bodies = [read(x, node.name) for x in node.body]
-        keywords = [read(x, node.name) for x in node.keywords]
-        decorators = [read(x, node.name) for x in node.decorator_list]
-        # print("class: " + str(node.name))
-        return AstItem(ClassDef, [node.name, bases, bodies, decorators])
+    # if isinstance(node, ClassDef):
+    #     bases = [read(x, node.name) for x in node.bases]
+    #     bodies = [read(x, node.name) for x in node.body]
+    #     keywords = [read(x, node.name) for x in node.keywords]
+    #     decorators = [read(x, node.name) for x in node.decorator_list]
+    #     # print("class: " + str(node.name))
+    #     return AstItem(ClassDef, [node.name, bases, bodies, decorators])
 
     if isinstance(node, Return):
         return AstItem(Return, [read(node.value)])
@@ -555,6 +580,9 @@ def read(node, cl=None):
             nodes.append(read(x))
         return AstItem(List, nodes)
 
+    print(str(type(node)) + " is not allowed in hacspecs.")
+    exit(1)
+
     return
 
 def filter(parsed, obj, to_find):
@@ -593,6 +621,8 @@ def read_objects(ast, obj):
 
 def main(path):
     with open(path, 'r', encoding='utf-8') as py_file:
+        global file_dir
+        file_dir = os.path.dirname(os.path.abspath(path))
         code = py_file.read()
         ast = parse(source=code, filename=path)
 
@@ -601,6 +631,10 @@ def main(path):
         functions = read_objects(ast, FunctionDef)
 
         PRINT = False
+        try:
+            PRINT = True if environ['HACSPEC_DEBUG'] is "1" else False
+        except:
+            pass
         if PRINT:
             print("\nFile: " + path)
             print("\nImports: ")

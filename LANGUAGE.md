@@ -63,12 +63,13 @@ Statements s ::=
 
 ## Conventions
 Hacspecs must adhere to the following coding conventions:
-* All functions arguments must be typed.
-* All functions must have a return type.
+* All functions arguments must be typed. ~(checked)~
+* All functions must have a return type. ~(checked)~
 * Custom type names end with `_t`, e.g. `new_type_t`. If there exists a function casting to this type the function must us the type name, e.g. `new_type()`.
-* Everyt function must be annotated with `@typechecked`.
+* Every function must be annotated with `@typechecked`. ~(checked)~
 * Functions can be nested.
-* Classes are not allowed.
+* Classes are not allowed. ~(checked)~
+* Only `import from` import statements of local spec files and `speclib` are allowed. ~(checked)~
 
 ## Library functions
 

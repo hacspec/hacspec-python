@@ -11,20 +11,18 @@ d25519: felem_t = felem(nat(
 q25519: felem_t = felem(
     nat((1 << 252) + 27742317777372353535851937790883648493))
 
-
-@typechecked
-def sha512_modq(s: vlbytes) -> felem_t:
-    h = sha512(s)
-    return felem(nat(bytes.to_nat_le(h) % q25519))
-
-
-affine_point_t = tuple2(felem_t, felem_t)
 extended_point_t = tuple4(felem_t, felem_t, felem_t, felem_t)
 
 
 @typechecked
 def extended_point(a: int, b: int, c: int, d: int) -> extended_point_t:
     return to_felem(nat(a)), to_felem(nat(b)), to_felem(nat(c)), to_felem(nat(d))
+
+
+@typechecked
+def sha512_modq(s: vlbytes) -> felem_t:
+    h = sha512(s)
+    return felem(nat(bytes.to_nat_le(h) % q25519))
 
 
 @typechecked
