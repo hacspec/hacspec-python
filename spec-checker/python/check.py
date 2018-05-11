@@ -307,7 +307,13 @@ def read_function_signature(f):
             elif isinstance(tmp, Tuple):
                 tmp2 = [] 
                 for x in tmp.elts:
-                    tmp2.append(x.id)
+                    if isinstance(x, Name):
+                        tmp2.append(x.id)
+                    elif isinstance(x, NameConstant):
+                        tmp2.append(x.value)
+                    else:
+                        print("Couldn't parse function return values: \"" + fun_name+"\"")
+                        exit(1)
                 rt += str(tmp2)
             else:
                 rt += str(tmp)
