@@ -2,13 +2,13 @@
 #!/usr/bin/python3
 
 from speclib import *
-from curve25519 import felem_t, to_felem, felem, fadd, fsub, fmul, fsqr, finv, serialized_scalar_t, serialized_point_t, scalar_t, p25519
+from curve25519 import felem_t, to_felem, fadd, fsub, fmul, fsqr, finv, serialized_scalar_t, serialized_point_t, scalar_t, p25519
 from sha2 import sha512
 
 # Define prime field
-d25519: felem_t = felem(nat(
+d25519: felem_t = felem_t(nat(
     37095705934669439343138083508754565189542113879843219016388785533085940283555))
-q25519: felem_t = felem(
+q25519: felem_t = felem_t(
     nat((1 << 252) + 27742317777372353535851937790883648493))
 
 extended_point_t = tuple4(felem_t, felem_t, felem_t, felem_t)
@@ -22,7 +22,7 @@ def extended_point(a: int, b: int, c: int, d: int) -> extended_point_t:
 @typechecked
 def sha512_modq(s: vlbytes) -> felem_t:
     h = sha512(s)
-    return felem(nat(bytes.to_nat_le(h) % q25519))
+    return felem_t(nat(bytes.to_nat_le(h) % q25519))
 
 
 @typechecked
@@ -35,8 +35,8 @@ def point_add(p: extended_point_t, q: extended_point_t) -> extended_point_t:
     (x2, y2, z2, t2) = q
     a = fmul(fsub(y1, x1), fsub(y2, x2))
     b = fmul(fadd(y1, x1), fadd(y2, x2))
-    c = fmul(felem(nat(2)), fmul(fmul(d25519, t1), t2))
-    d = fmul(felem(nat(2)), fmul(z1, z2))
+    c = fmul(felem_t(nat(2)), fmul(fmul(d25519, t1), t2))
+    d = fmul(felem_t(nat(2)), fmul(z1, z2))
     e = fsub(b, a)
     f = fsub(d, c)
     g = fadd(d, c)
@@ -55,7 +55,7 @@ def point_double(p: extended_point_t) -> extended_point_t:
     (x1, y1, z1, t1) = p
     a = fmul(x1, x1)
     b = fmul(y1, y1)
-    c = fmul(felem(nat(2)), fmul(z1, z1))
+    c = fmul(felem_t(nat(2)), fmul(z1, z1))
     h = fadd(a, b)
     e = fsub(h, fmul(fadd(x1, y1), fadd(x1, y1)))
     g = fsub(a, b)
@@ -100,7 +100,7 @@ def point_compress(p: extended_point_t) -> serialized_point_t:
     r = nat_t(2**255 * (x % 2) + y)
     return bytes.from_nat_le(r)
 
-fsqrt_m1: felem_t = felem(nat(pow(2, ((p25519 - 1) // 4), p25519)))
+fsqrt_m1: felem_t = felem_t(nat(pow(2, ((p25519 - 1) // 4), p25519)))
   
 
 @typechecked
@@ -110,14 +110,14 @@ def recover_x_coordinate(y:nat,sign:bool) -> Union[felem_t, None]:
     else:
         y = to_felem(y)
         p1 = fmul(d25519, fsqr(y))
-        p1_1 = fadd(p1, felem(nat(1)))
-        x2 = fmul(fsub(fsqr(y), felem(nat(1))), finv(p1_1))
+        p1_1 = fadd(p1, felem_t(nat(1)))
+        x2 = fmul(fsub(fsqr(y), felem_t(nat(1))), finv(p1_1))
         if x2 == 0 and sign:
             return None
         elif x2 == 0 and not sign:
-            return felem(nat(0))
+            return felem_t(nat(0))
         else:
-            x = felem(nat(pow(x2, (p25519 + 3)//8, p25519)))
+            x = felem_t(nat(pow(x2, (p25519 + 3)//8, p25519)))
             if (fsub(fsqr(x), x2) != 0):
                 x = fmul(x, fsqrt_m1)
             if (fsub(fsqr(x), x2) != 0):
@@ -138,7 +138,7 @@ def point_decompress(s:serialized_point_t) ->Union[extended_point_t, None] :
     if x is None:
         return None
     else:
-        return extended_point(x, y, felem(nat(1)), fmul(x, y))
+        return extended_point(x, y, felem_t(nat(1)), fmul(x, y))
 
 
 @typechecked
@@ -152,9 +152,9 @@ def expand_secret(s: serialized_scalar_t) -> tuple2(serialized_scalar_t, seriali
     return serialized_scalar_t(h_low), serialized_scalar_t(h_high)
 
 
-_g_x: felem_t = felem(nat(
+_g_x: felem_t = felem_t(nat(
     15112221349535400772501151409588531511454012693041857206046113283949847762202))
-_g_y: felem_t = felem(nat(
+_g_y: felem_t = felem_t(nat(
     46316835694926478169428394003475163141307993866256225615783033603165251855960))
 
 g_ed25519: extended_point_t = extended_point(_g_x, _g_y, 1, fmul(_g_x, _g_y))
