@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from speclib import *
+from hacspec.speclib import *
 
 p448 = 2 ** 448 - 2 ** 224 - 1
 

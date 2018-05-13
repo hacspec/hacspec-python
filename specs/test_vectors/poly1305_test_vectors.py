@@ -1,5 +1,5 @@
 from mypy_extensions import TypedDict
-from speclib import array
+from hacspec.speclib import array
 
 poly1305_test = TypedDict('poly1305_test', {
     'input_len': str,

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from speclib import *
+from hacspec.speclib import *
 
 # Define prime field
 p25519 = (2 ** 255) - 19

@@ -1,5 +1,5 @@
 from mypy_extensions import TypedDict
-from speclib import array
+from hacspec.speclib import array
 
 #https://www.di-mgt.com.au/sha_testvectors.html
 #https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing

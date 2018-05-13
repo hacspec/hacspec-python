@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 from blake2 import blake2b
 
 version_number = uint8(0x13)

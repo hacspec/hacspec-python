@@ -1,5 +1,5 @@
 from mypy_extensions import TypedDict
-from speclib import array
+from hacspec.speclib import array
 
 #https://github.com/pyca/cryptography/blob/master/vectors/cryptography_vectors/asymmetric/RSA/FIPS_186-2/SigVerPSS_186-3.rsp
 

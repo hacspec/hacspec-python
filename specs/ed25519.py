@@ -1,7 +1,7 @@
 
 #!/usr/bin/python3
 
-from speclib import *
+from hacspec.speclib import *
 from curve25519 import felem_t, to_felem, fadd, fsub, fmul, fsqr, finv, serialized_scalar_t, serialized_point_t, scalar_t, p25519
 from sha2 import sha512
 

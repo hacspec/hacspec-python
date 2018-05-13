@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 
 block_t = array[uint8]     #length <= blocksize
 key_t = array[uint8]       #length = keysize

@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 from sha2 import sha224, sha256, sha384, sha512
 from sys import exit
 

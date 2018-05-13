@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 from curve25519 import *
 from sha2 import *
 

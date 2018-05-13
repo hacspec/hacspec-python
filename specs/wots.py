@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from speclib import *
+from hacspec.speclib import *
 from sha2 import sha256
 
 # Influences signature length, not security

@@ -16,6 +16,35 @@ This project is still in the early stages. We invite submissions of crypto specs
 
 See [spec-compilers](spec-compilers/) for details.
 
+# How to use
+
+To use hacspec in your project install the hacspec python package as follows.
+
+## Installation via pip
+hacspec is distributed as a [pip package](https://pypi.org/project/hacspec/)
+
+    pip install hacspec
+
+To install the hacspec package from its source clone this repository and run
+
+    cd hacspec-py
+    pip install .
+
+Now you can use the speclib in your python code with
+
+    from hacspec.speclib import *
+
+The package further provides a tool to check hacpsec files for its correctness
+
+    hacspec-check <your-hacspec>
+
+## Development
+
+When working on hacspec itself install the hacspec package in development mode.
+
+    cd hacspec-py
+    pip install -e .
+
 # contact
 
 Discussions are happening on the [mailing list](https://moderncrypto.org/mailman/listinfo/hacspec).

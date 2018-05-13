@@ -1,5 +1,5 @@
 from mypy_extensions import TypedDict
-from speclib import array
+from hacspec.speclib import array
 
 curve25519_test = TypedDict('curve25519_test', {
     'private':  str,

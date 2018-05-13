@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from speclib import *
+from hacspec.speclib import *
 
 blocksize = 16
 block_t  = bytes_t(16)

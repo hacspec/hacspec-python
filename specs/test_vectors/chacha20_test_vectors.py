@@ -1,5 +1,5 @@
 from mypy_extensions import TypedDict
-from speclib import array
+from hacspec.speclib import array
 
 chacha20_test = TypedDict('chacha20_test', {
     'input_len': int,

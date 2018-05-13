@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 from keccak import shake128, shake256, sha3_224, sha3_256, sha3_384, sha3_512
 from test_vectors.keccak_test_vectors import sha3_test_vectors, shake128_test_vectors, shake256_test_vectors
 from sys import exit

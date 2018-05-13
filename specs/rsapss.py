@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from speclib import *
+from hacspec.speclib import *
 from sha2 import sha256
 
 max_size_t = 2 ** 32 - 1

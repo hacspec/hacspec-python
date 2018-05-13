@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from wots import *
-from speclib import *
+from hacspec.speclib import *
 from sys import exit
 
 # Generated with https://github.com/joostrijneveld/xmss-reference/

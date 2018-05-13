@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 from rsapss import rsapss_sign, rsapss_verify, os2ip
 from test_vectors.rsapss_test_vectors import rsapss_test_vectors
 from sys import exit

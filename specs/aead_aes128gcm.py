@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from speclib import *
+from hacspec.speclib import *
 from aes import aes128_block, aes128_encrypt, aes128_decrypt, xor_block
 from gf128 import gmac
 

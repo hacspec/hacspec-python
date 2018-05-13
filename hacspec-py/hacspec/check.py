@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from typed_ast.ast3 import *
 from sys import argv
 from os import environ
@@ -345,7 +347,7 @@ def read_function_signature(f):
 
 
 def import_is_hacspec(filename):
-    if filename == "speclib":
+    if filename == "hacspec.speclib":
         # speclib can always be used.
         return True
     if not file_dir:
@@ -619,7 +621,11 @@ def read_objects(ast, obj):
     filtered = filter(parsed, obj, obj.__name__)
     return filtered
 
-def main(path):
+def main():
+    if len(argv) != 2:
+        print("Usage: hacspec-check <hacspec>")
+        exit(1)
+    path = argv[1]
     with open(path, 'r', encoding='utf-8') as py_file:
         global file_dir
         file_dir = os.path.dirname(os.path.abspath(path))
@@ -643,7 +649,8 @@ def main(path):
             print("\nFunctions: ")
             for f in functions:
                 print(f.get_function_signature())
+        print(path + " is a valid hacspec.")
 
 
 if __name__ == "__main__":
-    main(argv[1])
+    main()

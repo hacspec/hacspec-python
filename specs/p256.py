@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 
 prime = 2**256 - 2**224 + 2**192 + 2**96 - 1
 

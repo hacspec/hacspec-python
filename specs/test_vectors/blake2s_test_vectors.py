@@ -1,5 +1,5 @@
 from mypy_extensions import TypedDict
-from speclib import array
+from hacspec.speclib import array
 
 blake2s_test = TypedDict('blake2s_test', {
     'data': str,

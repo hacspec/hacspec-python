@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 
 state_t = array_t(uint64_t, 25)
 index_t = range_t(0, 5)

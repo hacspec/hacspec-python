@@ -1,4 +1,4 @@
-from speclib import *
+from hacspec.speclib import *
 
 variant = refine3(nat, lambda x: x == 0 or x == 1)
 out_size_t = refine3(nat, lambda x: x <= 32)

@@ -1,5 +1,5 @@
 from mypy_extensions import TypedDict
-from speclib import array
+from hacspec.speclib import array
 
 aes128gcm_test = TypedDict('aes128gcm_test', {
     'input_len': int,
