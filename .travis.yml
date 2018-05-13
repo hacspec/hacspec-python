@@ -10,8 +10,8 @@ install:
   - gem install --no-doc kramdown-rfc2629
 
 script:
-  - make -C hacspec-py
   - pip install hacspec-py
+  - make -C hacspec-py
   - travis_wait 40 make -C specs -j10
   - make -C spec-compilers
   - make -C rfc
