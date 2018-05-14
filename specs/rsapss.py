@@ -4,14 +4,14 @@ from hacspec.speclib import *
 from sha2 import sha256
 
 max_size_t = 2 ** 32 - 1
-size_nat = refine3(nat, lambda x: x <= max_size_t)
+size_nat_t = refine3(nat, lambda x: x <= max_size_t)
 
 @typechecked
-def blocks(x:size_nat, m:size_nat) \
-    -> contract(size_nat,
+def blocks(x:size_nat_t, m:size_nat_t) \
+    -> contract(size_nat_t,
                 lambda x, m: x > 0 and m > 0,
                 lambda x, m, res: res > 0 and x <= m * r):
-    return size_nat(nat((x - 1) // m + 1))
+    return size_nat_t(nat((x - 1) // m + 1))
 
 @typechecked
 def xor_bytes(b1:vlbytes_t, b2:vlbytes_t) -> vlbytes_t:
@@ -39,7 +39,7 @@ def hash_sha256(msg:vlbytes_t) \
 # Mask Generation Function
 
 @typechecked
-def mgf_sha256(mgfseed:vlbytes_t, maskLen:size_nat) \
+def mgf_sha256(mgfseed:vlbytes_t, maskLen:size_nat_t) \
     -> contract(vlbytes_t,
                 lambda mgfseed, maskLen: maskLen < (2 ** 32) * hLen and maskLen > 0
                 and array.length(mgfseed) + 4 < max_size_t,
@@ -77,14 +77,14 @@ rsa_privkey = tuple2(rsa_pubkey, nat) #((n, e), d)
 # EMSA-PSS encoding
 
 @typechecked
-def pss_encode(salt:vlbytes_t, msg:vlbytes_t, emBits:size_nat) \
+def pss_encode(salt:vlbytes_t, msg:vlbytes_t, emBits:size_nat_t) \
     -> contract(vlbytes_t,
                 lambda salt, msg, emBits: array.length(msg) < max_input_len_sha256 and
                 hLen + array.length(salt) + 2 <= blocks(emBits, nat(8)) and
                 array.length(salt) + hLen + 8 < max_size_t and emBits > 0,
                 lambda salt, msg, emBits, res: array.length(res) == blocks(emBits, nat(8))):
     sLen = array.length(salt)
-    emLen = blocks(emBits, size_nat(nat(8)))
+    emLen = blocks(emBits, size_nat_t(nat(8)))
     msBits = emBits % 8
 
     mHash = hash_sha256(msg)
@@ -95,7 +95,7 @@ def pss_encode(salt:vlbytes_t, msg:vlbytes_t, emBits:size_nat) \
     m1[(8 + hLen):m1Len] = salt
     m1Hash = hash_sha256(m1)
 
-    dbLen = size_nat(nat(emLen - hLen - 1))
+    dbLen = size_nat_t(nat(emLen - hLen - 1))
     #db = [0x00; ..; 0x00; 0x01; salt]
     db = array.create(dbLen, uint8(0))
     last_before_salt = dbLen - sLen - 1
@@ -117,7 +117,7 @@ def pss_encode(salt:vlbytes_t, msg:vlbytes_t, emBits:size_nat) \
 # EMSA-PSS verification
 
 @typechecked
-def pss_verify(sLen:size_nat, msg:vlbytes_t, em:vlbytes_t, emBits:size_nat) \
+def pss_verify(sLen:size_nat_t, msg:vlbytes_t, em:vlbytes_t, emBits:size_nat_t) \
     -> contract(bool,
                 lambda sLen, msg, em, emBits: array.length(msg) < max_input_len_sha256 and
                 array.length(em) == blocks(emBits, nat(8)) and emBits > 0 and
@@ -138,7 +138,7 @@ def pss_verify(sLen:size_nat, msg:vlbytes_t, em:vlbytes_t, emBits:size_nat) \
         if not (em[emLen - 1] == uint8(0xbc) and em_0 == uint8(0)):
             res = False
         else:
-            dbLen = size_nat(nat(emLen - hLen - 1))
+            dbLen = size_nat_t(nat(emLen - hLen - 1))
             maskedDB = em[0:dbLen]
             m1Hash = em[dbLen:(dbLen + hLen)]
 
@@ -166,7 +166,7 @@ def pss_verify(sLen:size_nat, msg:vlbytes_t, em:vlbytes_t, emBits:size_nat) \
     return res
 
 @typechecked
-def rsapss_sign(modBits:size_nat, skey:rsa_privkey, salt:vlbytes_t, msg:vlbytes_t) \
+def rsapss_sign(modBits:size_nat_t, skey:rsa_privkey, salt:vlbytes_t, msg:vlbytes_t) \
     -> contract(vlbytes_t,
                 lambda modBits, skey, salt, msg: array.length(msg) < max_input_len_sha256 and modBits > 1 and
                 array.length(salt) + hLen + 8 < max_size_t and array.length(salt) + hLen + 2 <= blocks(modBits - 1, nat(8)),
@@ -180,7 +180,7 @@ def rsapss_sign(modBits:size_nat, skey:rsa_privkey, salt:vlbytes_t, msg:vlbytes_
     return sgnt
 
 @typechecked
-def rsapss_verify(modBits:size_nat, pkey:rsa_pubkey, sLen:size_nat, msg:vlbytes_t, sgnt: vlbytes_t) \
+def rsapss_verify(modBits:size_nat_t, pkey:rsa_pubkey, sLen:size_nat_t, msg:vlbytes_t, sgnt: vlbytes_t) \
     -> contract(bool,
                 lambda modBits, pkey, sLen, msg, sgnt: array.length(msg) < max_input_len_sha256 and
                 modBits > 1 and array.length(sgnt) == blocks(modBits, 8) and sLen + hLen + 8 < max_size_t,
@@ -190,7 +190,7 @@ def rsapss_verify(modBits:size_nat, pkey:rsa_pubkey, sLen:size_nat, msg:vlbytes_
     if s < n:
         m = pow(s, e, n)
         em = i2osp(m)
-        res = pss_verify(sLen, msg, em, size_nat(nat(modBits - 1)))
+        res = pss_verify(sLen, msg, em, size_nat_t(nat(modBits - 1)))
     else:
         res = False
     return res

@@ -9,8 +9,8 @@ state_t  = array_t(uint32_t,16)
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 block_t  = bytes_t(64)
-subblock  = refine3(vlbytes, lambda x: array.length(x) <= blocksize)
-subblock_t = subblock
+subblock_t  = refine3(vlbytes, lambda x: array.length(x) <= blocksize)
+constants_t = array_t(uint32,4)
 
 @typechecked
 def line(a: index_t, b: index_t, d: index_t, s: rotval_t, m: state_t) -> state_t:
@@ -42,7 +42,7 @@ def double_round(m: state_t) -> state_t :
     return m
 
 
-constants : array_t(uint32,4) =array(
+constants = constants_t(
     [uint32(0x61707865), uint32(0x3320646e),
      uint32(0x79622d32), uint32(0x6b206574)])
 
@@ -72,7 +72,8 @@ def chacha20(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
 def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
     st = chacha20(k,counter,nonce)
     block = bytes.from_uint32s_le(st)
-    return block
+    # If block is not cast to block_t, the type isn't checked!
+    return block_t(block)
 
 # Many ways of extending this to CTR
 # This version: use first-order CTR function specific to Chacha20 with a loop
@@ -82,25 +83,25 @@ def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
     out = vlbytes.copy(block)
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
-    return vlbytes(out)
+    return out
 
 @typechecked
-def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
-    blocks,last = vlarray.split_blocks(msg,blocksize)
-    keyblock = array.create(blocksize,uint8(0))
+def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes) -> vlbytes:
+    blocks, last = vlarray.split_blocks(msg, blocksize)
+    keyblock = array.create(blocksize, uint8(0))
     ctr = counter
     for i in range(array.length(blocks)):
-        keyblock = chacha20_block(key,ctr,nonce)
-        blocks[i] = xor_block(bytes(blocks[i]),keyblock)
+        keyblock = chacha20_block(key, ctr, nonce)
+        blocks[i] = xor_block(blocks[i], keyblock)
         ctr += uint32(1)
-    keyblock = chacha20_block(key,ctr,nonce)
-    last = xor_block(bytes(last),keyblock)
-    return array.concat_blocks(blocks,last)
+    keyblock = chacha20_block(key, ctr, nonce)
+    last = xor_block(last, keyblock)
+    return array.concat_blocks(blocks, last)
 
 @typechecked
-def chacha20_encrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
+def chacha20_encrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes) -> vlbytes:
     return chacha20_counter_mode(key,counter,nonce,msg)
 
 @typechecked
-def chacha20_decrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
+def chacha20_decrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes) -> vlbytes:
     return chacha20_counter_mode(key,counter,nonce,msg)

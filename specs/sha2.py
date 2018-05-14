@@ -2,12 +2,14 @@ from hacspec.speclib import *
 
 # Four variants of SHA-2
 
-variant = refine3(nat, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
+variant_t = refine3(nat, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
+i_range_t = range_t(0, 4)
+op_range_t = range_t(0, 1)
 
-# Generic SHA-2 spec parameterized by variant
+# Generic SHA-2 spec parameterized by variant_t
 
 @typechecked
-def sha2(v:variant) -> FunctionType:
+def sha2(v:variant_t) -> FunctionType:
     # Initializing types and constants for different variants 
     if v == 224 or v == 256:
         blockSize = 64
@@ -21,13 +23,13 @@ def sha2(v:variant) -> FunctionType:
         words_to_bytes = bytes.from_uint32s_be
         kSize = 64
         k_t = array_t(word_t,kSize)
-        opTableType = array_t(uint32_t,12)
-        opTable: opTableType = array([
+        opTableType_t = array_t(int,12)
+        opTable = opTableType_t([
             2, 13, 22,
             6, 11, 25,
             7, 18, 3,
             17, 19, 10])
-        kTable: k_t = array([
+        kTable = k_t([
             uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf), uint32(0xe9b5dba5),
             uint32(0x3956c25b), uint32(0x59f111f1), uint32(0x923f82a4), uint32(0xab1c5ed5),
             uint32(0xd807aa98), uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3),
@@ -56,13 +58,13 @@ def sha2(v:variant) -> FunctionType:
         words_to_bytes = bytes.from_uint64s_be
         kSize = 80
         k_t = array_t(word_t,kSize)
-        opTableType = array_t(uint64_t,12)
-        opTable: opTableType = array([
+        opTableType_t = array_t(int,12)
+        opTable = opTableType_t([
             28, 34, 39,
             14, 18, 41,
             1,   8,  7,
             19, 61,  6])
-        kTable: k_t = array([
+        kTable = k_t([
             uint64(0x428a2f98d728ae22), uint64(0x7137449123ef65cd), uint64(0xb5c0fbcfec4d3b2f), uint64(0xe9b5dba58189dbbc),
             uint64(0x3956c25bf348b538), uint64(0x59f111f1b605d019), uint64(0x923f82a4af194f9b), uint64(0xab1c5ed5da6d8118),
             uint64(0xd807aa98a3030242), uint64(0x12835b0145706fbe), uint64(0x243185be4ee4b28c), uint64(0x550c7dc3d5ffb4e2),
@@ -87,21 +89,21 @@ def sha2(v:variant) -> FunctionType:
     hashSize = v // 8
     hash_t = array_t(word_t,8)
     digest_t = bytes_t(hashSize)
-    h0 : hash_t = array.create(8,to_word(0))
+    h0 = hash_t.create(8,to_word(0))
     if v == 224:
-        h0 = array([
+        h0 = hash_t([
             uint32(0xc1059ed8), uint32(0x367cd507), uint32(0x3070dd17), uint32(0xf70e5939),
             uint32(0xffc00b31), uint32(0x68581511), uint32(0x64f98fa7), uint32(0xbefa4fa4)])
     elif v == 256:
-        h0 = array([
+        h0 = hash_t([
             uint32(0x6a09e667), uint32(0xbb67ae85), uint32(0x3c6ef372), uint32(0xa54ff53a),
             uint32(0x510e527f), uint32(0x9b05688c), uint32(0x1f83d9ab), uint32(0x5be0cd19)])
     elif v == 384:
-        h0 = array([
+        h0 = hash_t([
             uint64(0xcbbb9d5dc1059ed8), uint64(0x629a292a367cd507), uint64(0x9159015a3070dd17), uint64(0x152fecd8f70e5939),
             uint64(0x67332667ffc00b31), uint64(0x8eb44a8768581511), uint64(0xdb0c2e0d64f98fa7), uint64(0x47b5481dbefa4fa4)])
     else:
-        h0 = array([
+        h0 = hash_t([
             uint64(0x6a09e667f3bcc908), uint64(0xbb67ae8584caa73b), uint64(0x3c6ef372fe94f82b), uint64(0xa54ff53a5f1d36f1),
             uint64(0x510e527fade682d1), uint64(0x9b05688c2b3e6c1f), uint64(0x1f83d9abfb41bd6b), uint64(0x5be0cd19137e2179)])
 
@@ -114,11 +116,9 @@ def sha2(v:variant) -> FunctionType:
     @typechecked
     def maj(x:word_t,y:word_t,z:word_t) -> word_t:
         return (x & y) ^ ((x & z) ^ (y & z))
-    i_range = range_t(0, 4)
-    op_range = range_t(0, 1)
 
     @typechecked
-    def sigma(x:word_t,i:i_range,op:op_range) -> word_t:
+    def sigma(x:word_t,i:i_range_t,op:op_range_t) -> word_t:
         if op == 0:
             tmp = x >> opTable[3*i+2]
         else:
@@ -209,7 +209,7 @@ def sha2(v:variant) -> FunctionType:
 
 # Specific instances of SHA-2 
 
-sha224 = sha2(variant(nat(224)))
-sha256 = sha2(variant(nat(256)))
-sha384 = sha2(variant(nat(384)))
-sha512 = sha2(variant(nat(512)))
+sha224 = sha2(variant_t(nat(224)))
+sha256 = sha2(variant_t(nat(256)))
+sha384 = sha2(variant_t(nat(384)))
+sha512 = sha2(variant_t(nat(512)))

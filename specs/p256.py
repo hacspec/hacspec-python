@@ -4,8 +4,8 @@ prime = 2**256 - 2**224 + 2**192 + 2**96 - 1
 
 
 
-felem = refine3(nat, lambda x: x < prime)
-felem_t = felem
+felem_t = refine3(nat, lambda x: x < prime)
+felem = felem_t
 
 
 @typechecked

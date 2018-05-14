@@ -728,7 +728,10 @@ class vlarray():
 
     @staticmethod
     def copy(x: 'vlarray') -> 'vlarray':
-        return vlarray(x.l[:])
+        copy = vlarray(x.l[:])
+        if x.t and x.t.__name__ == "uint8":
+            copy = bytes(copy)
+        return copy
 
     @staticmethod
     def concat(x: 'vlarray', y: 'vlarray') -> 'vlarray':
@@ -758,11 +761,19 @@ class vlarray():
         blocks = vlarray([a[x*blocksize:(x+1)*blocksize]
                           for x in range(nblocks)])
         last = vlarray(a[len(a) - (len(a) % blocksize):len(a)])
-        return (blocks, last)
+        if not isinstance(blocks, vlbytes) and a.t and a.t.__name__ is "uint8":
+            # Cast result to bytes if necessary.
+            if isinstance(last, vlarray):
+                last = bytes(last)
+        return blocks, last
 
     @staticmethod
     def concat_blocks(blocks: 'vlarray', last: 'vlarray') -> 'vlarray':
-        return (vlarray.concat(vlarray([b for block in blocks for b in block]), last))
+        res = vlarray.concat(vlarray([b for block in blocks for b in block]), last)
+        # TODO: make sure blcoska and last both have a type t
+        if last.t and last.t.__name__ == "uint8":
+            res = bytes(res)
+        return res
 
     # Only used in ctr. Maybe delete
     @staticmethod
@@ -1040,8 +1051,27 @@ def vlarray_t(t: type):
     return vlarray
 
 
-def array_t(t: type, len: int) -> vlarray:
-    return vlarray
+def array_t(t: type, l: int) -> type:
+    def refine_array() -> type:
+        __class__ = vlarray
+        def init(self, x: Union[Sequence[T], vlarray]) -> None:
+            if not (isinstance(x, Sequence) or isinstance(x, vlarray)) or not len(x) == l:
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of bitvector.")
+            else:
+                super().__init__(x, t)
+                vlarray(x, t)
+        def string(self) -> str:
+            return str(self.__origin__)
+        # We use a random string as class name here. The result of refine3 has to
+        # get assigend to a type alias, which can be used as class name.
+        u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+        if DEBUG:
+            print("new class " + u_rand + " - " + str(vlarray))
+        cl = type(u_rand, (vlarray,), {'__init__': init , '__origin__': vlarray, '__str__': string})
+        __class__ = cl
+        return cl
+    refinement = refine_array()
+    return refinement
 
 
 bit_t = bit

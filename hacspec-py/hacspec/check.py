@@ -387,10 +387,26 @@ def read(node, cl=None):
     # Normal assignments with types in comments
     if isinstance(node, Assign):
         args = [read(t) for t in node.targets]
-        args.append(read(node.value))
+        if len(args) < 1:
+            print("Invalid assign.")
+            exit(1)
+        right = read(node.value)
         if node.type_comment:
             print("Type comments are not supported by hacspec")
             exit(1)
+        # Check that types are named _t.
+        try:
+            # Types come from _t functions or refine3.
+            # Only checking refine for now.
+            fun = right.get_function_signature()
+            if fun.fun_name == "refine3":
+                type_name = args[0].get_name()
+                if len(args) != 1 or not type_name.endswith("_t"):
+                    print("Invalid hacspec. " + type_name + " must end with _t.")
+                    exit(1)
+        except:
+            pass
+        args.append(right)
         return AstItem(Assign, args)
 
     if isinstance(node, AugAssign):
@@ -613,10 +629,12 @@ def read_objects(ast, obj):
     mod = ast.body
     if mod is None:
         # ast root has to be Module.
-        return []
+        print("This is not a valid ast3.")
+        exit(1)
     if not isinstance(mod, list):
         # The ast module is a list of nodes.
-        return []
+        print("This is not a valid ast3.")
+        exit(1)
     parsed = read(ast)
     filtered = filter(parsed, obj, obj.__name__)
     return filtered
