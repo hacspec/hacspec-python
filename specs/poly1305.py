@@ -34,7 +34,7 @@ def fmul(x: felem_t, y: felem_t) -> felem_t:
 
 @typechecked
 def encode(block: subblock_t) -> felem_t:
-    b = array.create(16, uint8(0))
+    b = block_t.create(16, uint8(0))
     b[0:array.length(block)] = block
     welem = to_felem(uint128.to_nat(bytes.to_uint128_le(b)))
     lelem = to_felem(nat(2 ** (8 * array.length(block))))

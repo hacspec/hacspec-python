@@ -14,9 +14,10 @@ n = 32
 w = w_sixteen
 log_w = 4
 
-length1 = uint32(int(speclib.ceil(8*n / log_w)))
+length1 = uint32(int(speclib.ceil(8*n // log_w)))
 tmp = uint32.to_int(length1) * (uint32.to_int(w) - 1)
-length2 = uint32(int(speclib.log(tmp, 2) // log_w + 1))
+tmp = speclib.log(tmp, 2)
+length2 = uint32(int(tmp // log_w + 1))
 length = length1 + length2
 
 # Types
@@ -161,7 +162,7 @@ def wots_msg(msg: digest_t) -> vlbytes_t:
     for i in range(0, uint32.to_int(length1)):
         csum = csum + uint32.to_int(w) - 1 - uint32.to_int(m[i])
     csum = nat(csum << int(8 - ((uint32.to_int(length2) * log_w) % 8)))
-    length2_bytes = speclib.ceil((uint32.to_int(length2) * log_w) / 8)
+    length2_bytes = speclib.ceil((uint32.to_int(length2) * log_w) // 8)
     csum_bytes = bytes.from_nat_be(csum, length2_bytes)
     m = array.concat(m, base_w(csum_bytes, length2))
     return m

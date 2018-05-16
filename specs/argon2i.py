@@ -21,7 +21,7 @@ working_vector_t = array_t(uint64_t, 16)
 
 @typechecked
 def h(a: refine3(vlbytes, lambda x: array.length(x) < max_size_t - 2 * line_size), nn: output_size_t) \
-        -> contract(vlbytes_t, lambda a, nn: True, lambda a, nn, res: array.length(res) == nn):
+        -> contract(vlbytes, lambda a, nn: True, lambda a, nn, res: array.length(res) == nn):
     res = blake2b(a, bytes([]), nn)
     return res
 
@@ -46,7 +46,7 @@ def compute_variable_length_output_size(t_len: refine3(size_nat_t, lambda x: x +
 @typechecked
 def h_prime(t_len: refine3(size_nat_t, lambda x: 1 <= t_len and t_len + 64 <= max_size_t),
             x: refine3(vlbytes, lambda x: array.length(x) + 4 <= max_size_t - 2 * line_size)) \
-        -> contract(vlbytes_t,
+        -> contract(vlbytes,
                     lambda t_len, x: True,
                     lambda t_len, x, res: array.length(x) == compute_variable_length_output_size(t_len)):
     t_with_x = bytes(array.create(array.length(x) + 4, uint8(0)))
@@ -279,7 +279,7 @@ def map_indexes(t: size_nat_t, segment: segment_t, lanes: lanes_t, columns: size
 @typechecked
 def fill_segment(h0: bytes_t(64), iterations: size_nat_t, segment: segment_t, t_len: t_len_t,
                  lanes: lanes_t, columns: size_nat_t, t: size_nat_t, i: size_nat_t, memory: vlbytes_t) \
-    -> contract(vlbytes_t,
+    -> contract(vlbytes,
                 lambda h0, iterations, segment, t_len, lanes, columns, t, i, memory:
                 columns <= 4 and lanes * columns * block_size <= max_size_t and
                 i < lanes and j < columns and
@@ -325,7 +325,7 @@ def fill_segment(h0: bytes_t(64), iterations: size_nat_t, segment: segment_t, t_
 @typechecked
 def argon2i(p: vlbytes, s: vlbytes, lanes: lanes_t, t_len: t_len_t, m: size_nat_t,
             iterations: size_nat_t, x: vlbytes, k: vlbytes) \
-    -> contract(vlbytes_t,
+    -> contract(vlbytes,
                 lambda p, s, lanes, t_len, m, iterations, x, k: array.length(s >= 8) and
                 m >= 8 * lanes and (m + 4 * lanes) * block_size <= max_size_t and
                 iterations >= 1 and array.length(x) + 4 <= max_size_t - 2 * line_size and

@@ -133,7 +133,7 @@ def blake2(v:variant) -> FunctionType:
 
     @typechecked
     def blake2_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size_t, nn: out_size_t) \
-            -> contract(vlbytes_t,
+            -> contract(vlbytes,
                         lambda data, input_bytes, kk, nn: True,
                         lambda data, input_bytes, kk, nn, res: array.length(res) == nn):
         h = array.copy(_IV)
@@ -154,7 +154,7 @@ def blake2(v:variant) -> FunctionType:
 
     @typechecked
     def blake2(data: data_t, key: key_t, nn: out_size_t) \
-            -> contract(vlbytes_t,
+            -> contract(vlbytes,
                         lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn):
         ll = array.length(data)
         kk = array.length(key)

@@ -40,7 +40,7 @@ def hash_sha256(msg:vlbytes_t) \
 
 @typechecked
 def mgf_sha256(mgfseed:vlbytes_t, maskLen:size_nat_t) \
-    -> contract(vlbytes_t,
+    -> contract(vlbytes,
                 lambda mgfseed, maskLen: maskLen < (2 ** 32) * hLen and maskLen > 0
                 and array.length(mgfseed) + 4 < max_size_t,
                 lambda mgfseed, maskLen, res: array.length(res) == maskLen):
@@ -78,7 +78,7 @@ rsa_privkey = tuple2(rsa_pubkey, nat) #((n, e), d)
 
 @typechecked
 def pss_encode(salt:vlbytes_t, msg:vlbytes_t, emBits:size_nat_t) \
-    -> contract(vlbytes_t,
+    -> contract(vlbytes,
                 lambda salt, msg, emBits: array.length(msg) < max_input_len_sha256 and
                 hLen + array.length(salt) + 2 <= blocks(emBits, nat(8)) and
                 array.length(salt) + hLen + 8 < max_size_t and emBits > 0,
@@ -167,7 +167,7 @@ def pss_verify(sLen:size_nat_t, msg:vlbytes_t, em:vlbytes_t, emBits:size_nat_t) 
 
 @typechecked
 def rsapss_sign(modBits:size_nat_t, skey:rsa_privkey, salt:vlbytes_t, msg:vlbytes_t) \
-    -> contract(vlbytes_t,
+    -> contract(vlbytes,
                 lambda modBits, skey, salt, msg: array.length(msg) < max_input_len_sha256 and modBits > 1 and
                 array.length(salt) + hLen + 8 < max_size_t and array.length(salt) + hLen + 2 <= blocks(modBits - 1, nat(8)),
                 lambda modBits, skey, salt, msg, res: array.length(res) == blocks(modBits, nat(8))):

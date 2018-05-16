@@ -10,7 +10,7 @@ size_nat_1600_t = refine3(int, lambda x: x <= 1600 and x %
 
 
 @typechecked
-def lfsr86540(lfsr: uint8) -> tuple2(uint8_t, bool):
+def lfsr86540(lfsr: uint8_t) -> tuple2(uint8_t, bool):
     lfsr1 = lfsr & uint8(1)
     result = not (lfsr1 == uint8(0))
     lfsr2 = lfsr << 1
@@ -156,7 +156,7 @@ def squeeze(s: state_t,
 @typechecked
 def keccak(rate: size_nat_1600_t, capacity: size_nat_t, inputByteLen: size_nat_t,
            input_b: vlbytes_t, delimitedSuffix: uint8_t, outputByteLen: size_nat_t) \
-    -> contract(vlbytes_t,
+    -> contract(vlbytes,
                 lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen:
                 capacity +
                     rate == 1600 and array.length(input_b) == inputByteLen,
