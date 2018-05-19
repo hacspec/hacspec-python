@@ -328,7 +328,12 @@ def read_function_signature(f):
             rt = f.returns.func.id
     decorators = [read(x, fun_name) for x in f.decorator_list]
     # Every function must have a typechecked decorator.
-    if len(decorators) != 1 or decorators[0].get_name() != "typechecked":
+    typechecked = False
+    for decorator in decorators:
+        if isinstance(decorator, AstName) and decorator.get_name() == "typechecked":
+            typechecked = True
+            break
+    if not typechecked:
         print("Every hacpsec function must have a @typechecked decorator: \"" + fun_name+"\"")
         exit(1)
     try:

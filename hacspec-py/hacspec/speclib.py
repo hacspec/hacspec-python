@@ -94,9 +94,27 @@ def range_t(min: int, max: int) -> type:
 
 # TODO: make this actually do something.
 @typechecked
-def contract(t: type, pre, post) -> type:
+def contract(t: type, pre: Callable[..., bool], post: Callable[..., bool]) -> type:
     return t
 
+@typechecked
+def contract3(pre: Callable[..., bool], post: Callable[..., bool]) -> FunctionType:
+    @typechecked
+    def decorator(func: Callable[..., Any]) -> Any:
+        # **kwargs are not allowed in hacspec.
+        def wrapper(*args):
+            pr = pre(*args)
+            if not pr:
+                fail("Precondition for " + func.__name__ + " failed.")
+            res = func(*args)
+            unpacked_args = list(args)
+            unpacked_args.append(res)
+            po = post(*unpacked_args)
+            if not po:
+                fail("Postcondition for " + func.__name__ + " failed.")
+            return res
+        return wrapper
+    return decorator
 
 class _uintn:
     @typechecked
