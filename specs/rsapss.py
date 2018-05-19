@@ -18,7 +18,7 @@ def blocks(x: size_nat_t, m: size_nat_t) -> size_nat_t:
 
 @typechecked
 def xor_bytes(b1: vlbytes_t, b2: vlbytes_t) -> vlbytes_t:
-    res = vlbytes.copy(b1)
+    res = vlbytes_t.copy(b1)
     for i in range(array.length(b1)):
         res[i] ^= b2[i]
     return res
@@ -32,7 +32,7 @@ def eq_bytes(b1: vlbytes_t, b2: vlbytes_t) -> bool:
 @contract3(lambda msg: array.length(msg) < max_input_len_sha256,
            lambda msg, res: True)
 @typechecked
-def hash_sha256(msg: vlbytes) -> bytes_t(hLen):
+def hash_sha256(msg: vlbytes_t) -> bytes_t(hLen):
     return sha256(msg)
 
 # Mask Generation Function
@@ -42,7 +42,7 @@ def hash_sha256(msg: vlbytes) -> bytes_t(hLen):
            and array.length(mgfseed) + 4 < max_size_t,
            lambda mgfseed, maskLen, res: array.length(res) == maskLen)
 @typechecked
-def mgf_sha256(mgfseed: vlbytes, maskLen: size_nat_t) -> vlbytes:
+def mgf_sha256(mgfseed: vlbytes_t, maskLen: size_nat_t) -> vlbytes_t:
     counter_max = blocks(maskLen, hLen)
     accLen = counter_max * hLen
     acc = array.create(accLen, uint8(0))
@@ -51,7 +51,7 @@ def mgf_sha256(mgfseed: vlbytes, maskLen: size_nat_t) -> vlbytes:
     mgfseed_counter[0:mgfseedLen] = mgfseed
 
     for i in range(counter_max):
-        c = vlbytes.from_uint32_be(uint32(i))
+        c = vlbytes_t.from_uint32_be(uint32(i))
         mgfseed_counter[mgfseedLen:(mgfseedLen + 4)] = c
         mHash = hash_sha256(mgfseed_counter)
         acc[(hLen * i):(hLen * i + hLen)] = mHash
@@ -82,7 +82,7 @@ rsa_privkey = tuple2(rsa_pubkey, nat)  # ((n, e), d)
            array.length(salt) + hLen + nat(8) < max_size_t and emBits > 0,
            lambda salt, msg, emBits, res: array.length(res) == blocks(emBits, nat(8)))
 @typechecked
-def pss_encode(salt: vlbytes, msg: vlbytes, emBits: size_nat_t) -> vlbytes:
+def pss_encode(salt: vlbytes_t, msg: vlbytes_t, emBits: size_nat_t) -> vlbytes_t:
     sLen = array.length(salt)
     emLen = blocks(emBits, size_nat_t(nat(8)))
     msBits = emBits % 8
@@ -170,7 +170,7 @@ def pss_verify(sLen: size_nat_t, msg: vlbytes_t, em: vlbytes_t, emBits: size_nat
                 hLen + nat(2) <= blocks(nat(modBits - nat(1)), nat(8)),
            lambda modBits, skey, salt, msg, res: array.length(res) == blocks(modBits, nat(8)))
 @typechecked
-def rsapss_sign(modBits: size_nat_t, skey: rsa_privkey, salt: vlbytes, msg: vlbytes) -> vlbytes:
+def rsapss_sign(modBits: size_nat_t, skey: rsa_privkey, salt: vlbytes_t, msg: vlbytes_t) -> vlbytes_t:
     (pkey, d) = skey
     (n, e) = pkey
     em = pss_encode(salt, msg, nat(modBits - 1))

@@ -35,15 +35,15 @@ def blake2(v:variant_t) -> FunctionType:
         minus_one = uint64(0xFFFFFFFFFFFFFFFF)
         data_internal_t = refine(bytes, lambda x: array.length(
             x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
-        key_t = refine(vlbytes, lambda x: array.length(x) <= 64)
+        key_t = refine(vlbytes_t, lambda x: array.length(x) <= 64)
         key_size_t = refine(nat, lambda x: x <= 64)
-        to_words_le = vlbytes.to_uint64s_le
-        from_words_le = vlbytes.from_uint64s_le
+        to_words_le = vlbytes_t.to_uint64s_le
+        from_words_le = vlbytes_t.from_uint64s_le
         low_bits = to_word
         high_bits = highbits_128
         to_double_word = uint128
         max_size_t = 2**64 - 1
-        data_t = refine(vlbytes, lambda x: vlbytes.length(x)
+        data_t = refine(vlbytes_t, lambda x: vlbytes_t.length(x)
                             < max_size_t - 2 * block_bytes)
     else:
         bits_in_word = 32
@@ -67,15 +67,15 @@ def blake2(v:variant_t) -> FunctionType:
         minus_one = uint32(0xFFFFFFFF)
         data_internal_t = refine(bytes, lambda x: array.length(
             x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
-        key_t = refine(vlbytes, lambda x: array.length(x) <= 32)
+        key_t = refine(vlbytes_t, lambda x: array.length(x) <= 32)
         key_size_t = refine(nat, lambda x: x <= 32)
-        to_words_le = vlbytes.to_uint32s_le
-        from_words_le = vlbytes.from_uint32s_le
+        to_words_le = vlbytes_t.to_uint32s_le
+        from_words_le = vlbytes_t.from_uint32s_le
         low_bits = to_word
         high_bits = highbits_64
         to_double_word = uint64
         max_size_t = 2**32 - 1
-        data_t = refine(vlbytes, lambda x: vlbytes.length(x)
+        data_t = refine(vlbytes_t, lambda x: vlbytes_t.length(x)
                         < max_size_t - 2 * block_bytes)
 
 
@@ -134,7 +134,7 @@ def blake2(v:variant_t) -> FunctionType:
 
     @typechecked
     def blake2_internal(data: data_internal_t, input_bytes: uint128_t, kk: key_size_t, nn: out_size_t) \
-            -> contract(vlbytes,
+            -> contract(vlbytes_t,
                         lambda data, input_bytes, kk, nn: True,
                         lambda data, input_bytes, kk, nn, res: array.length(res) == nn):
         h = array.copy(_IV)
@@ -155,7 +155,7 @@ def blake2(v:variant_t) -> FunctionType:
 
     @typechecked
     def blake2(data: data_t, key: key_t, nn: out_size_t) \
-            -> contract(vlbytes,
+            -> contract(vlbytes_t,
                         lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn):
         ll = array.length(data)
         kk = array.length(key)

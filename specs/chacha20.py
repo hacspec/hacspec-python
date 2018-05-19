@@ -9,7 +9,7 @@ state_t  = array_t(uint32_t,16)
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 block_t  = bytes_t(64)
-subblock_t  = refine(vlbytes, lambda x: array.length(x) <= blocksize)
+subblock_t  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
 constants_t = array_t(uint32,4)
 
 @typechecked
@@ -80,13 +80,13 @@ def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
 
 @typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out = vlbytes.copy(block)
+    out = vlbytes_t.copy(block)
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
     return out
 
 @typechecked
-def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes) -> vlbytes:
+def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
     blocks, last = vlarray.split_blocks(msg, blocksize)
     keyblock = array.create(blocksize, uint8(0))
     ctr = counter
@@ -99,9 +99,9 @@ def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlb
     return array.concat_blocks(blocks, last)
 
 @typechecked
-def chacha20_encrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes) -> vlbytes:
+def chacha20_encrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
     return chacha20_counter_mode(key,counter,nonce,msg)
 
 @typechecked
-def chacha20_decrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes) -> vlbytes:
+def chacha20_decrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
     return chacha20_counter_mode(key,counter,nonce,msg)

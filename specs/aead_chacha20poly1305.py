@@ -9,7 +9,7 @@ nonce_t  = bytes_t(12)
 tag_t    = bytes_t(16)
 
 @typechecked
-def padded_aad_msg(aad:vlbytes,msg:vlbytes) -> Tuple[int,vlbytes]:
+def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> Tuple[int,vlbytes_t]:
     laad = len(aad)
     lmsg = len(msg)
     pad_aad = 16 * (laad // 16 + 1)
@@ -26,7 +26,7 @@ def padded_aad_msg(aad:vlbytes,msg:vlbytes) -> Tuple[int,vlbytes]:
     return pad_aad+pad_msg+16, to_mac
 
 @typechecked
-def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes,msg:vlbytes) -> Tuple[vlbytes,tag_t]:
+def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> Tuple[vlbytes_t,tag_t]:
     keyblock0 = chacha20_block(key,uint32(0),nonce)
     mac_key = keyblock0[0:32]
     ciphertext = chacha20_encrypt(key,uint32(1),nonce,msg)
@@ -36,8 +36,8 @@ def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes,msg:vlbyte
 
 @typechecked
 def aead_chacha20poly1305_decrypt(key:key_t,nonce:bytes,
-                                  aad:vlbytes,
-                                  ciphertext:vlbytes,
+                                  aad:vlbytes_t,
+                                  ciphertext:vlbytes_t,
                                   tag:tag_t) -> bytes:
     keyblock0 = chacha20_block(key, uint32(0), nonce)
     mac_key = keyblock0[0:32]

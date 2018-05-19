@@ -856,7 +856,7 @@ class vlarray():
     def create(len: int, default) -> 'vlarray':
         res = vlarray([default] * len)
         if isinstance(default, uint8_t):
-            res = bytes(res)
+            res = vlbytes_t(res)
         return res
 
     @staticmethod
@@ -876,17 +876,17 @@ class vlarray():
     def copy(x: 'vlarray') -> 'vlarray':
         copy = vlarray(x.l[:])
         if x.t and x.t.__name__ == "uint8":
-            copy = bytes(copy)
+            copy = vlbytes_t(copy)
         return copy
 
     @staticmethod
     @typechecked
     def concat(x: 'vlarray', y: 'vlarray') -> 'vlarray':
         if x.t and \
-           (str(x.t.__name__) == "vlbytes" or str(x.t.__name__) == "vlarray"):
+           (str(x.t.__name__) == "vlbytes_t" or str(x.t.__name__) == "vlarray"):
             tmp = x.l[:]
-            # TODO: only works with bytes
-            tmp.append(vlbytes(y.l[:]))
+            # TODO: only works with vlbytes_t
+            tmp.append(vlbytes_t(y.l[:]))
             return vlarray(tmp, x.t)
         return vlarray(x.l[:]+y.l[:], x.t)
 
@@ -911,10 +911,10 @@ class vlarray():
         blocks = vlarray([a[x*blocksize:(x+1)*blocksize]
                           for x in range(nblocks)])
         last = vlarray(a[len(a) - (len(a) % blocksize):len(a)])
-        if not isinstance(blocks, vlbytes) and a.t and a.t.__name__ is "uint8":
-            # Cast result to bytes if necessary.
+        if not isinstance(blocks, vlbytes_t) and a.t and a.t.__name__ is "uint8":
+            # Cast result to vlbytes_t if necessary.
             if isinstance(last, vlarray):
-                last = bytes(last)
+                last = vlbytes_t(last)
         return blocks, last
 
     @staticmethod
@@ -923,7 +923,7 @@ class vlarray():
         res = vlarray.concat(vlarray([b for block in blocks for b in block]), last)
         # TODO: make sure blcoska and last both have a type t
         if last.t and last.t.__name__ == "uint8":
-            res = bytes(res)
+            res = vlbytes_t(res)
         return res
 
     # Only used in ctr. Maybe delete
@@ -942,18 +942,18 @@ class vlarray():
         return array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
 
 
-class vlbytes(vlarray):
+class vlbytes_t(vlarray):
     # FIXME
     # @typechecked
-    def __init__(self, x: Union[Sequence[T], 'vlbytes']) -> None:
-        super(vlbytes, self).__init__(x, uint8_t)
+    def __init__(self, x: Union[Sequence[T], 'vlbytes_t']) -> None:
+        super(vlbytes_t, self).__init__(x, uint8_t)
 
     # TODO: this wouldn't be necessary if we could return the correct type in vlarray.
     @typechecked
-    def __getitem__(self, key: Union[int, slice]) -> Union['vlbytes', T]:
+    def __getitem__(self, key: Union[int, slice]) -> Union['vlbytes_t', T]:
         try:
             if isinstance(key, slice):
-                return vlbytes(self.l[key.start:key.stop])
+                return vlbytes_t(self.l[key.start:key.stop])
             return self.l[key]
         except:
             print('vlarray access error:')
@@ -963,47 +963,47 @@ class vlbytes(vlarray):
 
     @staticmethod
     @typechecked
-    def from_ints(x: List[int]) -> 'vlbytes':
-        return vlbytes([uint8(i) for i in x])
+    def from_ints(x: List[int]) -> 'vlbytes_t':
+        return vlbytes_t([uint8(i) for i in x])
 
     @staticmethod
     @typechecked
-    def concat_bytes(blocks: 'vlarray') -> 'vlbytes':
+    def concat_bytes(blocks: 'vlarray') -> 'vlbytes_t':
         concat = [b for block in blocks for b in block]
-        return vlbytes(concat)
+        return vlbytes_t(concat)
 
     @staticmethod
     @typechecked
-    def from_hex(x: str) -> 'vlbytes':
-        return vlbytes([uint8(int(x[i:i+2], 16)) for i in range(0, len(x), 2)])
+    def from_hex(x: str) -> 'vlbytes_t':
+        return vlbytes_t([uint8(int(x[i:i+2], 16)) for i in range(0, len(x), 2)])
 
     @staticmethod
     @typechecked
-    def to_hex(a: 'vlbytes') -> str:
+    def to_hex(a: 'vlbytes_t') -> str:
         return "".join(['{:02x}'.format(uint8.to_int(x)) for x in a])
 
     @staticmethod
     @typechecked
-    def from_nat_le(x: nat_t) -> 'vlbytes':
+    def from_nat_le(x: nat_t) -> 'vlbytes_t':
         if not isinstance(x, nat_t):
-            fail("bytes.from_nat_le's argument has to be of type nat_t.")
+            fail("bytes.from_nat_le's argument has to be of type nat.")
         b = x.to_bytes((x.bit_length() + 7) // 8, 'little') or b'\0'
-        return vlbytes([uint8(i) for i in b])
+        return vlbytes_t([uint8(i) for i in b])
 
     @staticmethod
     @typechecked
-    def to_int_le(x: 'vlbytes') -> int:
+    def to_int_le(x: 'vlbytes_t') -> int:
         b = builtins.bytes([uint8.to_int(u) for u in x])
         return int.from_bytes(b, 'little')
 
     @staticmethod
     @typechecked
-    def to_nat_le(x: 'vlbytes') -> nat_t:
-        return nat(vlbytes.to_int_le(x))
+    def to_nat_le(x: 'vlbytes_t') -> nat_t:
+        return nat(vlbytes_t.to_int_le(x))
 
     @staticmethod
     @typechecked
-    def from_nat_be(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes':
+    def from_nat_be(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes_t':
         if not isinstance(x, nat_t):
             fail("bytes.from_nat_be's first argument has to be of type nat_t.")
         if not isinstance(l, nat_t):
@@ -1011,27 +1011,27 @@ class vlbytes(vlarray):
         b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
         pad = vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
         result = vlarray([uint8(i) for i in b])
-        return bytes(array.concat(pad, result))
+        return vlbytes_t(array.concat(pad, result))
 
     @staticmethod
     @typechecked
-    def to_nat_be(x: 'vlbytes') -> nat_t:
+    def to_nat_be(x: 'vlbytes_t') -> nat_t:
         b = builtins.bytes([uint8.to_int(u) for u in x])
         return int.from_bytes(b, 'big')
 
     @staticmethod
     @typechecked
-    def from_uint32_le(x: uint32) -> 'vlbytes':
+    def from_uint32_le(x: uint32) -> 'vlbytes_t':
         xv = uint32.to_int(x)
         x0 = uint8(xv & 255)
         x1 = uint8((xv >> 8) & 255)
         x2 = uint8((xv >> 16) & 255)
         x3 = uint8((xv >> 24) & 255)
-        return vlbytes([x0, x1, x2, x3])
+        return vlbytes_t([x0, x1, x2, x3])
 
     @staticmethod
     @typechecked
-    def to_uint32_le(x: 'vlbytes') -> uint32:
+    def to_uint32_le(x: 'vlbytes_t') -> uint32:
         x0 = uint8.to_int(x[0])
         x1 = uint8.to_int(x[1]) << 8
         x2 = uint8.to_int(x[2]) << 16
@@ -1040,55 +1040,55 @@ class vlbytes(vlarray):
 
     @staticmethod
     @typechecked
-    def from_uint64_le(x: uint64) -> 'vlbytes':
+    def from_uint64_le(x: uint64) -> 'vlbytes_t':
         xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlbytes = vlarray.create(8, uint8(0))
-        a[0:4] = vlbytes.from_uint32_le(x0)
-        a[4:8] = vlbytes.from_uint32_le(x1)
+        a: vlbytes_t = vlarray.create(8, uint8(0))
+        a[0:4] = vlbytes_t.from_uint32_le(x0)
+        a[4:8] = vlbytes_t.from_uint32_le(x1)
         return a
 
     @staticmethod
     @typechecked
-    def to_uint64_le(x: 'vlbytes') -> uint64:
-        x0 = vlbytes.to_uint32_le(x[0:4])
-        x1 = vlbytes.to_uint32_le(x[4:8])
+    def to_uint64_le(x: 'vlbytes_t') -> uint64:
+        x0 = vlbytes_t.to_uint32_le(x[0:4])
+        x1 = vlbytes_t.to_uint32_le(x[4:8])
         return uint64(uint32.to_int(x0) +
                       (uint32.to_int(x1) << 32))
 
     @staticmethod
     @typechecked
-    def from_uint128_le(x: uint128) -> 'vlbytes':
+    def from_uint128_le(x: uint128) -> 'vlbytes_t':
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
         a = vlarray.create(16, uint8(0))
-        a[0:8] = vlbytes.from_uint64_le(x0)
-        a[8:16] = vlbytes.from_uint64_le(x1)
-        return bytes(a)
+        a[0:8] = vlbytes_t.from_uint64_le(x0)
+        a[8:16] = vlbytes_t.from_uint64_le(x1)
+        return vlbytes_t(a)
 
     @staticmethod
     @typechecked
-    def to_uint128_le(x: 'vlbytes') -> uint128:
-        x0 = vlbytes.to_uint64_le(x[0:8])
-        x1 = vlbytes.to_uint64_le(x[8:16])
+    def to_uint128_le(x: 'vlbytes_t') -> uint128:
+        x0 = vlbytes_t.to_uint64_le(x[0:8])
+        x1 = vlbytes_t.to_uint64_le(x[8:16])
         return uint128(uint64.to_int(x0) +
                        (uint64.to_int(x1) << 64))
 
     @staticmethod
     @typechecked
-    def from_uint32_be(x: uint32) -> 'vlbytes':
+    def from_uint32_be(x: uint32) -> 'vlbytes_t':
         xv = uint32.to_int(x)
         x0 = uint8(xv & 255)
         x1 = uint8((xv >> 8) & 255)
         x2 = uint8((xv >> 16) & 255)
         x3 = uint8((xv >> 24) & 255)
-        return vlbytes([x3, x2, x1, x0])
+        return vlbytes_t([x3, x2, x1, x0])
 
     @staticmethod
     @typechecked
-    def to_uint32_be(x: 'vlbytes') -> uint32:
+    def to_uint32_be(x: 'vlbytes_t') -> uint32:
         x0 = uint8.to_int(x[0]) << 24
         x1 = uint8.to_int(x[1]) << 16
         x2 = uint8.to_int(x[2]) << 8
@@ -1097,117 +1097,112 @@ class vlbytes(vlarray):
 
     @staticmethod
     @typechecked
-    def from_uint64_be(x: uint64) -> 'vlbytes':
+    def from_uint64_be(x: uint64) -> 'vlbytes_t':
         xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlbytes = vlarray.create(8, uint8(0))
-        a[0:4] = vlbytes.from_uint32_be(x1)
-        a[4:8] = vlbytes.from_uint32_be(x0)
+        a: vlbytes_t = vlarray.create(8, uint8(0))
+        a[0:4] = vlbytes_t.from_uint32_be(x1)
+        a[4:8] = vlbytes_t.from_uint32_be(x0)
         return a
 
     @staticmethod
     @typechecked
-    def to_uint64_be(x: 'vlbytes') -> uint64:
-        x0 = vlbytes.to_uint32_be(x[0:4])
-        x1 = vlbytes.to_uint32_be(x[4:8])
+    def to_uint64_be(x: 'vlbytes_t') -> uint64:
+        x0 = vlbytes_t.to_uint32_be(x[0:4])
+        x1 = vlbytes_t.to_uint32_be(x[4:8])
         return uint64(uint32.to_int(x1) +
                       (uint32.to_int(x0) << 32))
 
     @staticmethod
     @typechecked
-    def from_uint128_be(x: uint128) -> 'vlbytes':
+    def from_uint128_be(x: uint128) -> 'vlbytes_t':
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = bytes(vlarray.create(16, uint8(0)))
-        a[0:8] = vlbytes.from_uint64_be(x1)
-        a[8:16] = vlbytes.from_uint64_be(x0)
+        a = vlbytes_t(vlarray.create(16, uint8(0)))
+        a[0:8] = vlbytes_t.from_uint64_be(x1)
+        a[8:16] = vlbytes_t.from_uint64_be(x0)
         return a
 
     @staticmethod
     @typechecked
-    def to_uint128_be(x: 'vlbytes') -> uint128:
-        x0 = vlbytes.to_uint64_be(x[0:8])
-        x1 = vlbytes.to_uint64_be(x[8:16])
+    def to_uint128_be(x: 'vlbytes_t') -> uint128:
+        x0 = vlbytes_t.to_uint64_be(x[0:8])
+        x1 = vlbytes_t.to_uint64_be(x[8:16])
         return uint128(uint64.to_int(x1) +
                        (uint64.to_int(x0) << 64))
 
     @staticmethod
     @typechecked
-    def from_uint32s_le(x: vlarray) -> 'vlbytes':
-        by = vlarray([vlbytes.from_uint32_le(i) for i in x])
-        return bytes(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint32s_le(x: vlarray) -> 'vlbytes_t':
+        by = vlarray([vlbytes_t.from_uint32_le(i) for i in x])
+        return vlbytes_t(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint32s_le(x: 'vlbytes') -> vlarray:
+    def to_uint32s_le(x: 'vlbytes_t') -> vlarray:
         nums, x = vlarray.split_blocks(x, 4)
         if len(x) > 0:
             fail("array length not a multiple of 4")
         else:
-            return(vlarray([vlbytes.to_uint32_le(i) for i in nums]))
+            return(vlarray([vlbytes_t.to_uint32_le(i) for i in nums]))
 
     @staticmethod
     @typechecked
-    def from_uint32s_be(x: vlarray) -> 'vlbytes':
-        by = vlarray([vlbytes.from_uint32_be(i) for i in x])
-        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint32s_be(x: vlarray) -> 'vlbytes_t':
+        by = vlarray([vlbytes_t.from_uint32_be(i) for i in x])
+        return vlbytes_t(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint32s_be(x: 'vlbytes') -> vlarray:
+    def to_uint32s_be(x: 'vlbytes_t') -> vlarray:
         nums, x = vlarray.split_blocks(x, 4)
         if len(x) > 0:
             fail("array length not a multiple of 4")
         else:
-            return vlarray([vlbytes.to_uint32_be(i) for i in nums])
+            return vlarray([vlbytes_t.to_uint32_be(i) for i in nums])
 
     @staticmethod
     @typechecked
-    def from_uint64s_be(x: vlarray) -> 'vlbytes':
-        by = vlarray([vlbytes.from_uint64_be(i) for i in x])
-        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint64s_be(x: vlarray) -> 'vlbytes_t':
+        by = vlarray([vlbytes_t.from_uint64_be(i) for i in x])
+        return vlbytes_t(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint64s_be(x: 'vlbytes') -> vlarray:
+    def to_uint64s_be(x: 'vlbytes_t') -> vlarray:
         nums, x = vlarray.split_blocks(x, 8)
         if len(x) > 0:
             fail("array length not a multple of 8")
         else:
-            return(vlarray([vlbytes.to_uint64_be(i) for i in nums]))
+            return(vlarray([vlbytes_t.to_uint64_be(i) for i in nums]))
 
     @staticmethod
     @typechecked
-    def from_uint64s_le(x: vlarray) -> 'vlbytes':
-        by = vlarray([vlbytes.from_uint64_le(i) for i in x])
-        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint64s_le(x: vlarray) -> 'vlbytes_t':
+        by = vlarray([vlbytes_t.from_uint64_le(i) for i in x])
+        return vlbytes_t(vlarray.concat_blocks(by, vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint64s_le(x: 'vlbytes') -> vlarray:
+    def to_uint64s_le(x: 'vlbytes_t') -> vlarray:
         nums, x = vlarray.split_blocks(x, 8)
         if len(x) > 0:
             fail("array length not a multple of 8")
         else:
-            return vlarray([vlbytes.to_uint64_le(i) for i in nums])
+            return vlarray([vlbytes_t.to_uint64_le(i) for i in nums])
 
     @staticmethod
     @typechecked
-    def create_random_bytes(len: nat) -> 'vlbytes':
+    def create_random_bytes(len: nat) -> 'vlbytes_t':
         r = rand()
-        return bytes(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
-
-
-@typechecked
-def vlbytes_t(T) -> type:
-    return vlbytes
+        return vlbytes_t(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
 
 @typechecked
 def bytes_t(l:int) -> type:
-    return refine(vlbytes, lambda x: vlbytes.length(x) <= l)
+    return refine(vlbytes_t, lambda x: vlbytes_t.length(x) <= l)
 
 
 def bitvector_t(l:int):
@@ -1279,7 +1274,8 @@ uint64_t = uint64
 uint128_t = uint128
 
 array = vlarray
-bytes = vlbytes
+bytes = vlbytes_t
+vlbytes = vlbytes_t
 
 
 # The libraries below are experimental and need more thought

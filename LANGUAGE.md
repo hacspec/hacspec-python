@@ -14,10 +14,10 @@ Types t ::= int | bool | str
           | range_t(min,max)
 
 Derived Types:
-      nat                  := refine(int,lambda x: x >= 0)
-      array_t(t,len)       := refine(vlarray_t(t),lambda x: length(x) == len)
+      nat                  := refine(int, lambda x: x >= 0)
+      array_t(t,len)       := refine(vlarray_t(t), lambda x: length(x) == len)
       vlbytes_t            := vlarray_t(uint8_t)
-      bytes_t(len)         := array_t(uint8_t,len)
+      bytes_t(len)         := vlarray_t(uint8_t, len)
       pfelem_t(prime)      := refine(nat,lambda x: x < prime)
       gfelem_t(len,irred)  := bitvector_t(len)
 
@@ -58,7 +58,7 @@ Statements s ::=
             s		    (for loop)
       | s
         s	          (sequential composition)
-      | from x import x1,x2,...,xn (import from external module)
+      | from x import x1,x2,...,xn (import from other module, only speclib or hacspec)
 ```
 
 ## Conventions

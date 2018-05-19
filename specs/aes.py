@@ -4,7 +4,7 @@ from hacspec.speclib import *
 
 blocksize = 16
 block_t  = bytes_t(16)
-subblock_t  = refine(vlbytes, lambda x: array.length(x) <= blocksize)
+subblock_t  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
 
 rowindex_t = range_t(0,4)
 expindex_t = range_t(0,48)
@@ -188,7 +188,7 @@ def aes128_block(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
 
 @typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out = bytes(vlbytes.copy(block))
+    out = bytes(vlbytes_t.copy(block))
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
     return out

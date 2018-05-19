@@ -29,7 +29,7 @@ def OS2IP(s: serialized_scalar_t) -> felem_t:
 	return bytes.to_nat_le(s)
 
 @typechecked
-def hash (msg:vlbytes) -> serialized_point_t:
+def hash (msg:vlbytes_t) -> serialized_point_t:
 	return sha256(msg)
 
 curveOrder = (7237005577332262213973186563042994240857116359379907606001950938285454250989)
