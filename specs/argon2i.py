@@ -7,20 +7,20 @@ block_size = nat(1024)
 line_size = nat(128)
 
 max_size_t = 2**64 - 1
-size_nat_t = refine3(nat, lambda x: x <= max_size_t)
-output_size_t = refine3(nat, lambda x: x <= 64)
+size_nat_t = refine(nat, lambda x: x <= max_size_t)
+output_size_t = refine(nat, lambda x: x <= 64)
 
 
 j_range = range_t(0, 8)
 lanes_t = range_t(1, 2**24)
 segment_t = range_t(0, 4)
 t_len_t = range_t(1, max_size_t - 65)
-idx_t = refine3(size_nat_t, lambda x: x <= 15)
+idx_t = refine(size_nat_t, lambda x: x <= 15)
 working_vector_t = array_t(uint64_t, 16)
 
 
 @typechecked
-def h(a: refine3(vlbytes, lambda x: array.length(x) < max_size_t - 2 * line_size), nn: output_size_t) \
+def h(a: refine(vlbytes, lambda x: array.length(x) < max_size_t - 2 * line_size), nn: output_size_t) \
         -> contract(vlbytes, lambda a, nn: True, lambda a, nn, res: array.length(res) == nn):
     res = blake2b(a, bytes([]), nn)
     return res
@@ -35,7 +35,7 @@ def ceil32(x: size_nat_t) -> size_nat_t:
 
 
 @typechecked
-def compute_variable_length_output_size(t_len: refine3(size_nat_t, lambda x: x + 64 <= max_size_t)) -> size_nat_t:
+def compute_variable_length_output_size(t_len: refine(size_nat_t, lambda x: x + 64 <= max_size_t)) -> size_nat_t:
     if t_len <= 64:
         return t_len
     else:
@@ -44,8 +44,8 @@ def compute_variable_length_output_size(t_len: refine3(size_nat_t, lambda x: x +
 
 
 @typechecked
-def h_prime(t_len: refine3(size_nat_t, lambda x: 1 <= t_len and t_len + 64 <= max_size_t),
-            x: refine3(vlbytes, lambda x: array.length(x) + 4 <= max_size_t - 2 * line_size)) \
+def h_prime(t_len: refine(size_nat_t, lambda x: 1 <= t_len and t_len + 64 <= max_size_t),
+            x: refine(vlbytes, lambda x: array.length(x) + 4 <= max_size_t - 2 * line_size)) \
         -> contract(vlbytes,
                     lambda t_len, x: True,
                     lambda t_len, x, res: array.length(x) == compute_variable_length_output_size(t_len)):
@@ -153,7 +153,7 @@ def G(X: bytes_t(block_size), Y: bytes_t(block_size)) -> bytes_t(block_size):
 
 
 @typechecked
-def extend_to_block(input: refine3(vlbytes, lambda x: array.length(x) <= block_size)) -> bytes_t(block_size):
+def extend_to_block(input: refine(vlbytes, lambda x: array.length(x) <= block_size)) -> bytes_t(block_size):
     output = array.create(block_size, uint8(0))
     output[:array.length(intput)] = input
     return output

@@ -4,7 +4,7 @@ from hacspec.speclib import *
 from sha2 import sha256
 
 max_size_t = 2 ** 32 - 1
-size_nat_t = refine3(nat, lambda x: x <= max_size_t)
+size_nat_t = refine(nat, lambda x: x <= max_size_t)
 max_input_len_sha256 = nat(2 ** 61)
 hLen = nat(32)
 

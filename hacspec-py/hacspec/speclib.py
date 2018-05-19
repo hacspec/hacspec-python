@@ -49,7 +49,7 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> type:
 
 
 @typechecked
-def refine3(t: type, f: Callable[[T], bool]) -> type:
+def refine(t: type, f: Callable[[T], bool]) -> type:
     __class__ = t
     # We can't @typechecked here because it gets called with 0 args for super.
     @typechecked
@@ -69,12 +69,12 @@ def refine3(t: type, f: Callable[[T], bool]) -> type:
                 # Special case for typeguard. Don't do anything.
                 return
             else:
-                fail("refine3 super.init has more args than we expected (" + str(num_init_args) + ")")
+                fail("refine super.init has more args than we expected (" + str(num_init_args) + ")")
             t(x)
     @typechecked
     def string(self) -> str:
         return str(self.__origin__)
-    # We use a random string as class name here. The result of refine3 has to
+    # We use a random string as class name here. The result of refine has to
     # get assigend to a type alias, which can be used as class name.
     u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
     if DEBUG:
@@ -83,13 +83,13 @@ def refine3(t: type, f: Callable[[T], bool]) -> type:
     __class__ = cl
     return cl
 
-nat = refine3(int, lambda x: x >= 0)
+nat = refine(int, lambda x: x >= 0)
 nat_t = nat
 
 
 @typechecked
 def range_t(min: int, max: int) -> type:
-    return refine3(int, lambda x: x >= min and x < max)
+    return refine(int, lambda x: x >= min and x < max)
 
 
 # TODO: make this actually do something.
@@ -1207,7 +1207,7 @@ def vlbytes_t(T) -> type:
 
 @typechecked
 def bytes_t(l:int) -> type:
-    return refine3(vlbytes, lambda x: vlbytes.length(x) <= l)
+    return refine(vlbytes, lambda x: vlbytes.length(x) <= l)
 
 
 def bitvector_t(l:int):
@@ -1227,7 +1227,7 @@ def bitvector_t(l:int):
         @typechecked
         def string(self) -> str:
             return str(self.__origin__)
-        # We use a random string as class name here. The result of refine3 has to
+        # We use a random string as class name here. The result has to
         # get assigend to a type alias, which can be used as class name.
         u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
         if DEBUG:
@@ -1259,7 +1259,7 @@ def array_t(t: type, l: int) -> type:
         @typechecked
         def string(self) -> str:
             return str(self.__origin__)
-        # We use a random string as class name here. The result of refine3 has to
+        # We use a random string as class name here. The result has to
         # get assigend to a type alias, which can be used as class name.
         u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
         if DEBUG:

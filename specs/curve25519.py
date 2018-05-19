@@ -5,7 +5,7 @@ from hacspec.speclib import *
 # Define prime field
 p25519 = (2 ** 255) - 19
 
-felem_t = refine3(nat, lambda x: x < p25519)
+felem_t = refine(nat, lambda x: x < p25519)
 point_t = tuple2(felem_t, felem_t)  # projective coordinates
 scalar_t = bitvector_t(256)
 serialized_point_t = bytes_t(32)

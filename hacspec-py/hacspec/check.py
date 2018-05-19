@@ -401,10 +401,10 @@ def read(node, cl=None):
             exit(1)
         # Check that types are named _t.
         try:
-            # Types come from _t functions or refine3.
+            # Types come from _t functions or refine.
             # Only checking refine for now.
             fun = right.get_function_signature()
-            if fun.fun_name == "refine3":
+            if fun.fun_name == "refine":
                 type_name = args[0].get_name()
                 if len(args) != 1 or not type_name.endswith("_t"):
                     print("Invalid hacspec. " + type_name + " must end with _t.")

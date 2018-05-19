@@ -9,16 +9,16 @@ Types t ::= int | bool | str
           | bit_t | uint8_t | uint16_t | uint32_t | uint64_t | uint128_t
           | tuple2_t(t1,t2) | tuple3_t(t1,t2,t3) | tuple4_t(t1,t2,t3,t4) | tuple5_t(t1,t2,t3,t4,t5)
           | vlarray_t(t)
-          | refine3(t,pred)
+          | refine(t,pred)
           | bitvector_t(len)
           | range_t(min,max)
 
 Derived Types:
-      nat                  := refine3(int,lambda x: x >= 0)
-      array_t(t,len)       := refine3(vlarray_t(t),lambda x: length(x) == len)
+      nat                  := refine(int,lambda x: x >= 0)
+      array_t(t,len)       := refine(vlarray_t(t),lambda x: length(x) == len)
       vlbytes_t            := vlarray_t(uint8_t)
       bytes_t(len)         := array_t(uint8_t,len)
-      pfelem_t(prime)      := refine3(nat,lambda x: x < prime)
+      pfelem_t(prime)      := refine(nat,lambda x: x < prime)
       gfelem_t(len,irred)  := bitvector_t(len)
 
 ```

@@ -4,7 +4,7 @@ from hacspec.speclib import *
 
 blocksize = 16
 block_t  = bytes_t(16)
-subblock_t  = refine3(vlbytes, lambda x: array.length(x) <= blocksize)
+subblock_t  = refine(vlbytes, lambda x: array.length(x) <= blocksize)
 
 rowindex_t = range_t(0,4)
 expindex_t = range_t(0,48)

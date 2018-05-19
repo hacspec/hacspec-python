@@ -6,7 +6,7 @@ blocksize = 16
 block_t = bytes_t(16)
 key_t = bytes_t(16)
 tag_t = bytes_t(16)
-subblock_t = refine3(vlbytes, lambda x: vlbytes.length(x) <= 16)
+subblock_t = refine(vlbytes, lambda x: vlbytes.length(x) <= 16)
 elem_t = bitvector_t(128)
 
 # Define galois field
