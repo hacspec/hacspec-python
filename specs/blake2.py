@@ -1,6 +1,6 @@
 from hacspec.speclib import *
 
-variant = refine3(nat, lambda x: x == 0 or x == 1)
+variant_t = refine3(nat, lambda x: x == 0 or x == 1)
 out_size_t = refine3(nat, lambda x: x <= 32)
 
 @typechecked
@@ -12,7 +12,7 @@ def highbits_64(x:uint64_t) -> uint32_t:
     return uint32(x >> 32)
 
 @typechecked
-def blake2(v:variant) -> FunctionType:
+def blake2(v:variant_t) -> FunctionType:
     if v == 1:
         bits_in_word = 64
         rounds_in_f = 12
@@ -95,6 +95,7 @@ def blake2(v:variant) -> FunctionType:
     ])
 
 
+    @typechecked
     def _G(v: working_vector_t, a: index_t, b: index_t, c: index_t, d: index_t, x: uint64_t, y: uint64_t) -> working_vector_t:
         v[a] = v[a] + v[b] + x
         v[d] = word_t.rotate_right(v[d] ^ v[a], _R1)
@@ -171,5 +172,5 @@ def blake2(v:variant) -> FunctionType:
 
     return blake2
 
-blake2s = blake2(variant(nat(0)))
-blake2b = blake2(variant(nat(1)))
+blake2s = blake2(variant_t(nat(0)))
+blake2b = blake2(variant_t(nat(1)))

@@ -12,6 +12,7 @@ def normalise_point(s:extended_point_t) -> extended_point_t:
 	return extended_point(fmul(x, finv(z)), fmul(y, finv(z)), felem(nat(1)), fmul(t, finv (z)))
 
 
+@typechecked
 def OS2ECP(s:serialized_point_t) -> Union[extended_point_t, None]:
 	return point_decompress(s)
 
@@ -35,6 +36,7 @@ curveOrder = (723700557733226221397318656304299424085711635937990760600195093828
 cofactor = (8)
 
 
+@typechecked
 def ECVRF_hash_to_curve(ctr: nat, pub: serialized_point_t, input: bytes_t(uint32)) -> Union[extended_point_t, None]:
 	tmp = array.create(array.length(input)+64,uint8(0))
 	lenMessage = array.length(input)
@@ -55,6 +57,7 @@ def ECVRF_hash_to_curve(ctr: nat, pub: serialized_point_t, input: bytes_t(uint32
 		return p2		
 
 
+@typechecked
 def ECVRF_decode_proof(pi: bytes_t(5*n)) -> Union[Tuple[extended_point_t, bytes_t(n), bytes_t(2*n)], None]:
 	gamma = pi[:2*n]
 	c = pi[2*n: 3*n]
@@ -77,6 +80,7 @@ def ECVRF_hash_points (g: extended_point_t, h: extended_point_t, pub: extended_p
 	result = to_felem(hashed)
 	return result
 
+@typechecked
 def ECVRF_prove (input: bytes_t(uint32), pub: serialized_point_t, priv: serialized_scalar_t, k:felem_t) -> Union[(bytes_t(5*n)), None]:
 	ap = point_decompress(pub)
 	if ap is None:
@@ -103,6 +107,7 @@ def ECVRF_prove (input: bytes_t(uint32), pub: serialized_point_t, priv: serializ
 	return tmp
 
 
+@typechecked
 def ECVRF_proof_to_hash (pi: bytes_t(5*n)) -> Union[(bytes_t(2*n)), None]:
 	(gamma, c, s) = ECVRF_decode_proof(pi)
 	h = hash(ECP2OS(gamma))
