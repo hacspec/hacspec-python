@@ -21,9 +21,6 @@ def main (x: int) -> None :
 		exit(1)	
 
 	sk1 = scalar_t(0x018ebbb95eed0e13)
-	# print(hex(sk1.v))
-	# print(bytes.from_hex('130eed5eb9bb8e01'))
-	# print(hex(bitvector(bytes.to_nat_le(bytes.from_hex('502563fcc2cab9f3849e17a7adfae6bcffffffffffffffff00000000ffffffff')),256).v))
 	point_computed1 = point_mul(sk1)
 	point_expected1 = (0x339150844EC15234807FE862A86BE77977DBFB3AE3D96F4C22795513AEAAB82F, 0xB1C14DDFDC8EC1B2583F51E85A5EB3A155840F2034730E9B5ADA38B674336A21)
 

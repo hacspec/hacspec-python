@@ -678,7 +678,7 @@ class uint128(_uintn):
         return (x >> other | x << (x.bits - other))
 
 
-class bitvector(_uintn):
+class _bitvector(_uintn):
     @typechecked
     def __init__(self, v: Union[int, _uintn], bits: int) -> None:
         if isinstance(v, int):
@@ -688,99 +688,99 @@ class bitvector(_uintn):
 
     @staticmethod
     @typechecked
-    def init(v: Union[int, _uintn]) -> 'bitvector':
-        return bitvector(v, 0)
+    def init(v: Union[int, _uintn]) -> '_bitvector':
+        return _bitvector(v, 0)
 
     @typechecked
-    def __add__(self, other: 'bitvector') -> 'bitvector':
+    def __add__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v + other.v, self.bits)
+            return _bitvector(self.v + other.v, self.bits)
         else:
-            fail("cannot add bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot add _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __sub__(self, other: 'bitvector') -> 'bitvector':
+    def __sub__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v - other.v, self.bits)
+            return _bitvector(self.v - other.v, self.bits)
         else:
-            fail("cannot sub bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot sub _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __inv__(self) -> 'bitvector':
-        return bitvector(~self.v, self.bits)
+    def __inv__(self) -> '_bitvector':
+        return _bitvector(~self.v, self.bits)
 
     @typechecked
-    def __invert__(self) -> 'bitvector':
-        return bitvector(~self.v & self.max, self.bits)
+    def __invert__(self) -> '_bitvector':
+        return _bitvector(~self.v & self.max, self.bits)
 
     @typechecked
-    def __or__(self, other: 'bitvector') -> 'bitvector':
+    def __or__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v | other.v, self.bits)
+            return _bitvector(self.v | other.v, self.bits)
         else:
-            fail("cannot or bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot or _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __and__(self, other: 'bitvector') -> 'bitvector':
+    def __and__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v & other.v, self.bits)
+            return _bitvector(self.v & other.v, self.bits)
         else:
-            fail("cannot and bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot and _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __xor__(self, other: 'bitvector') -> 'bitvector':
+    def __xor__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v ^ other.v, self.bits)
+            return _bitvector(self.v ^ other.v, self.bits)
         else:
-            fail("cannot xor bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot xor _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __lshift__(self, other: int) -> 'bitvector':
+    def __lshift__(self, other: int) -> '_bitvector':
         if other < 0 or other >= self.bits:
-            fail("bitvector cannot be shifted by < 0 or >= bits")
-            return bitvector(0, self.bits,)
+            fail("_bitvector cannot be shifted by < 0 or >= bits")
+            return _bitvector(0, self.bits,)
         else:
-            return bitvector(self.v << other, self.bits)
+            return _bitvector(self.v << other, self.bits)
 
     @typechecked
-    def __rshift__(self, other: int) -> 'bitvector':
+    def __rshift__(self, other: int) -> '_bitvector':
         if other < 0 or other >= self.bits:
-            fail("bitvector cannot be shifted by < 0 or >= bits")
-            return bitvector(0, self.bits)
+            fail("_bitvector cannot be shifted by < 0 or >= bits")
+            return _bitvector(0, self.bits)
         else:
-            return bitvector(self.v >> other, self.bits)
+            return _bitvector(self.v >> other, self.bits)
 
     @staticmethod
     @typechecked
-    def rotate_left(x: 'bitvector', other: int) -> 'bitvector':
+    def rotate_left(x: '_bitvector', other: int) -> '_bitvector':
         return (x << other | x >> (x.bits - other))
 
     @staticmethod
     @typechecked
-    def rotate_right(x: 'bitvector', other: int) -> 'bitvector':
+    def rotate_right(x: '_bitvector', other: int) -> '_bitvector':
         return (x >> other | x << (x.bits - other))
 
     @typechecked
     def __getitem__(self, key: Union[int, slice]):
         try:
             if isinstance(key, slice):
-                return bitvector(self.v >> key.start,
+                return _bitvector(self.v >> key.start,
                                  key.stop - key.start)
             else:
                 return bit(self.v >> key)
         except:
-            print('bitvector content:', self.v)
-            print('bitvector index:', key)
-            fail('bitvector access error')
+            print('_bitvector content:', self.v)
+            print('_bitvector index:', key)
+            fail('_bitvector access error')
 
     @typechecked
-    def __getslice__(self, i: int, j: int) -> 'bitvector':
-        return bitvector(self.v >> i, j - i)
+    def __getslice__(self, i: int, j: int) -> '_bitvector':
+        return _bitvector(self.v >> i, j - i)
 
 
 class vlarray():
@@ -1208,17 +1208,17 @@ def bytes_t(l:int) -> type:
 def bitvector_t(l:int):
     @typechecked
     def refine_bitvec() -> type:
-        __class__ = bitvector
+        __class__ = _bitvector
         @typechecked
         def f(x:Union[int, _uintn]):
             return int(x) <= ((1 << l) - 1)
         @typechecked
         def init(self, x:Union[int, _uintn]) -> None:
             if not (isinstance(x, int) or isinstance(x, _uintn)) or not f(x):
-                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of bitvector.")
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of _bitvector.")
             else:
                 super().__init__(x, l)
-                bitvector(x, l)
+                _bitvector(x, l)
         @typechecked
         def string(self) -> str:
             return str(self.__origin__)
@@ -1226,8 +1226,8 @@ def bitvector_t(l:int):
         # get assigend to a type alias, which can be used as class name.
         u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
         if DEBUG:
-            print("new class " + u_rand + " - " + str(bitvector))
-        cl = type(u_rand, (bitvector,), {'__init__': init , '__origin__': bitvector, '__str__': string})
+            print("new class " + u_rand + " - " + str(_bitvector))
+        cl = type(u_rand, (_bitvector,), {'__init__': init , '__origin__': _bitvector, '__str__': string})
         __class__ = cl
         return cl
     refinement = refine_bitvec()
@@ -1247,7 +1247,7 @@ def array_t(t: type, l: int) -> type:
         @typechecked
         def init(self, x: Union[Sequence[T], vlarray]) -> None:
             if not (isinstance(x, Sequence) or isinstance(x, vlarray)) or not len(x) == l:
-                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of bitvector.")
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
             else:
                 super().__init__(x, t)
                 vlarray(x, t)
@@ -1377,7 +1377,7 @@ def prime_field(prime: nat):
 
 
 class gfelem:
-    def __init__(self, x: bitvector, irred: bitvector) -> None:
+    def __init__(self, x: _bitvector, irred: _bitvector) -> None:
         if x.v < 0:
             fail("cannot convert negative integer to gfelem")
         elif x.bits < 1:
@@ -1400,14 +1400,14 @@ class gfelem:
             return gfelem(self.v ^ other.v, self.irred)
         else:
             fail("cannot add gfelem of different fields")
-            return gfelem(bitvector(0, self.bits), self.irred)
+            return gfelem(_bitvector(0, self.bits), self.irred)
 
     def __sub__(self, other: 'gfelem') -> 'gfelem':
         if (other.bits == self.bits and other.irred == self.irred):
             return gfelem(self.v ^ other.v, self.irred)
         else:
             fail("cannot sub gfelem of different fields")
-            return gfelem(bitvector(0, self.bits), self.irred)
+            return gfelem(_bitvector(0, self.bits), self.irred)
 
     def __mul__(self, other: 'gfelem') -> 'gfelem':
         if (other.bits == self.bits and other.irred == self.irred):
@@ -1415,28 +1415,28 @@ class gfelem:
             irred = self.irred
             a = self.v
             b = other.v
-            p = bitvector(0, bits)
+            p = _bitvector(0, bits)
             for i in range(bits):
-                if (bitvector.to_int(b) & 1 == 1):
+                if (_bitvector.to_int(b) & 1 == 1):
                     p = p ^ a
                 b = b >> 1
                 c = a >> (bits - 1)
                 a = a << 1
-                if (bitvector.to_int(a) == 1):
+                if (_bitvector.to_int(a) == 1):
                     a = a ^ irred
             return gfelem(p, irred)
         else:
             fail("cannot mul gfelem of different fields")
-            return gfelem(bitvector(0, self.bits), self.irred)
+            return gfelem(_bitvector(0, self.bits), self.irred)
 
     def __pow__(self, other: int) -> 'gfelem':
         if (other < 0):
             fail("cannot exp with negative number")
-            return gfelem(bitvector(0, self.bits), self.irred)
+            return gfelem(_bitvector(0, self.bits), self.irred)
         else:
             def exp(a, x):
                 if (x == 0):
-                    return gfelem(bitvector(1, self.bits), self.irred)
+                    return gfelem(_bitvector(1, self.bits), self.irred)
                 elif (x == 1):
                     return a
                 elif (x == 2):
@@ -1475,10 +1475,10 @@ class gfelem:
         bits = x.bits
         irred = x.irred
 
-        def degree(v: bitvector, bits: int):
+        def degree(v: _bitvector, bits: int):
             if (v == 0 or bits == 0):
                 return 0
-            elif (bitvector.to_int(v >> (bits - 1)) == 1):
+            elif (_bitvector.to_int(v >> (bits - 1)) == 1):
                 return (bits - 1)
             else:
                 return degree(v >> 1, bits - 1)
@@ -1504,8 +1504,8 @@ class gfelem:
         s = irred
         dr = degree(r, bits)
         ds = degree(s, bits)
-        v = gfelem(bitvector(0, bits), irred)
-        u = gfelem(bitvector(1, bits), irred)
+        v = gfelem(_bitvector(0, bits), irred)
+        u = gfelem(_bitvector(1, bits), irred)
         if (dr == 0):
             return u
         else:
@@ -1514,11 +1514,11 @@ class gfelem:
             return gfelem(gfgcd(s_, r, v_, u), irred)
 
     def __int__(self) -> int:
-        return bitvector.to_int(self.v)
+        return _bitvector.to_int(self.v)
 
     @staticmethod
     def to_int(x: 'gfelem') -> int:
-        return bitvector.to_int(x.v)
+        return _bitvector.to_int(x.v)
 
 
 # Typed versions of all python functions that can be used in specs.
