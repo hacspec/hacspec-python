@@ -853,16 +853,13 @@ class vlarray():
 
     @staticmethod
     @typechecked
-    def create(len: int, default) -> 'vlarray':
-        res = vlarray([default] * len)
+    def create(l: Union[int, _uintn], default) -> 'vlarray':
+        if isinstance(l, _uintn):
+            l = _uintn.to_int(l)
+        res = vlarray([default] * l)
         if isinstance(default, uint8_t):
             res = vlbytes_t(res)
         return res
-
-    @staticmethod
-    @typechecked
-    def create_type(x: Iterable[U], t: type) -> 'vlarray':
-        return vlarray(list([t(el) for el in x]), t)
 
     @staticmethod
     @typechecked
@@ -888,7 +885,10 @@ class vlarray():
             # TODO: only works with vlbytes_t
             tmp.append(vlbytes_t(y.l[:]))
             return vlarray(tmp, x.t)
-        return vlarray(x.l[:]+y.l[:], x.t)
+        res = vlarray(x.l[:]+y.l[:], x.t)
+        if x.t is uint8_t:
+            res = vlbytes(res)
+        return res
 
     @staticmethod
     @typechecked
@@ -1236,17 +1236,12 @@ def bitvector_t(l:int):
 
 @typechecked
 def vlarray_t(t: type) -> type:
-    return vlarray
-
-
-@typechecked
-def array_t(t: type, l: int) -> type:
     @typechecked
     def refine_array() -> type:
         __class__ = vlarray
         @typechecked
         def init(self, x: Union[Sequence[T], vlarray]) -> None:
-            if not (isinstance(x, Sequence) or isinstance(x, vlarray)) or not len(x) == l:
+            if not (isinstance(x, Sequence) or isinstance(x, vlarray)):
                 fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
             else:
                 super().__init__(x, t)
@@ -1260,6 +1255,33 @@ def array_t(t: type, l: int) -> type:
         if DEBUG:
             print("new class " + u_rand + " - " + str(vlarray))
         cl = type(u_rand, (vlarray,), {'__init__': init , '__origin__': vlarray, '__str__': string})
+        __class__ = cl
+        return cl
+    refinement = refine_array()
+    return refinement
+
+
+@typechecked
+def array_t(t: type, l: int) -> type:
+    @typechecked
+    def refine_array() -> type:
+        __class__ = vlarray
+        @typechecked
+        def init(self, x: Union[list, Sequence[T], vlarray]) -> None:
+            if not (isinstance(x, Sequence) or isinstance(x, vlarray)) or not len(x) == self.l:
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
+            else:
+                super().__init__(x, t)
+                vlarray(x, t)
+        @typechecked
+        def string(self) -> str:
+            return str(self.__origin__)
+        # We use a random string as class name here. The result has to
+        # get assigend to a type alias, which can be used as class name.
+        u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+        if DEBUG:
+            print("new class " + u_rand + " - " + str(vlarray))
+        cl = type(u_rand, (vlarray,), {'__init__': init , '__origin__': vlarray, '__str__': string, 'l': l})
         __class__ = cl
         return cl
     refinement = refine_array()

@@ -24,9 +24,9 @@ length = length1 + length2
 
 
 key_t = bytes_t(n)
-sk_t = vlarray_t(bytes_t(n))
-pk_t = vlarray_t(bytes_t(n))
-sig_t = vlarray_t(bytes_t(n))
+sk_t = array_t(key_t, uint32.to_int(length))
+pk_t = array_t(key_t, uint32.to_int(length))
+sig_t = array_t(key_t, uint32.to_int(length))
 address_t = array_t(uint32_t, 8)
 key_pair_t = Tuple[sk_t, pk_t, address_t]
 digest_t = bytes_t(32)
@@ -126,14 +126,14 @@ def wots_chain(x: bytes_t, start: int, steps: int, seed: seed_t, adr: address_t)
 @typechecked
 def key_gen(adr: address_t, seed: seed_t) -> key_pair_t:
     # TODO: we need separate functions here for xmss later.
-    sk: sk_t = vlarray.create_type([], bytes)
-    pk: pk_t = vlarray.create_type([], bytes)
+    sk = sk_t.create(length, key_t.create(n, uint8(0)))
+    pk = pk_t.create(length, key_t.create(n, uint8(0)))
     for i in range(0, uint32.to_int(length)):
         sk_i: bytes_t = bytes.create_random_bytes(n)
         adr = set_chain_address(adr, uint32(i))
         adr, pk_i = wots_chain(sk_i, 0, uint32.to_int(w)-1, seed, adr)
-        sk = vlarray.concat(sk, sk_i)
-        pk = vlarray.concat(pk, pk_i)
+        sk[i] = sk_i
+        pk[i] = pk_i
     return (sk, pk, adr)
 
 
@@ -143,7 +143,7 @@ def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
     out = 0
     total = 0
     bits = 0
-    basew: vlbytes_t = vlbytes([])
+    basew = vlbytes([])
     for consumed in range(0, uint32.to_int(l)):
         if bits == 0:
             total = uint8.to_int(msg[i])
@@ -170,22 +170,22 @@ def wots_msg(msg: digest_t) -> vlbytes_t:
 
 @typechecked
 def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
-    m = wots_msg(msg, )
-    sig = vlarray.create_type([], bytes)
+    m = wots_msg(msg)
+    sig = sig_t.create(length, key_t.create(n, uint8(0)))
     for i in range(0, uint32.to_int(length)):
         adr = set_chain_address(adr, uint32(i))
         adr, sig_i = wots_chain(sk[i], 0, uint32.to_int(m[i]), seed, adr)
-        sig = vlarray.concat(sig, sig_i)
+        sig[i] = sig_i
     return sig
 
 
 @typechecked
 def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> Tuple[pk_t, address_t]:
     m = wots_msg(msg)
-    pk2: pk_t = vlarray.create_type([], bytes)
+    pk2 = pk_t.create(length, key_t.create(n, uint8(0)))
     for i in range(0, uint32.to_int(length)):
         adr = set_chain_address(adr, uint32(i))
         m_i = uint32.to_int(m[i])
         adr, pk_i = wots_chain(sig[i], m_i, uint32.to_int(w) - 1 - m_i, seed, adr)
-        pk2 = vlarray.concat(pk2, pk_i)
+        pk2[i] = pk_i
     return (pk2, adr)
