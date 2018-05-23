@@ -24,7 +24,7 @@ def blake2(v:variant_t) -> FunctionType:
         working_vector_t = array_t(uint64_t, 16)
         hash_vector_t = array_t(uint64_t, 8)
         index_t = range_t(0, 16)
-        _IV = array([
+        _IV = hash_vector_t([
             uint64(0x6A09E667F3BCC908), uint64(0xBB67AE8584CAA73B),
             uint64(0x3C6EF372FE94F82B), uint64(0xA54FF53A5F1D36F1),
             uint64(0x510E527FADE682D1), uint64(0x9B05688C2B3E6C1F),
@@ -56,7 +56,7 @@ def blake2(v:variant_t) -> FunctionType:
         working_vector_t = array_t(uint32_t, 16)
         hash_vector_t = array_t(uint32_t, 8)
         index_t = range_t(0, 16)
-        _IV = array([
+        _IV = hash_vector_t([
             uint32(0x6A09E667), uint32(0xBB67AE85),
             uint32(0x3C6EF372), uint32(0xA54FF53A),
             uint32(0x510E527F), uint32(0x9B05688C),
@@ -79,7 +79,8 @@ def blake2(v:variant_t) -> FunctionType:
                         < max_size_t - 2 * block_bytes)
 
 
-    _SIGMA: array_t(index_t, 16 * 12) = array([
+    sigma_t = array_t(index_t, 16 * 12)
+    _SIGMA = sigma_t([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
         14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
         11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,

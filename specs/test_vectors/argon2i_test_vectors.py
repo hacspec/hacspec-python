@@ -1,7 +1,7 @@
 from mypy_extensions import TypedDict
-from hacspec.speclib import array
+from hacspec.speclib import *
 
-argon2i_test = TypedDict('blake2b_test', {
+argon2i_test_item = TypedDict('blake2b_test_item', {
     'p': str,
     's': str,
     'lanes': int,
@@ -13,7 +13,9 @@ argon2i_test = TypedDict('blake2b_test', {
     'output': str
     })
 
-argon2i_test_vectors = array([{
+argon2i_test = vlarray_t(dict)
+
+argon2i_test_vectors = argon2i_test([{
     'p': '0101010101010101010101010101010101010101010101010101010101010101',
     's': '02020202020202020202020202020202',
     'lanes': 4,

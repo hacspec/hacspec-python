@@ -186,7 +186,7 @@ def sha2(v:variant_t) -> FunctionType:
 
     @typechecked
     def hash(msg:vlbytes_t) -> digest_t:
-        blocks,last = vlarray.split_blocks(msg, blockSize)
+        blocks,last = array.split_blocks(msg, blockSize)
         nblocks = array.length(blocks)
         h:hash_t = h0
         for i in range(nblocks):

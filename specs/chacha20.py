@@ -87,7 +87,7 @@ def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
 
 @typechecked
 def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
-    blocks, last = vlarray.split_blocks(msg, blocksize)
+    blocks, last = array.split_blocks(msg, blocksize)
     keyblock = array.create(blocksize, uint8(0))
     ctr = counter
     for i in range(array.length(blocks)):

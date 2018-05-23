@@ -51,12 +51,10 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> type:
 @typechecked
 def refine(t: type, f: Callable[[T], bool]) -> type:
     __class__ = t
-    # We can't @typechecked here because it gets called with 0 args for super.
     @typechecked
     def init(self, x:t) -> None:
-        # assert check_argument_types()
         if not isinstance(x, t):
-            print("ref "+str(type(x)))
+            fail("ref "+str(type(x)) + " - "+str(t))
         if not isinstance(x, t) or not f(x):
             fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(t) + ".")
         else:
@@ -783,16 +781,111 @@ class _bitvector(_uintn):
         return _bitvector(self.v >> i, j - i)
 
 
-class vlarray():
+class array():
+    def __init__(self) -> None:
+        fail("Don't use array directly. Define one with array_t(your_type)")
+
+    @staticmethod
+    @typechecked
+    def create(l: Union[int, _uintn], default) -> '_vlarray':
+        if isinstance(l, _uintn):
+            l = _uintn.to_int(l)
+        res = _vlarray([default] * l)
+        if isinstance(default, uint8_t):
+            res = vlbytes_t(res)
+        return res
+
+    @staticmethod
+    @typechecked
+    def length(a: '_vlarray') -> int:
+        if not isinstance(a, _vlarray):
+            fail("array.length takes a _vlarray.")
+        return len(a.l)
+
+    @staticmethod
+    @typechecked
+    def copy(x: '_vlarray') -> '_vlarray':
+        copy = _vlarray(x.l[:])
+        if x.t and x.t.__name__ == "uint8":
+            copy = vlbytes_t(copy)
+        return copy
+
+    @staticmethod
+    @typechecked
+    def concat(x: '_vlarray', y: '_vlarray') -> '_vlarray':
+        if x.t and \
+           (str(x.t.__name__) == "vlbytes_t" or str(x.t.__name__) == "_vlarray"):
+            tmp = x.l[:]
+            # TODO: only works with vlbytes_t
+            tmp.append(vlbytes_t(y.l[:]))
+            return _vlarray(tmp, x.t)
+        res = _vlarray(x.l[:]+y.l[:], x.t)
+        if x.t is uint8_t:
+            res = vlbytes(res)
+        return res
+
+    @staticmethod
+    @typechecked
+    def zip(x: '_vlarray', y: '_vlarray') -> '_vlarray':
+        return _vlarray(list(zip(x.l, y.l)))
+
+    @staticmethod
+    @typechecked
+    def enumerate(x: '_vlarray') -> '_vlarray':
+        return _vlarray(list(enumerate(x.l)))
+
+    @staticmethod
+    @typechecked
+    def split_blocks(a: '_vlarray', blocksize: int) -> 'Tuple[_vlarray,_vlarray]':
+        if not isinstance(a, _vlarray):
+            fail("split_blocks takes a _vlarray as first argument.")
+        if not isinstance(blocksize, int):
+            fail("split_blocks takes an int as second argument.")
+        nblocks = len(a) // blocksize
+        blocks = _vlarray([a[x*blocksize:(x+1)*blocksize]
+                          for x in range(nblocks)])
+        last = _vlarray(a[len(a) - (len(a) % blocksize):len(a)])
+        if not isinstance(blocks, vlbytes_t) and a.t and a.t.__name__ is "uint8":
+            # Cast result to vlbytes_t if necessary.
+            if isinstance(last, _vlarray):
+                last = vlbytes_t(last)
+        return blocks, last
+
+    @staticmethod
+    @typechecked
+    def concat_blocks(blocks: '_vlarray', last: '_vlarray') -> '_vlarray':
+        res = _vlarray.concat(_vlarray([b for block in blocks for b in block]), last)
+        # TODO: make sure blcoska and last both have a type t
+        if last.t and last.t.__name__ == "uint8":
+            res = vlbytes_t(res)
+        return res
+
+    # Only used in ctr. Maybe delete
+    @staticmethod
+    @typechecked
+    def map(f: Callable[[T], U], a: '_vlarray') -> '_vlarray':
+        return _vlarray(list(map(f, a.l)))
+
+    @staticmethod
+    @typechecked
+    def create_random(l: nat_t, t: Type[_uintn]) -> '_vlarray':
+        if not isinstance(l, nat_t):
+            fail("array.create_random's first argument has to be of type nat_t.")
+        r = rand()
+        x = t(0)
+        return array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
+
+
+class _vlarray(array):
     # TODO: make t arg mandatory
     @typechecked
-    def __init__(self, x: Union[Sequence[T], 'vlarray'], t: Type=None) -> None:
-        if not (isinstance(x, Sequence) or isinstance(x, vlarray)):
-            fail("vlarray() takes a sequence or vlarray as first argument.")
+    def __init__(self, x: Union[Sequence[T], '_vlarray'], t: Type=None) -> None:
+        if not (isinstance(x, Sequence) or isinstance(x, _vlarray)):
+            fail("_vlarray() takes a sequence or _vlarray as first argument.")
         if t:
             for e in x:
-                if not isinstance(e, t):
-                    fail("vlarray() input element has wrong type. "+\
+                if not isinstance(e, t) and t(e) is None:
+                    fail("_vlarray() input element has wrong type. "+\
                          "Got "+str(type(e))+" expected "+str(t)+".")
         self.l = list(x)
         self.t = t
@@ -814,35 +907,34 @@ class vlarray():
         return iter(self.l)
 
     @typechecked
-    def __eq__(self, other: 'vlarray'):
-        if not isinstance(self, vlarray) or not isinstance(other, vlarray):
-            fail("vlarray.__eq__ only works on two vlarray.")
-        return self.l == other.l
+    def __eq__(self, other: '_vlarray'):
+        if isinstance(self, other.__class__) or isinstance(other, self.__class__):
+            return self.l == other.l
+        fail("_vlarray.__eq__ only works on two _vlarray.")
 
     @typechecked
-    def __ne__(self, other: 'vlarray'):
-        if isinstance(other, self.__class__):
+    def __ne__(self, other: '_vlarray'):
+        if isinstance(self, other.__class__) or isinstance(other, self.__class__):
             return self.l != other.l
-        else:
-            return True
+        fail("_vlarray.__ne__ only works on two _vlarray.")
 
-    # TODO: Return type should be Union['vlarray', self.t] but we don't have
+    # TODO: Return type should be Union['_vlarray', self.t] but we don't have
     #       access to self at this point.
     @typechecked
-    def __getitem__(self, key: Union[int, slice]) -> Union['vlarray', T]:
+    def __getitem__(self, key: Union[int, slice]) -> Union['_vlarray', T]:
         try:
             if isinstance(key, slice):
-                return vlarray(self.l[key.start:key.stop])
+                return _vlarray(self.l[key.start:key.stop])
             return self.l[key]
         except:
-            print('vlarray access error:')
-            print('vlarray content:', self.l)
-            print('vlarray index:', key)
-            fail('vlarray index error')
+            print('_vlarray access error:')
+            print('_vlarray content:', self.l)
+            print('_vlarray index:', key)
+            fail('_vlarray index error')
 
     @typechecked
-    def __getslice__(self, i: int, j: int) -> 'vlarray':
-        return vlarray(self.l[i:j])
+    def __getslice__(self, i: int, j: int) -> '_vlarray':
+        return _vlarray(self.l[i:j])
 
     @typechecked
     def __setitem__(self, key: Union[int, slice], v) -> None:
@@ -851,104 +943,13 @@ class vlarray():
         else:
             self.l[key] = v
 
-    @staticmethod
-    @typechecked
-    def create(l: Union[int, _uintn], default) -> 'vlarray':
-        if isinstance(l, _uintn):
-            l = _uintn.to_int(l)
-        res = vlarray([default] * l)
-        if isinstance(default, uint8_t):
-            res = vlbytes_t(res)
-        return res
-
-    @staticmethod
-    @typechecked
-    def length(a: 'vlarray') -> int:
-        if not isinstance(a, vlarray):
-            fail("array.length takes a vlarray.")
-        return len(a.l)
-
-    @staticmethod
-    @typechecked
-    def copy(x: 'vlarray') -> 'vlarray':
-        copy = vlarray(x.l[:])
-        if x.t and x.t.__name__ == "uint8":
-            copy = vlbytes_t(copy)
-        return copy
-
-    @staticmethod
-    @typechecked
-    def concat(x: 'vlarray', y: 'vlarray') -> 'vlarray':
-        if x.t and \
-           (str(x.t.__name__) == "vlbytes_t" or str(x.t.__name__) == "vlarray"):
-            tmp = x.l[:]
-            # TODO: only works with vlbytes_t
-            tmp.append(vlbytes_t(y.l[:]))
-            return vlarray(tmp, x.t)
-        res = vlarray(x.l[:]+y.l[:], x.t)
-        if x.t is uint8_t:
-            res = vlbytes(res)
-        return res
-
-    @staticmethod
-    @typechecked
-    def zip(x: 'vlarray', y: 'vlarray') -> 'vlarray':
-        return vlarray(list(zip(x.l, y.l)))
-
-    @staticmethod
-    @typechecked
-    def enumerate(x: 'vlarray') -> 'vlarray':
-        return vlarray(list(enumerate(x.l)))
-
-    @staticmethod
-    @typechecked
-    def split_blocks(a: 'vlarray', blocksize: int) -> 'Tuple[vlarray,vlarray]':
-        if not isinstance(a, vlarray):
-            fail("split_blocks takes a vlarray as first argument.")
-        if not isinstance(blocksize, int):
-            fail("split_blocks takes an int as second argument.")
-        nblocks = len(a) // blocksize
-        blocks = vlarray([a[x*blocksize:(x+1)*blocksize]
-                          for x in range(nblocks)])
-        last = vlarray(a[len(a) - (len(a) % blocksize):len(a)])
-        if not isinstance(blocks, vlbytes_t) and a.t and a.t.__name__ is "uint8":
-            # Cast result to vlbytes_t if necessary.
-            if isinstance(last, vlarray):
-                last = vlbytes_t(last)
-        return blocks, last
-
-    @staticmethod
-    @typechecked
-    def concat_blocks(blocks: 'vlarray', last: 'vlarray') -> 'vlarray':
-        res = vlarray.concat(vlarray([b for block in blocks for b in block]), last)
-        # TODO: make sure blcoska and last both have a type t
-        if last.t and last.t.__name__ == "uint8":
-            res = vlbytes_t(res)
-        return res
-
-    # Only used in ctr. Maybe delete
-    @staticmethod
-    @typechecked
-    def map(f: Callable[[T], U], a: 'vlarray') -> 'vlarray':
-        return vlarray(list(map(f, a.l)))
-
-    @staticmethod
-    @typechecked
-    def create_random(l: nat_t, t: Type[_uintn]) -> 'vlarray':
-        if not isinstance(l, nat_t):
-            fail("array.create_random's first argument has to be of type nat_t.")
-        r = rand()
-        x = t(0)
-        return array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
-
-
-class vlbytes_t(vlarray):
+class vlbytes_t(_vlarray):
     # FIXME
     # @typechecked
     def __init__(self, x: Union[Sequence[T], 'vlbytes_t']) -> None:
         super(vlbytes_t, self).__init__(x, uint8_t)
 
-    # TODO: this wouldn't be necessary if we could return the correct type in vlarray.
+    # TODO: this wouldn't be necessary if we could return the correct type in _vlarray.
     @typechecked
     def __getitem__(self, key: Union[int, slice]) -> Union['vlbytes_t', T]:
         try:
@@ -956,10 +957,10 @@ class vlbytes_t(vlarray):
                 return vlbytes_t(self.l[key.start:key.stop])
             return self.l[key]
         except:
-            print('vlarray access error:')
-            print('vlarray content:', self.l)
-            print('vlarray index:', key)
-            fail('vlarray index error')
+            print('_vlarray access error:')
+            print('_vlarray content:', self.l)
+            print('_vlarray index:', key)
+            fail('_vlarray index error')
 
     @staticmethod
     @typechecked
@@ -968,7 +969,7 @@ class vlbytes_t(vlarray):
 
     @staticmethod
     @typechecked
-    def concat_bytes(blocks: 'vlarray') -> 'vlbytes_t':
+    def concat_bytes(blocks: '_vlarray') -> 'vlbytes_t':
         concat = [b for block in blocks for b in block]
         return vlbytes_t(concat)
 
@@ -984,11 +985,13 @@ class vlbytes_t(vlarray):
 
     @staticmethod
     @typechecked
-    def from_nat_le(x: nat_t) -> 'vlbytes_t':
+    def from_nat_le(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes_t':
         if not isinstance(x, nat_t):
             fail("bytes.from_nat_le's argument has to be of type nat.")
         b = x.to_bytes((x.bit_length() + 7) // 8, 'little') or b'\0'
-        return vlbytes_t([uint8(i) for i in b])
+        pad = _vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
+        result = vlbytes_t([uint8(i) for i in b])
+        return vlbytes_t(array.concat(pad, result))
 
     @staticmethod
     @typechecked
@@ -1009,8 +1012,8 @@ class vlbytes_t(vlarray):
         if not isinstance(l, nat_t):
             fail("bytes.from_nat_be's second argument has to be of type nat_t.")
         b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
-        pad = vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
-        result = vlarray([uint8(i) for i in b])
+        pad = _vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
+        result = _vlarray([uint8(i) for i in b])
         return vlbytes_t(array.concat(pad, result))
 
     @staticmethod
@@ -1044,7 +1047,7 @@ class vlbytes_t(vlarray):
         xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlbytes_t = vlarray.create(8, uint8(0))
+        a: vlbytes_t = _vlarray.create(8, uint8(0))
         a[0:4] = vlbytes_t.from_uint32_le(x0)
         a[4:8] = vlbytes_t.from_uint32_le(x1)
         return a
@@ -1063,7 +1066,7 @@ class vlbytes_t(vlarray):
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = vlarray.create(16, uint8(0))
+        a = _vlarray.create(16, uint8(0))
         a[0:8] = vlbytes_t.from_uint64_le(x0)
         a[8:16] = vlbytes_t.from_uint64_le(x1)
         return vlbytes_t(a)
@@ -1101,7 +1104,7 @@ class vlbytes_t(vlarray):
         xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlbytes_t = vlarray.create(8, uint8(0))
+        a: vlbytes_t = _vlarray.create(8, uint8(0))
         a[0:4] = vlbytes_t.from_uint32_be(x1)
         a[4:8] = vlbytes_t.from_uint32_be(x0)
         return a
@@ -1120,7 +1123,7 @@ class vlbytes_t(vlarray):
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = vlbytes_t(vlarray.create(16, uint8(0)))
+        a = vlbytes_t(_vlarray.create(16, uint8(0)))
         a[0:8] = vlbytes_t.from_uint64_be(x1)
         a[8:16] = vlbytes_t.from_uint64_be(x0)
         return a
@@ -1135,63 +1138,63 @@ class vlbytes_t(vlarray):
 
     @staticmethod
     @typechecked
-    def from_uint32s_le(x: vlarray) -> 'vlbytes_t':
-        by = vlarray([vlbytes_t.from_uint32_le(i) for i in x])
-        return vlbytes_t(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint32s_le(x: _vlarray) -> 'vlbytes_t':
+        by = _vlarray([vlbytes_t.from_uint32_le(i) for i in x])
+        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint32s_le(x: 'vlbytes_t') -> vlarray:
-        nums, x = vlarray.split_blocks(x, 4)
+    def to_uint32s_le(x: 'vlbytes_t') -> _vlarray:
+        nums, x = _vlarray.split_blocks(x, 4)
         if len(x) > 0:
             fail("array length not a multiple of 4")
         else:
-            return(vlarray([vlbytes_t.to_uint32_le(i) for i in nums]))
+            return(_vlarray([vlbytes_t.to_uint32_le(i) for i in nums]))
 
     @staticmethod
     @typechecked
-    def from_uint32s_be(x: vlarray) -> 'vlbytes_t':
-        by = vlarray([vlbytes_t.from_uint32_be(i) for i in x])
-        return vlbytes_t(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint32s_be(x: _vlarray) -> 'vlbytes_t':
+        by = _vlarray([vlbytes_t.from_uint32_be(i) for i in x])
+        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint32s_be(x: 'vlbytes_t') -> vlarray:
-        nums, x = vlarray.split_blocks(x, 4)
+    def to_uint32s_be(x: 'vlbytes_t') -> _vlarray:
+        nums, x = _vlarray.split_blocks(x, 4)
         if len(x) > 0:
             fail("array length not a multiple of 4")
         else:
-            return vlarray([vlbytes_t.to_uint32_be(i) for i in nums])
+            return _vlarray([vlbytes_t.to_uint32_be(i) for i in nums])
 
     @staticmethod
     @typechecked
-    def from_uint64s_be(x: vlarray) -> 'vlbytes_t':
-        by = vlarray([vlbytes_t.from_uint64_be(i) for i in x])
-        return vlbytes_t(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint64s_be(x: _vlarray) -> 'vlbytes_t':
+        by = _vlarray([vlbytes_t.from_uint64_be(i) for i in x])
+        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint64s_be(x: 'vlbytes_t') -> vlarray:
-        nums, x = vlarray.split_blocks(x, 8)
+    def to_uint64s_be(x: 'vlbytes_t') -> _vlarray:
+        nums, x = _vlarray.split_blocks(x, 8)
         if len(x) > 0:
             fail("array length not a multple of 8")
         else:
-            return(vlarray([vlbytes_t.to_uint64_be(i) for i in nums]))
+            return(_vlarray([vlbytes_t.to_uint64_be(i) for i in nums]))
 
     @staticmethod
     @typechecked
-    def from_uint64s_le(x: vlarray) -> 'vlbytes_t':
-        by = vlarray([vlbytes_t.from_uint64_le(i) for i in x])
-        return vlbytes_t(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint64s_le(x: _vlarray) -> 'vlbytes_t':
+        by = _vlarray([vlbytes_t.from_uint64_le(i) for i in x])
+        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint64s_le(x: 'vlbytes_t') -> vlarray:
-        nums, x = vlarray.split_blocks(x, 8)
+    def to_uint64s_le(x: 'vlbytes_t') -> _vlarray:
+        nums, x = _vlarray.split_blocks(x, 8)
         if len(x) > 0:
             fail("array length not a multple of 8")
         else:
-            return vlarray([vlbytes_t.to_uint64_le(i) for i in nums])
+            return _vlarray([vlbytes_t.to_uint64_le(i) for i in nums])
 
     @staticmethod
     @typechecked
@@ -1202,7 +1205,25 @@ class vlbytes_t(vlarray):
 
 @typechecked
 def bytes_t(l:int) -> type:
-    return refine(vlbytes_t, lambda x: vlbytes_t.length(x) <= l)
+    __class__ = vlbytes_t
+    @typechecked
+    def init(self, x: Union[vlbytes_t, Sequence[T]]) -> None:
+        if not (isinstance(x, Sequence) or isinstance(x, _vlarray)) or not len(x) == l:
+            fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(vlbytes_t) + ".")
+        else:
+            super().__init__(x)
+            vlbytes_t(x)
+    @typechecked
+    def string(self) -> str:
+        return str(self.__origin__)
+    # We use a random string as class name here. The result of refine has to
+    # get assigend to a type alias, which can be used as class name.
+    u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+    if DEBUG:
+        print("new class " + u_rand + " - " + str(vlbytes_t))
+    cl = type(u_rand, (vlbytes_t,), {'__init__': init , '__origin__': vlbytes_t})
+    __class__ = cl
+    return cl
 
 
 def bitvector_t(l:int):
@@ -1238,14 +1259,14 @@ def bitvector_t(l:int):
 def vlarray_t(t: type) -> type:
     @typechecked
     def refine_array() -> type:
-        __class__ = vlarray
+        __class__ = _vlarray
         @typechecked
-        def init(self, x: Union[Sequence[T], vlarray]) -> None:
-            if not (isinstance(x, Sequence) or isinstance(x, vlarray)):
+        def init(self, x: Union[Sequence[T], _vlarray]) -> None:
+            if not (isinstance(x, Sequence) or isinstance(x, _vlarray)):
                 fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
             else:
                 super().__init__(x, t)
-                vlarray(x, t)
+                _vlarray(x, t)
         @typechecked
         def string(self) -> str:
             return str(self.__origin__)
@@ -1253,8 +1274,8 @@ def vlarray_t(t: type) -> type:
         # get assigend to a type alias, which can be used as class name.
         u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
         if DEBUG:
-            print("new class " + u_rand + " - " + str(vlarray))
-        cl = type(u_rand, (vlarray,), {'__init__': init , '__origin__': vlarray, '__str__': string})
+            print("new class " + u_rand + " - " + str(_vlarray))
+        cl = type(u_rand, (_vlarray,), {'__init__': init , '__origin__': _vlarray})
         __class__ = cl
         return cl
     refinement = refine_array()
@@ -1265,14 +1286,14 @@ def vlarray_t(t: type) -> type:
 def array_t(t: type, l: int) -> type:
     @typechecked
     def refine_array() -> type:
-        __class__ = vlarray
+        __class__ = _vlarray
         @typechecked
-        def init(self, x: Union[list, Sequence[T], vlarray]) -> None:
-            if not (isinstance(x, Sequence) or isinstance(x, vlarray)) or not len(x) == self.l:
+        def init(self, x: Union[Sequence[T], _vlarray]) -> None:
+            if not (isinstance(x, Sequence) or isinstance(x, _vlarray)) or not len(x) == self.l:
                 fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
             else:
                 super().__init__(x, t)
-                vlarray(x, t)
+                _vlarray(x, t)
         @typechecked
         def string(self) -> str:
             return str(self.__origin__)
@@ -1280,8 +1301,8 @@ def array_t(t: type, l: int) -> type:
         # get assigend to a type alias, which can be used as class name.
         u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
         if DEBUG:
-            print("new class " + u_rand + " - " + str(vlarray))
-        cl = type(u_rand, (vlarray,), {'__init__': init , '__origin__': vlarray, '__str__': string, 'l': l})
+            print("new class " + u_rand + " - " + str(_vlarray))
+        cl = type(u_rand, (_vlarray,), {'__init__': init , '__origin__': _vlarray, '__str__': string, 'l': l})
         __class__ = cl
         return cl
     refinement = refine_array()
@@ -1295,7 +1316,6 @@ uint32_t = uint32
 uint64_t = uint64
 uint128_t = uint128
 
-array = vlarray
 bytes = vlbytes_t
 vlbytes = vlbytes_t
 

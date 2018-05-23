@@ -1,10 +1,10 @@
 from mypy_extensions import TypedDict
-from hacspec.speclib import array
+from hacspec.speclib import *
 
 #https://www.di-mgt.com.au/sha_testvectors.html
 #https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing
 
-sha3_test = TypedDict('sha3_test', {
+sha3_test_item = TypedDict('sha3_test_item', {
     'msg' : str,
     'expected224':  str,
     'expected256' :  str,
@@ -12,7 +12,9 @@ sha3_test = TypedDict('sha3_test', {
     'expected512'  : str}
 )
 
-sha3_test_vectors : array = array([
+sha3_test = vlarray_t(dict)
+
+sha3_test_vectors = sha3_test([
     {
         'msg' : "",
         'expected224' : "6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7",
@@ -47,7 +49,7 @@ shake_test = TypedDict('shake_test', {
     'output':  str}
 )
 
-shake128_test_vectors : array = array([
+shake128_test_vectors = sha3_test([
     {
         'msg' : "",
         'output' : "7f9c2ba4e88f827d616045507605853e"
@@ -70,7 +72,7 @@ shake128_test_vectors : array = array([
     }
 ])
 
-shake256_test_vectors : array = array([
+shake256_test_vectors = sha3_test([
     {
         'msg' : "",
         'output' : "46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762f"

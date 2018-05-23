@@ -412,6 +412,9 @@ def read(node, cl=None):
         except:
             pass
         args.append(right)
+        if right.t.__name__ == "List":
+            print("\n *** Python lists have to be wrapped in hacspec arrays.\n")
+            exit(1)
         return AstItem(Assign, args)
 
     if isinstance(node, AugAssign):

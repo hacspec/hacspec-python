@@ -61,17 +61,17 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "createL"
         if f == "array.create":
            return "create"
-        if f == "vlarray.length":
+        if f == "array.length":
            return "length"
         if f == "vlbytes.length":
            return "length"
         if f == "array.length":
            return "length"
-        if f == "vlarray.split_blocks":
+        if f == "array.split_blocks":
            return "split_blocks"
         if f == "vlbytes.split_blocks":
            return "split_blocks"
-        if f == "vlarray.concat_blocks":
+        if f == "array.concat_blocks":
            return "concat_blocks"
         if f == "vlbytes.concat_blocks":
            return "concat_blocks"
@@ -81,7 +81,7 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "copy"
         if f == "vlbytes.copy":
            return "vlcopy"
-        if f == "vlarray.copy":
+        if f == "array.copy":
            return "vlcopy"
         if f == "bytes.to_uint32s_le":
            return "uints_from_bytes_le #U32"

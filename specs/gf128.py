@@ -55,7 +55,7 @@ def update(r:elem_t,block:subblock_t,acc:elem_t) -> elem_t:
 
 @typechecked
 def poly(text:vlbytes_t,r:elem_t) -> elem_t:
-    blocks,last = vlarray.split_blocks(text,blocksize)
+    blocks,last = array.split_blocks(text,blocksize)
     acc = elem(0)
     for i in range(array.length(blocks)):
         acc = update(r,subblock_t(blocks[i]),acc)

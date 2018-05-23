@@ -72,7 +72,7 @@ def decodePoint(u: serialized_point_t) -> point_t:
 @typechecked
 def encodePoint(p: point_t) -> serialized_point_t:
     b = fmul(p[0], finv(p[1]))
-    return serialized_point_t(bytes.from_nat_le(b))
+    return serialized_point_t(bytes.from_nat_le(b, 32))
 
 
 @typechecked
@@ -105,7 +105,7 @@ def montgomery_ladder(k: scalar_t, init: point_t) -> point_t:
             (p1, p0) = point_add_and_double(init, p1, p0)
         else:
             (p0, p1) = point_add_and_double(init, p0, p1)
-    return(p0)
+    return p0
 
 
 @typechecked

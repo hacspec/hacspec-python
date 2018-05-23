@@ -20,7 +20,7 @@ def test_2d_arrays():
     x = my_array_t([])
     x = array.concat(x, bytes.from_ints([0x01, 0x02, 0x03]))
     x = array.concat(x, bytes.from_ints([0x04, 0x05]))
-    y: vlarray_t(bytes_t) = vlarray([bytes.from_ints([0x01, 0x02, 0x03]), bytes.from_ints([0x04, 0x05])], bytes)
+    y = my_array_t([bytes.from_ints([0x01, 0x02, 0x03]), bytes.from_ints([0x04, 0x05])])
     z = my_array_t([])
     z = array.concat(z, bytes.from_ints([0x01, 0x02, 0x03]))
     z = array.concat(z, bytes.from_ints([0x04, 0x05]))

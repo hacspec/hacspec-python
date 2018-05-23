@@ -52,7 +52,7 @@ def encode_r(r: block_t) -> felem_t:
 # This version: use a loop to accumulate the result
 @typechecked
 def poly(text: vlbytes_t, r: felem_t) -> felem_t:
-    blocks, last = vlarray.split_blocks(text, blocksize)
+    blocks, last = array.split_blocks(text, blocksize)
     acc = felem(nat(0))
     for i in range(array.length(blocks)):
         acc = fmul(fadd(acc, encode(subblock(blocks[i]))), r)

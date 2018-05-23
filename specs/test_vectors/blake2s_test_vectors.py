@@ -1,14 +1,16 @@
 from mypy_extensions import TypedDict
-from hacspec.speclib import array
+from hacspec.speclib import *
 
-blake2s_test = TypedDict('blake2s_test', {
+blake2s_test_item = TypedDict('blake2s_test_item', {
     'data': str,
     'key': str,
     'nn': int,
     'output': str
     })
 
-blake2s_test_vectors = array([
+blake2s_test = vlarray_t(dict)
+
+blake2s_test_vectors = blake2s_test([
     {'data': '616263',
     'key': '',
     'nn': 32,

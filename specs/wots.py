@@ -151,7 +151,7 @@ def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
             bits = bits + 8
         bits = bits - int(log_w)
         bw = (total >> bits) & int(uint32.to_int(w) - 1)
-        basew = vlarray.concat(basew, bytes([uint8(bw)]))
+        basew = array.concat(basew, bytes([uint8(bw)]))
         out = out + 1
     return basew
 

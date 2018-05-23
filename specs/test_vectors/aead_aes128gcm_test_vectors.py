@@ -1,7 +1,7 @@
 from mypy_extensions import TypedDict
-from hacspec.speclib import array
+from hacspec.speclib import *
 
-aes128gcm_test = TypedDict('aes128gcm_test', {
+aes128gcm_test_item = TypedDict('aes128gcm_test', {
     'input_len': int,
     'input': str,
     'aad_len': int,
@@ -10,7 +10,9 @@ aes128gcm_test = TypedDict('aes128gcm_test', {
     'nonce' :  str,
     'output' :  str})
 
-aead_aes128gcm_test_vectors : 'array[aes128gcm_test]' = array([
+aes128gcm_test = vlarray_t(dict)
+
+aead_aes128gcm_test_vectors = aes128gcm_test([
 {
 	'key'	: "00000000000000000000000000000000",
 	'nonce'	: "000000000000000000000000",
