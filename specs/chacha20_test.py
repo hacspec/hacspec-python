@@ -10,9 +10,10 @@ def main(x: int) -> None:
     b = uint32(0x01020304)
     c = uint32(0x9b8d6f43)
     d = uint32(0x01234567)
-    my_state = array([a, b, c, d])
+    const_state_t = array_t(uint32, 4)
+    my_state = const_state_t([a, b, c, d])
     my_state = quarter_round(0, 1, 2, 3, my_state)
-    exp_state = array([uint32(0xea2a92f4), uint32(0xcb1cf8ce), uint32(0x4581472e), uint32(0x5881c4bb)])
+    exp_state = const_state_t([uint32(0xea2a92f4), uint32(0xcb1cf8ce), uint32(0x4581472e), uint32(0x5881c4bb)])
     if (my_state == exp_state):
         print("Quarter round test vector passed.")
     else:
@@ -25,7 +26,7 @@ def main(x: int) -> None:
     nonce = bytes.from_ints([0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x00, 0x00])
     counter = uint32(1)
     result = chacha20(key, counter, nonce)
-    expected_state = array([
+    expected_state = state_t([
         uint32(0xe4e7f110), uint32(0x15593bd1), uint32(0x1fdd0f50), uint32(0xc47120a3),
         uint32(0xc7f4d1c7), uint32(0x0368c033), uint32(0x9aaa2204), uint32(0x4e6cd4c3),
         uint32(0x466482d2), uint32(0x09aa9f07), uint32(0x05d7c214), uint32(0xa2028bd9),

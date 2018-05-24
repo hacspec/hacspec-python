@@ -61,17 +61,17 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "createL"
         if f == "array.create":
            return "create"
-        if f == "vlarray.length":
+        if f == "array.length":
            return "length"
         if f == "vlbytes.length":
            return "length"
         if f == "array.length":
            return "length"
-        if f == "vlarray.split_blocks":
+        if f == "array.split_blocks":
            return "split_blocks"
         if f == "vlbytes.split_blocks":
            return "split_blocks"
-        if f == "vlarray.concat_blocks":
+        if f == "array.concat_blocks":
            return "concat_blocks"
         if f == "vlbytes.concat_blocks":
            return "concat_blocks"
@@ -81,7 +81,7 @@ def dump(node, annotate_fields=True, include_attributes=False):
            return "copy"
         if f == "vlbytes.copy":
            return "vlcopy"
-        if f == "vlarray.copy":
+        if f == "array.copy":
            return "vlcopy"
         if f == "bytes.to_uint32s_le":
            return "uints_from_bytes_le #U32"
@@ -275,16 +275,6 @@ def dump(node, annotate_fields=True, include_attributes=False):
             pre = _format(node.args[1].body,False,ind,False)
             post = _format(node.args[2].body,False,ind,False)
             return ("Pure "+ty+" (requires ("+pre+")) (ensures ("+post+"))")
-        if (isinstance(node, Assign) and
-            isinstance(node.value,Call) and
-            isinstance(node.value.func,Name) and
-            node.value.func.id == 'refine3'):
-            vs = [_format(x,False,ind,paren) for x in node.targets]
-            ty = node.value.args[0].id
-            nty = vs[0]
-            x = node.value.args[1].args.args[0].arg
-            b = _format(node.value.args[1].body,False,ind,False)
-            return ("let "+nty+" = "+x+":"+ty+"{"+b+"}"+_sep(top))
         if (isinstance(node, Assign) and
             isinstance(node.value,Call) and
             isinstance(node.value.func,Name) and

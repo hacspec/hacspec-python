@@ -4,7 +4,7 @@ from hacspec.speclib import *
 
 p448 = 2 ** 448 - 2 ** 224 - 1
 
-felem_t = refine3(nat, lambda x: x < p448)
+felem_t = refine(nat, lambda x: x < p448)
 felem = felem_t
 
 

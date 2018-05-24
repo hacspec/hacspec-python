@@ -6,14 +6,14 @@ blocksize = 16
 block_t = bytes_t(16)
 key_t = bytes_t(32)
 tag_t = bytes_t(16)
-subblock_t = refine3(vlbytes, lambda x: vlbytes.length(x) <= 16)
+subblock_t = refine(vlbytes_t, lambda x: vlbytes.length(x) <= 16)
 subblock = subblock_t
 
 
 # Define prime field
 
 p130m5 = nat((2 ** 130) - 5)
-felem_t = refine3(nat, lambda x: x < p130m5)
+felem_t = refine(nat, lambda x: x < p130m5)
 felem = felem_t
 
 
@@ -52,7 +52,7 @@ def encode_r(r: block_t) -> felem_t:
 # This version: use a loop to accumulate the result
 @typechecked
 def poly(text: vlbytes_t, r: felem_t) -> felem_t:
-    blocks, last = vlarray.split_blocks(text, blocksize)
+    blocks, last = array.split_blocks(text, blocksize)
     acc = felem(nat(0))
     for i in range(array.length(blocks)):
         acc = fmul(fadd(acc, encode(subblock(blocks[i]))), r)

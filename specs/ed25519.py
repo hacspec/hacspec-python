@@ -20,7 +20,7 @@ def extended_point(a: int, b: int, c: int, d: int) -> extended_point_t:
 
 
 @typechecked
-def sha512_modq(s: vlbytes) -> felem_t:
+def sha512_modq(s: vlbytes_t) -> felem_t:
     h = sha512(s)
     return felem_t(nat(bytes.to_nat_le(h) % q25519))
 
@@ -194,7 +194,7 @@ def point_equal(p: extended_point_t, q: extended_point_t) -> bool:
 
 
 @typechecked
-def verify(pub: serialized_point_t, msg: vlbytes, sigval: sigval_t) -> bool:
+def verify(pub: serialized_point_t, msg: vlbytes_t, sigval: sigval_t) -> bool:
     ap = point_decompress(pub)
     if ap is None:
         return False

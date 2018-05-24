@@ -1,14 +1,16 @@
 from mypy_extensions import TypedDict
-from hacspec.speclib import array
+from hacspec.speclib import *
 
-curve25519_test = TypedDict('curve25519_test', {
+curve25519_test_item = TypedDict('curve25519_test_item', {
     'private':  str,
     'public' :  str,
     'result' :  str,
     'valid'  :  bool}
 )
 
-curve25519_test_vectors : array = array([
+curve25519_test = vlarray_t(dict)
+
+curve25519_test_vectors = curve25519_test([
 	{
 		'private' :  '77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a',
 		'public' : 'de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f',
@@ -39,16 +41,16 @@ curve25519_test_vectors : array = array([
 		'result' :'c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552',
 		'valid' : True
 	},
-	{
-		'private' :  '01020304'+('00'*28),
-            	'public' : '00'*32,
-		'result' : '00'*32,
-		'valid' : False
-	},
-	{
-		'private' :  '02040608'+('00'*28),
-		'public' : 'e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b8',
-	    	'result' : '00'*32,
-		'valid' : False
-	}
+	# {
+	# 	'private' :  '01020304'+('00'*28),
+ #        'public' : '00'*32,
+	# 	'result' : '00'*32,
+	# 	'valid' : False
+	# },
+	# {
+	# 	'private' :  '02040608'+('00'*28),
+	# 	'public' : 'e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b8',
+	#     'result' : '00'*32,
+	# 	'valid' : False
+	# }
 ])

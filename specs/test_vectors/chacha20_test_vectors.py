@@ -1,7 +1,7 @@
 from mypy_extensions import TypedDict
-from hacspec.speclib import array
+from hacspec.speclib import *
 
-chacha20_test = TypedDict('chacha20_test', {
+chacha20_test_item = TypedDict('chacha20_test', {
     'input_len': int,
     'input': str,
     'key' :  str,
@@ -9,7 +9,9 @@ chacha20_test = TypedDict('chacha20_test', {
     'counter' : int,
     'output' :  str})
 
-chacha20_test_vectors = array([
+chacha20_test = vlarray_t(dict)
+
+chacha20_test_vectors = chacha20_test([
 {   'input_len': 114,
     'input': '4c616469657320616e642047656e746c656d656e206f662074686520636c617373206f66202739393a204966204920636f756c64206f6666657220796f75206f6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73637265656e20776f756c642062652069742e',
     'key' :  '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f',

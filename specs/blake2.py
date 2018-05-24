@@ -1,7 +1,7 @@
 from hacspec.speclib import *
 
-variant = refine3(nat, lambda x: x == 0 or x == 1)
-out_size_t = refine3(nat, lambda x: x <= 32)
+variant_t = refine(nat, lambda x: x == 0 or x == 1)
+out_size_t = refine(nat, lambda x: x <= 32)
 
 @typechecked
 def highbits_128(x:uint128_t) -> uint64_t:
@@ -12,7 +12,7 @@ def highbits_64(x:uint64_t) -> uint32_t:
     return uint32(x >> 32)
 
 @typechecked
-def blake2(v:variant) -> FunctionType:
+def blake2(v:variant_t) -> FunctionType:
     if v == 1:
         bits_in_word = 64
         rounds_in_f = 12
@@ -24,7 +24,7 @@ def blake2(v:variant) -> FunctionType:
         working_vector_t = array_t(uint64_t, 16)
         hash_vector_t = array_t(uint64_t, 8)
         index_t = range_t(0, 16)
-        _IV = array([
+        _IV = hash_vector_t([
             uint64(0x6A09E667F3BCC908), uint64(0xBB67AE8584CAA73B),
             uint64(0x3C6EF372FE94F82B), uint64(0xA54FF53A5F1D36F1),
             uint64(0x510E527FADE682D1), uint64(0x9B05688C2B3E6C1F),
@@ -33,18 +33,18 @@ def blake2(v:variant) -> FunctionType:
         to_word = uint64
         word_t = uint64_t
         minus_one = uint64(0xFFFFFFFFFFFFFFFF)
-        data_internal_t = refine3(bytes, lambda x: array.length(
+        data_internal_t = refine(bytes, lambda x: array.length(
             x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
-        key_t = refine3(vlbytes, lambda x: array.length(x) <= 64)
-        key_size_t = refine3(nat, lambda x: x <= 64)
-        to_words_le = vlbytes.to_uint64s_le
-        from_words_le = vlbytes.from_uint64s_le
+        key_t = refine(vlbytes_t, lambda x: array.length(x) <= 64)
+        key_size_t = refine(nat, lambda x: x <= 64)
+        to_words_le = vlbytes_t.to_uint64s_le
+        from_words_le = vlbytes_t.from_uint64s_le
         low_bits = to_word
         high_bits = highbits_128
         double_word_t = uint128_t
         to_double_word = uint128
         max_size_t = 2**64 - 1
-        data_t = refine3(vlbytes, lambda x: vlbytes.length(x)
+        data_t = refine(vlbytes_t, lambda x: vlbytes_t.length(x)
                             < max_size_t - 2 * block_bytes)
     else:
         bits_in_word = 32
@@ -57,7 +57,7 @@ def blake2(v:variant) -> FunctionType:
         working_vector_t = array_t(uint32_t, 16)
         hash_vector_t = array_t(uint32_t, 8)
         index_t = range_t(0, 16)
-        _IV = array([
+        _IV = hash_vector_t([
             uint32(0x6A09E667), uint32(0xBB67AE85),
             uint32(0x3C6EF372), uint32(0xA54FF53A),
             uint32(0x510E527F), uint32(0x9B05688C),
@@ -66,22 +66,23 @@ def blake2(v:variant) -> FunctionType:
         to_word = uint32
         word_t = uint32_t
         minus_one = uint32(0xFFFFFFFF)
-        data_internal_t = refine3(bytes, lambda x: array.length(
+        data_internal_t = refine(bytes, lambda x: array.length(
             x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
-        key_t = refine3(vlbytes, lambda x: array.length(x) <= 32)
-        key_size_t = refine3(nat, lambda x: x <= 32)
-        to_words_le = vlbytes.to_uint32s_le
-        from_words_le = vlbytes.from_uint32s_le
+        key_t = refine(vlbytes_t, lambda x: array.length(x) <= 32)
+        key_size_t = refine(nat, lambda x: x <= 32)
+        to_words_le = vlbytes_t.to_uint32s_le
+        from_words_le = vlbytes_t.from_uint32s_le
         low_bits = to_word
         high_bits = highbits_64
         double_word_t = uint64_t
         to_double_word = uint64
         max_size_t = 2**32 - 1
-        data_t = refine3(vlbytes, lambda x: vlbytes.length(x)
+        data_t = refine(vlbytes_t, lambda x: vlbytes_t.length(x)
                         < max_size_t - 2 * block_bytes)
 
 
-    _SIGMA: array_t(index_t, 16 * 12) = array([
+    sigma_t = array_t(index_t, 16 * 12)
+    _SIGMA = sigma_t([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
         14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
         11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,
@@ -97,6 +98,7 @@ def blake2(v:variant) -> FunctionType:
     ])
 
 
+    @typechecked
     def _G(v: working_vector_t, a: index_t, b: index_t, c: index_t, d: index_t, x: word_t, y: word_t) -> working_vector_t:
         v[a] = v[a] + v[b] + x
         v[d] = word_t.rotate_right(v[d] ^ v[a], _R1)
@@ -156,7 +158,7 @@ def blake2(v:variant) -> FunctionType:
 
     @typechecked
     def blake2(data: data_t, key: key_t, nn: out_size_t) \
-            -> contract(vlbytes,
+            -> contract(vlbytes_t,
                         lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn):
         ll = array.length(data)
         kk = array.length(key)
@@ -173,5 +175,5 @@ def blake2(v:variant) -> FunctionType:
 
     return blake2
 
-blake2s = blake2(variant(nat(0)))
-blake2b = blake2(variant(nat(1)))
+blake2s = blake2(variant_t(nat(0)))
+blake2b = blake2(variant_t(nat(1)))

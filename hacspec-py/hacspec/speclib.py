@@ -49,14 +49,12 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> type:
 
 
 @typechecked
-def refine3(t: type, f: Callable[[T], bool]) -> type:
+def refine(t: type, f: Callable[[T], bool]) -> type:
     __class__ = t
-    # We can't @typechecked here because it gets called with 0 args for super.
     @typechecked
     def init(self, x:t) -> None:
-        # assert check_argument_types()
         if not isinstance(x, t):
-            print("ref "+str(type(x)))
+            fail("ref "+str(type(x)) + " - "+str(t))
         if not isinstance(x, t) or not f(x):
             fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(t) + ".")
         else:
@@ -69,12 +67,12 @@ def refine3(t: type, f: Callable[[T], bool]) -> type:
                 # Special case for typeguard. Don't do anything.
                 return
             else:
-                fail("refine3 super.init has more args than we expected (" + str(num_init_args) + ")")
+                fail("refine super.init has more args than we expected (" + str(num_init_args) + ")")
             t(x)
     @typechecked
     def string(self) -> str:
         return str(self.__origin__)
-    # We use a random string as class name here. The result of refine3 has to
+    # We use a random string as class name here. The result of refine has to
     # get assigend to a type alias, which can be used as class name.
     u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
     if DEBUG:
@@ -83,20 +81,38 @@ def refine3(t: type, f: Callable[[T], bool]) -> type:
     __class__ = cl
     return cl
 
-nat = refine3(int, lambda x: x >= 0)
+nat = refine(int, lambda x: x >= 0)
 nat_t = nat
 
 
 @typechecked
 def range_t(min: int, max: int) -> type:
-    return refine3(int, lambda x: x >= min and x < max)
+    return refine(int, lambda x: x >= min and x < max)
 
 
 # TODO: make this actually do something.
 @typechecked
-def contract(t: type, pre, post) -> type:
+def contract(t: type, pre: Callable[..., bool], post: Callable[..., bool]) -> type:
     return t
 
+@typechecked
+def contract3(pre: Callable[..., bool], post: Callable[..., bool]) -> FunctionType:
+    @typechecked
+    def decorator(func: Callable[..., Any]) -> Any:
+        # **kwargs are not allowed in hacspec.
+        def wrapper(*args):
+            pr = pre(*args)
+            if not pr:
+                fail("Precondition for " + func.__name__ + " failed.")
+            res = func(*args)
+            unpacked_args = list(args)
+            unpacked_args.append(res)
+            po = post(*unpacked_args)
+            if not po:
+                fail("Postcondition for " + func.__name__ + " failed.")
+            return res
+        return wrapper
+    return decorator
 
 class _uintn:
     @typechecked
@@ -660,7 +676,7 @@ class uint128(_uintn):
         return (x >> other | x << (x.bits - other))
 
 
-class bitvector(_uintn):
+class _bitvector(_uintn):
     @typechecked
     def __init__(self, v: Union[int, _uintn], bits: int) -> None:
         if isinstance(v, int):
@@ -670,111 +686,206 @@ class bitvector(_uintn):
 
     @staticmethod
     @typechecked
-    def init(v: Union[int, _uintn]) -> 'bitvector':
-        return bitvector(v, 0)
+    def init(v: Union[int, _uintn]) -> '_bitvector':
+        return _bitvector(v, 0)
 
     @typechecked
-    def __add__(self, other: 'bitvector') -> 'bitvector':
+    def __add__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v + other.v, self.bits)
+            return _bitvector(self.v + other.v, self.bits)
         else:
-            fail("cannot add bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot add _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __sub__(self, other: 'bitvector') -> 'bitvector':
+    def __sub__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v - other.v, self.bits)
+            return _bitvector(self.v - other.v, self.bits)
         else:
-            fail("cannot sub bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot sub _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __inv__(self) -> 'bitvector':
-        return bitvector(~self.v, self.bits)
+    def __inv__(self) -> '_bitvector':
+        return _bitvector(~self.v, self.bits)
 
     @typechecked
-    def __invert__(self) -> 'bitvector':
-        return bitvector(~self.v & self.max, self.bits)
+    def __invert__(self) -> '_bitvector':
+        return _bitvector(~self.v & self.max, self.bits)
 
     @typechecked
-    def __or__(self, other: 'bitvector') -> 'bitvector':
+    def __or__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v | other.v, self.bits)
+            return _bitvector(self.v | other.v, self.bits)
         else:
-            fail("cannot or bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot or _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __and__(self, other: 'bitvector') -> 'bitvector':
+    def __and__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v & other.v, self.bits)
+            return _bitvector(self.v & other.v, self.bits)
         else:
-            fail("cannot and bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot and _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __xor__(self, other: 'bitvector') -> 'bitvector':
+    def __xor__(self, other: '_bitvector') -> '_bitvector':
         if (other.bits == self.bits):
-            return bitvector(self.v ^ other.v, self.bits)
+            return _bitvector(self.v ^ other.v, self.bits)
         else:
-            fail("cannot xor bitvector of different lengths")
-            return bitvector(0, self.bits)
+            fail("cannot xor _bitvector of different lengths")
+            return _bitvector(0, self.bits)
 
     @typechecked
-    def __lshift__(self, other: int) -> 'bitvector':
+    def __lshift__(self, other: int) -> '_bitvector':
         if other < 0 or other >= self.bits:
-            fail("bitvector cannot be shifted by < 0 or >= bits")
-            return bitvector(0, self.bits,)
+            fail("_bitvector cannot be shifted by < 0 or >= bits")
+            return _bitvector(0, self.bits,)
         else:
-            return bitvector(self.v << other, self.bits)
+            return _bitvector(self.v << other, self.bits)
 
     @typechecked
-    def __rshift__(self, other: int) -> 'bitvector':
+    def __rshift__(self, other: int) -> '_bitvector':
         if other < 0 or other >= self.bits:
-            fail("bitvector cannot be shifted by < 0 or >= bits")
-            return bitvector(0, self.bits)
+            fail("_bitvector cannot be shifted by < 0 or >= bits")
+            return _bitvector(0, self.bits)
         else:
-            return bitvector(self.v >> other, self.bits)
+            return _bitvector(self.v >> other, self.bits)
 
     @staticmethod
     @typechecked
-    def rotate_left(x: 'bitvector', other: int) -> 'bitvector':
+    def rotate_left(x: '_bitvector', other: int) -> '_bitvector':
         return (x << other | x >> (x.bits - other))
 
     @staticmethod
     @typechecked
-    def rotate_right(x: 'bitvector', other: int) -> 'bitvector':
+    def rotate_right(x: '_bitvector', other: int) -> '_bitvector':
         return (x >> other | x << (x.bits - other))
 
     @typechecked
     def __getitem__(self, key: Union[int, slice]):
         try:
             if isinstance(key, slice):
-                return bitvector(self.v >> key.start,
+                return _bitvector(self.v >> key.start,
                                  key.stop - key.start)
             else:
                 return bit(self.v >> key)
         except:
-            print('bitvector content:', self.v)
-            print('bitvector index:', key)
-            fail('bitvector access error')
+            print('_bitvector content:', self.v)
+            print('_bitvector index:', key)
+            fail('_bitvector access error')
 
     @typechecked
-    def __getslice__(self, i: int, j: int) -> 'bitvector':
-        return bitvector(self.v >> i, j - i)
+    def __getslice__(self, i: int, j: int) -> '_bitvector':
+        return _bitvector(self.v >> i, j - i)
 
 
-class vlarray():
+class array():
+    def __init__(self) -> None:
+        fail("Don't use array directly. Define one with array_t(your_type)")
+
+    @staticmethod
+    @typechecked
+    def create(l: Union[int, _uintn], default) -> '_vlarray':
+        if isinstance(l, _uintn):
+            l = _uintn.to_int(l)
+        res = _vlarray([default] * l)
+        if isinstance(default, uint8_t):
+            res = vlbytes_t(res)
+        return res
+
+    @staticmethod
+    @typechecked
+    def length(a: '_vlarray') -> int:
+        if not isinstance(a, _vlarray):
+            fail("array.length takes a _vlarray.")
+        return len(a.l)
+
+    @staticmethod
+    @typechecked
+    def copy(x: '_vlarray') -> '_vlarray':
+        copy = _vlarray(x.l[:])
+        if x.t and x.t.__name__ == "uint8":
+            copy = vlbytes_t(copy)
+        return copy
+
+    @staticmethod
+    @typechecked
+    def concat(x: '_vlarray', y: '_vlarray') -> '_vlarray':
+        if x.t and \
+           (str(x.t.__name__) == "vlbytes_t" or str(x.t.__name__) == "_vlarray"):
+            tmp = x.l[:]
+            # TODO: only works with vlbytes_t
+            tmp.append(vlbytes_t(y.l[:]))
+            return _vlarray(tmp, x.t)
+        res = _vlarray(x.l[:]+y.l[:], x.t)
+        if x.t is uint8_t:
+            res = vlbytes(res)
+        return res
+
+    @staticmethod
+    @typechecked
+    def zip(x: '_vlarray', y: '_vlarray') -> '_vlarray':
+        return _vlarray(list(zip(x.l, y.l)))
+
+    @staticmethod
+    @typechecked
+    def enumerate(x: '_vlarray') -> '_vlarray':
+        return _vlarray(list(enumerate(x.l)))
+
+    @staticmethod
+    @typechecked
+    def split_blocks(a: '_vlarray', blocksize: int) -> 'Tuple[_vlarray,_vlarray]':
+        if not isinstance(a, _vlarray):
+            fail("split_blocks takes a _vlarray as first argument.")
+        if not isinstance(blocksize, int):
+            fail("split_blocks takes an int as second argument.")
+        nblocks = len(a) // blocksize
+        blocks = _vlarray([a[x*blocksize:(x+1)*blocksize]
+                          for x in range(nblocks)])
+        last = _vlarray(a[len(a) - (len(a) % blocksize):len(a)])
+        if not isinstance(blocks, vlbytes_t) and a.t and a.t.__name__ is "uint8":
+            # Cast result to vlbytes_t if necessary.
+            if isinstance(last, _vlarray):
+                last = vlbytes_t(last)
+        return blocks, last
+
+    @staticmethod
+    @typechecked
+    def concat_blocks(blocks: '_vlarray', last: '_vlarray') -> '_vlarray':
+        res = _vlarray.concat(_vlarray([b for block in blocks for b in block]), last)
+        # TODO: make sure blcoska and last both have a type t
+        if last.t and last.t.__name__ == "uint8":
+            res = vlbytes_t(res)
+        return res
+
+    # Only used in ctr. Maybe delete
+    @staticmethod
+    @typechecked
+    def map(f: Callable[[T], U], a: '_vlarray') -> '_vlarray':
+        return _vlarray(list(map(f, a.l)))
+
+    @staticmethod
+    @typechecked
+    def create_random(l: nat_t, t: Type[_uintn]) -> '_vlarray':
+        if not isinstance(l, nat_t):
+            fail("array.create_random's first argument has to be of type nat_t.")
+        r = rand()
+        x = t(0)
+        return array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
+
+
+class _vlarray(array):
     # TODO: make t arg mandatory
     @typechecked
-    def __init__(self, x: Union[Sequence[T], 'vlarray'], t: Type=None) -> None:
-        if not (isinstance(x, Sequence) or isinstance(x, vlarray)):
-            fail("vlarray() takes a sequence or vlarray as first argument.")
+    def __init__(self, x: Union[Sequence[T], '_vlarray'], t: Type=None) -> None:
+        if not (isinstance(x, Sequence) or isinstance(x, _vlarray)):
+            fail("_vlarray() takes a sequence or _vlarray as first argument.")
         if t:
             for e in x:
-                if not isinstance(e, t):
-                    fail("vlarray() input element has wrong type. "+\
+                if not isinstance(e, t) and t(e) is None:
+                    fail("_vlarray() input element has wrong type. "+\
                          "Got "+str(type(e))+" expected "+str(t)+".")
         self.l = list(x)
         self.t = t
@@ -796,35 +907,34 @@ class vlarray():
         return iter(self.l)
 
     @typechecked
-    def __eq__(self, other: 'vlarray'):
-        if not isinstance(self, vlarray) or not isinstance(other, vlarray):
-            fail("vlarray.__eq__ only works on two vlarray.")
-        return self.l == other.l
+    def __eq__(self, other: '_vlarray'):
+        if isinstance(self, other.__class__) or isinstance(other, self.__class__):
+            return self.l == other.l
+        fail("_vlarray.__eq__ only works on two _vlarray.")
 
     @typechecked
-    def __ne__(self, other: 'vlarray'):
-        if isinstance(other, self.__class__):
+    def __ne__(self, other: '_vlarray'):
+        if isinstance(self, other.__class__) or isinstance(other, self.__class__):
             return self.l != other.l
-        else:
-            return True
+        fail("_vlarray.__ne__ only works on two _vlarray.")
 
-    # TODO: Return type should be Union['vlarray', self.t] but we don't have
+    # TODO: Return type should be Union['_vlarray', self.t] but we don't have
     #       access to self at this point.
     @typechecked
-    def __getitem__(self, key: Union[int, slice]) -> Union['vlarray', T]:
+    def __getitem__(self, key: Union[int, slice]) -> Union['_vlarray', T]:
         try:
             if isinstance(key, slice):
-                return vlarray(self.l[key.start:key.stop])
+                return _vlarray(self.l[key.start:key.stop])
             return self.l[key]
         except:
-            print('vlarray access error:')
-            print('vlarray content:', self.l)
-            print('vlarray index:', key)
-            fail('vlarray index error')
+            print('_vlarray access error:')
+            print('_vlarray content:', self.l)
+            print('_vlarray index:', key)
+            fail('_vlarray index error')
 
     @typechecked
-    def __getslice__(self, i: int, j: int) -> 'vlarray':
-        return vlarray(self.l[i:j])
+    def __getslice__(self, i: int, j: int) -> '_vlarray':
+        return _vlarray(self.l[i:j])
 
     @typechecked
     def __setitem__(self, key: Union[int, slice], v) -> None:
@@ -833,187 +943,98 @@ class vlarray():
         else:
             self.l[key] = v
 
-    @staticmethod
-    @typechecked
-    def create(len: int, default) -> 'vlarray':
-        res = vlarray([default] * len)
-        if isinstance(default, uint8_t):
-            res = bytes(res)
-        return res
-
-    @staticmethod
-    @typechecked
-    def create_type(x: Iterable[U], t: type) -> 'vlarray':
-        return vlarray(list([t(el) for el in x]), t)
-
-    @staticmethod
-    @typechecked
-    def length(a: 'vlarray') -> int:
-        if not isinstance(a, vlarray):
-            fail("array.length takes a vlarray.")
-        return len(a.l)
-
-    @staticmethod
-    @typechecked
-    def copy(x: 'vlarray') -> 'vlarray':
-        copy = vlarray(x.l[:])
-        if x.t and x.t.__name__ == "uint8":
-            copy = bytes(copy)
-        return copy
-
-    @staticmethod
-    @typechecked
-    def concat(x: 'vlarray', y: 'vlarray') -> 'vlarray':
-        if x.t and \
-           (str(x.t.__name__) == "vlbytes" or str(x.t.__name__) == "vlarray"):
-            tmp = x.l[:]
-            # TODO: only works with bytes
-            tmp.append(vlbytes(y.l[:]))
-            return vlarray(tmp, x.t)
-        return vlarray(x.l[:]+y.l[:], x.t)
-
-    @staticmethod
-    @typechecked
-    def zip(x: 'vlarray', y: 'vlarray') -> 'vlarray':
-        return vlarray(list(zip(x.l, y.l)))
-
-    @staticmethod
-    @typechecked
-    def enumerate(x: 'vlarray') -> 'vlarray':
-        return vlarray(list(enumerate(x.l)))
-
-    @staticmethod
-    @typechecked
-    def split_blocks(a: 'vlarray', blocksize: int) -> 'Tuple[vlarray,vlarray]':
-        if not isinstance(a, vlarray):
-            fail("split_blocks takes a vlarray as first argument.")
-        if not isinstance(blocksize, int):
-            fail("split_blocks takes an int as second argument.")
-        nblocks = len(a) // blocksize
-        blocks = vlarray([a[x*blocksize:(x+1)*blocksize]
-                          for x in range(nblocks)])
-        last = vlarray(a[len(a) - (len(a) % blocksize):len(a)])
-        if not isinstance(blocks, vlbytes) and a.t and a.t.__name__ is "uint8":
-            # Cast result to bytes if necessary.
-            if isinstance(last, vlarray):
-                last = bytes(last)
-        return blocks, last
-
-    @staticmethod
-    @typechecked
-    def concat_blocks(blocks: 'vlarray', last: 'vlarray') -> 'vlarray':
-        res = vlarray.concat(vlarray([b for block in blocks for b in block]), last)
-        # TODO: make sure blcoska and last both have a type t
-        if last.t and last.t.__name__ == "uint8":
-            res = bytes(res)
-        return res
-
-    # Only used in ctr. Maybe delete
-    @staticmethod
-    @typechecked
-    def map(f: Callable[[T], U], a: 'vlarray') -> 'vlarray':
-        return vlarray(list(map(f, a.l)))
-
-    @staticmethod
-    @typechecked
-    def create_random(l: nat_t, t: Type[_uintn]) -> 'vlarray':
-        if not isinstance(l, nat_t):
-            fail("array.create_random's first argument has to be of type nat_t.")
-        r = rand()
-        x = t(0)
-        return array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
-
-
-class vlbytes(vlarray):
+class vlbytes_t(_vlarray):
     # FIXME
     # @typechecked
-    def __init__(self, x: Union[Sequence[T], 'vlbytes']) -> None:
-        super(vlbytes, self).__init__(x, uint8_t)
+    def __init__(self, x: Union[Sequence[T], 'vlbytes_t']) -> None:
+        super(vlbytes_t, self).__init__(x, uint8_t)
 
-    # TODO: this wouldn't be necessary if we could return the correct type in vlarray.
+    # TODO: this wouldn't be necessary if we could return the correct type in _vlarray.
     @typechecked
-    def __getitem__(self, key: Union[int, slice]) -> Union['vlbytes', T]:
+    def __getitem__(self, key: Union[int, slice]) -> Union['vlbytes_t', T]:
         try:
             if isinstance(key, slice):
-                return vlbytes(self.l[key.start:key.stop])
+                return vlbytes_t(self.l[key.start:key.stop])
             return self.l[key]
         except:
-            print('vlarray access error:')
-            print('vlarray content:', self.l)
-            print('vlarray index:', key)
-            fail('vlarray index error')
+            print('_vlarray access error:')
+            print('_vlarray content:', self.l)
+            print('_vlarray index:', key)
+            fail('_vlarray index error')
 
     @staticmethod
     @typechecked
-    def from_ints(x: List[int]) -> 'vlbytes':
-        return vlbytes([uint8(i) for i in x])
+    def from_ints(x: List[int]) -> 'vlbytes_t':
+        return vlbytes_t([uint8(i) for i in x])
 
     @staticmethod
     @typechecked
-    def concat_bytes(blocks: 'vlarray') -> 'vlbytes':
+    def concat_bytes(blocks: '_vlarray') -> 'vlbytes_t':
         concat = [b for block in blocks for b in block]
-        return vlbytes(concat)
+        return vlbytes_t(concat)
 
     @staticmethod
     @typechecked
-    def from_hex(x: str) -> 'vlbytes':
-        return vlbytes([uint8(int(x[i:i+2], 16)) for i in range(0, len(x), 2)])
+    def from_hex(x: str) -> 'vlbytes_t':
+        return vlbytes_t([uint8(int(x[i:i+2], 16)) for i in range(0, len(x), 2)])
 
     @staticmethod
     @typechecked
-    def to_hex(a: 'vlbytes') -> str:
+    def to_hex(a: 'vlbytes_t') -> str:
         return "".join(['{:02x}'.format(uint8.to_int(x)) for x in a])
 
     @staticmethod
     @typechecked
-    def from_nat_le(x: nat_t) -> 'vlbytes':
+    def from_nat_le(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes_t':
         if not isinstance(x, nat_t):
-            fail("bytes.from_nat_le's argument has to be of type nat_t.")
+            fail("bytes.from_nat_le's argument has to be of type nat.")
         b = x.to_bytes((x.bit_length() + 7) // 8, 'little') or b'\0'
-        return vlbytes([uint8(i) for i in b])
+        pad = _vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
+        result = vlbytes_t([uint8(i) for i in b])
+        return vlbytes_t(array.concat(pad, result))
 
     @staticmethod
     @typechecked
-    def to_int_le(x: 'vlbytes') -> int:
+    def to_int_le(x: 'vlbytes_t') -> int:
         b = builtins.bytes([uint8.to_int(u) for u in x])
         return int.from_bytes(b, 'little')
 
     @staticmethod
     @typechecked
-    def to_nat_le(x: 'vlbytes') -> nat_t:
-        return nat(vlbytes.to_int_le(x))
+    def to_nat_le(x: 'vlbytes_t') -> nat_t:
+        return nat(vlbytes_t.to_int_le(x))
 
     @staticmethod
     @typechecked
-    def from_nat_be(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes':
+    def from_nat_be(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes_t':
         if not isinstance(x, nat_t):
             fail("bytes.from_nat_be's first argument has to be of type nat_t.")
         if not isinstance(l, nat_t):
             fail("bytes.from_nat_be's second argument has to be of type nat_t.")
         b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
-        pad = vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
-        result = vlarray([uint8(i) for i in b])
-        return bytes(array.concat(pad, result))
+        pad = _vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
+        result = _vlarray([uint8(i) for i in b])
+        return vlbytes_t(array.concat(pad, result))
 
     @staticmethod
     @typechecked
-    def to_nat_be(x: 'vlbytes') -> nat_t:
+    def to_nat_be(x: 'vlbytes_t') -> nat_t:
         b = builtins.bytes([uint8.to_int(u) for u in x])
         return int.from_bytes(b, 'big')
 
     @staticmethod
     @typechecked
-    def from_uint32_le(x: uint32) -> 'vlbytes':
+    def from_uint32_le(x: uint32) -> 'vlbytes_t':
         xv = uint32.to_int(x)
         x0 = uint8(xv & 255)
         x1 = uint8((xv >> 8) & 255)
         x2 = uint8((xv >> 16) & 255)
         x3 = uint8((xv >> 24) & 255)
-        return vlbytes([x0, x1, x2, x3])
+        return vlbytes_t([x0, x1, x2, x3])
 
     @staticmethod
     @typechecked
-    def to_uint32_le(x: 'vlbytes') -> uint32:
+    def to_uint32_le(x: 'vlbytes_t') -> uint32:
         x0 = uint8.to_int(x[0])
         x1 = uint8.to_int(x[1]) << 8
         x2 = uint8.to_int(x[2]) << 16
@@ -1022,55 +1043,55 @@ class vlbytes(vlarray):
 
     @staticmethod
     @typechecked
-    def from_uint64_le(x: uint64) -> 'vlbytes':
+    def from_uint64_le(x: uint64) -> 'vlbytes_t':
         xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlbytes = vlarray.create(8, uint8(0))
-        a[0:4] = vlbytes.from_uint32_le(x0)
-        a[4:8] = vlbytes.from_uint32_le(x1)
+        a: vlbytes_t = _vlarray.create(8, uint8(0))
+        a[0:4] = vlbytes_t.from_uint32_le(x0)
+        a[4:8] = vlbytes_t.from_uint32_le(x1)
         return a
 
     @staticmethod
     @typechecked
-    def to_uint64_le(x: 'vlbytes') -> uint64:
-        x0 = vlbytes.to_uint32_le(x[0:4])
-        x1 = vlbytes.to_uint32_le(x[4:8])
+    def to_uint64_le(x: 'vlbytes_t') -> uint64:
+        x0 = vlbytes_t.to_uint32_le(x[0:4])
+        x1 = vlbytes_t.to_uint32_le(x[4:8])
         return uint64(uint32.to_int(x0) +
                       (uint32.to_int(x1) << 32))
 
     @staticmethod
     @typechecked
-    def from_uint128_le(x: uint128) -> 'vlbytes':
+    def from_uint128_le(x: uint128) -> 'vlbytes_t':
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = vlarray.create(16, uint8(0))
-        a[0:8] = vlbytes.from_uint64_le(x0)
-        a[8:16] = vlbytes.from_uint64_le(x1)
-        return bytes(a)
+        a = _vlarray.create(16, uint8(0))
+        a[0:8] = vlbytes_t.from_uint64_le(x0)
+        a[8:16] = vlbytes_t.from_uint64_le(x1)
+        return vlbytes_t(a)
 
     @staticmethod
     @typechecked
-    def to_uint128_le(x: 'vlbytes') -> uint128:
-        x0 = vlbytes.to_uint64_le(x[0:8])
-        x1 = vlbytes.to_uint64_le(x[8:16])
+    def to_uint128_le(x: 'vlbytes_t') -> uint128:
+        x0 = vlbytes_t.to_uint64_le(x[0:8])
+        x1 = vlbytes_t.to_uint64_le(x[8:16])
         return uint128(uint64.to_int(x0) +
                        (uint64.to_int(x1) << 64))
 
     @staticmethod
     @typechecked
-    def from_uint32_be(x: uint32) -> 'vlbytes':
+    def from_uint32_be(x: uint32) -> 'vlbytes_t':
         xv = uint32.to_int(x)
         x0 = uint8(xv & 255)
         x1 = uint8((xv >> 8) & 255)
         x2 = uint8((xv >> 16) & 255)
         x3 = uint8((xv >> 24) & 255)
-        return vlbytes([x3, x2, x1, x0])
+        return vlbytes_t([x3, x2, x1, x0])
 
     @staticmethod
     @typechecked
-    def to_uint32_be(x: 'vlbytes') -> uint32:
+    def to_uint32_be(x: 'vlbytes_t') -> uint32:
         x0 = uint8.to_int(x[0]) << 24
         x1 = uint8.to_int(x[1]) << 16
         x2 = uint8.to_int(x[2]) << 8
@@ -1079,142 +1100,155 @@ class vlbytes(vlarray):
 
     @staticmethod
     @typechecked
-    def from_uint64_be(x: uint64) -> 'vlbytes':
+    def from_uint64_be(x: uint64) -> 'vlbytes_t':
         xv = uint64.to_int(x)
         x0 = uint32(xv & 0xffffffff)
         x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlbytes = vlarray.create(8, uint8(0))
-        a[0:4] = vlbytes.from_uint32_be(x1)
-        a[4:8] = vlbytes.from_uint32_be(x0)
+        a: vlbytes_t = _vlarray.create(8, uint8(0))
+        a[0:4] = vlbytes_t.from_uint32_be(x1)
+        a[4:8] = vlbytes_t.from_uint32_be(x0)
         return a
 
     @staticmethod
     @typechecked
-    def to_uint64_be(x: 'vlbytes') -> uint64:
-        x0 = vlbytes.to_uint32_be(x[0:4])
-        x1 = vlbytes.to_uint32_be(x[4:8])
+    def to_uint64_be(x: 'vlbytes_t') -> uint64:
+        x0 = vlbytes_t.to_uint32_be(x[0:4])
+        x1 = vlbytes_t.to_uint32_be(x[4:8])
         return uint64(uint32.to_int(x1) +
                       (uint32.to_int(x0) << 32))
 
     @staticmethod
     @typechecked
-    def from_uint128_be(x: uint128) -> 'vlbytes':
+    def from_uint128_be(x: uint128) -> 'vlbytes_t':
         xv = uint128.to_int(x)
         x0 = uint64(xv & 0xffffffffffffffff)
         x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = bytes(vlarray.create(16, uint8(0)))
-        a[0:8] = vlbytes.from_uint64_be(x1)
-        a[8:16] = vlbytes.from_uint64_be(x0)
+        a = vlbytes_t(_vlarray.create(16, uint8(0)))
+        a[0:8] = vlbytes_t.from_uint64_be(x1)
+        a[8:16] = vlbytes_t.from_uint64_be(x0)
         return a
 
     @staticmethod
     @typechecked
-    def to_uint128_be(x: 'vlbytes') -> uint128:
-        x0 = vlbytes.to_uint64_be(x[0:8])
-        x1 = vlbytes.to_uint64_be(x[8:16])
+    def to_uint128_be(x: 'vlbytes_t') -> uint128:
+        x0 = vlbytes_t.to_uint64_be(x[0:8])
+        x1 = vlbytes_t.to_uint64_be(x[8:16])
         return uint128(uint64.to_int(x1) +
                        (uint64.to_int(x0) << 64))
 
     @staticmethod
     @typechecked
-    def from_uint32s_le(x: vlarray) -> 'vlbytes':
-        by = vlarray([vlbytes.from_uint32_le(i) for i in x])
-        return bytes(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint32s_le(x: _vlarray) -> 'vlbytes_t':
+        by = _vlarray([vlbytes_t.from_uint32_le(i) for i in x])
+        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint32s_le(x: 'vlbytes') -> vlarray:
-        nums, x = vlarray.split_blocks(x, 4)
+    def to_uint32s_le(x: 'vlbytes_t') -> _vlarray:
+        nums, x = _vlarray.split_blocks(x, 4)
         if len(x) > 0:
             fail("array length not a multiple of 4")
         else:
-            return(vlarray([vlbytes.to_uint32_le(i) for i in nums]))
+            return(_vlarray([vlbytes_t.to_uint32_le(i) for i in nums]))
 
     @staticmethod
     @typechecked
-    def from_uint32s_be(x: vlarray) -> 'vlbytes':
-        by = vlarray([vlbytes.from_uint32_be(i) for i in x])
-        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint32s_be(x: _vlarray) -> 'vlbytes_t':
+        by = _vlarray([vlbytes_t.from_uint32_be(i) for i in x])
+        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint32s_be(x: 'vlbytes') -> vlarray:
-        nums, x = vlarray.split_blocks(x, 4)
+    def to_uint32s_be(x: 'vlbytes_t') -> _vlarray:
+        nums, x = _vlarray.split_blocks(x, 4)
         if len(x) > 0:
             fail("array length not a multiple of 4")
         else:
-            return vlarray([vlbytes.to_uint32_be(i) for i in nums])
+            return _vlarray([vlbytes_t.to_uint32_be(i) for i in nums])
 
     @staticmethod
     @typechecked
-    def from_uint64s_be(x: vlarray) -> 'vlbytes':
-        by = vlarray([vlbytes.from_uint64_be(i) for i in x])
-        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint64s_be(x: _vlarray) -> 'vlbytes_t':
+        by = _vlarray([vlbytes_t.from_uint64_be(i) for i in x])
+        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint64s_be(x: 'vlbytes') -> vlarray:
-        nums, x = vlarray.split_blocks(x, 8)
+    def to_uint64s_be(x: 'vlbytes_t') -> _vlarray:
+        nums, x = _vlarray.split_blocks(x, 8)
         if len(x) > 0:
             fail("array length not a multple of 8")
         else:
-            return(vlarray([vlbytes.to_uint64_be(i) for i in nums]))
+            return(_vlarray([vlbytes_t.to_uint64_be(i) for i in nums]))
 
     @staticmethod
     @typechecked
-    def from_uint64s_le(x: vlarray) -> 'vlbytes':
-        by = vlarray([vlbytes.from_uint64_le(i) for i in x])
-        return vlbytes(vlarray.concat_blocks(by, vlarray([])))
+    def from_uint64s_le(x: _vlarray) -> 'vlbytes_t':
+        by = _vlarray([vlbytes_t.from_uint64_le(i) for i in x])
+        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
 
     @staticmethod
     @typechecked
-    def to_uint64s_le(x: 'vlbytes') -> vlarray:
-        nums, x = vlarray.split_blocks(x, 8)
+    def to_uint64s_le(x: 'vlbytes_t') -> _vlarray:
+        nums, x = _vlarray.split_blocks(x, 8)
         if len(x) > 0:
             fail("array length not a multple of 8")
         else:
-            return vlarray([vlbytes.to_uint64_le(i) for i in nums])
+            return _vlarray([vlbytes_t.to_uint64_le(i) for i in nums])
 
     @staticmethod
     @typechecked
-    def create_random_bytes(len: nat) -> 'vlbytes':
+    def create_random_bytes(len: nat) -> 'vlbytes_t':
         r = rand()
-        return bytes(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
-
-
-@typechecked
-def vlbytes_t(T) -> type:
-    return vlbytes
+        return vlbytes_t(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
 
 @typechecked
 def bytes_t(l:int) -> type:
-    return refine3(vlbytes, lambda x: vlbytes.length(x) <= l)
+    __class__ = vlbytes_t
+    @typechecked
+    def init(self, x: Union[vlbytes_t, Sequence[T]]) -> None:
+        if not (isinstance(x, Sequence) or isinstance(x, _vlarray)) or not len(x) == l:
+            fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(vlbytes_t) + ".")
+        else:
+            super().__init__(x)
+            vlbytes_t(x)
+    @typechecked
+    def string(self) -> str:
+        return str(self.__origin__)
+    # We use a random string as class name here. The result of refine has to
+    # get assigend to a type alias, which can be used as class name.
+    u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+    if DEBUG:
+        print("new class " + u_rand + " - " + str(vlbytes_t))
+    cl = type(u_rand, (vlbytes_t,), {'__init__': init , '__origin__': vlbytes_t})
+    __class__ = cl
+    return cl
 
 
 def bitvector_t(l:int):
     @typechecked
     def refine_bitvec() -> type:
-        __class__ = bitvector
+        __class__ = _bitvector
         @typechecked
         def f(x:Union[int, _uintn]):
             return int(x) <= ((1 << l) - 1)
         @typechecked
         def init(self, x:Union[int, _uintn]) -> None:
             if not (isinstance(x, int) or isinstance(x, _uintn)) or not f(x):
-                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of bitvector.")
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of _bitvector.")
             else:
                 super().__init__(x, l)
-                bitvector(x, l)
+                _bitvector(x, l)
         @typechecked
         def string(self) -> str:
             return str(self.__origin__)
-        # We use a random string as class name here. The result of refine3 has to
+        # We use a random string as class name here. The result has to
         # get assigend to a type alias, which can be used as class name.
         u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
         if DEBUG:
-            print("new class " + u_rand + " - " + str(bitvector))
-        cl = type(u_rand, (bitvector,), {'__init__': init , '__origin__': bitvector, '__str__': string})
+            print("new class " + u_rand + " - " + str(_bitvector))
+        cl = type(u_rand, (_bitvector,), {'__init__': init , '__origin__': _bitvector, '__str__': string})
         __class__ = cl
         return cl
     refinement = refine_bitvec()
@@ -1223,30 +1257,52 @@ def bitvector_t(l:int):
 
 @typechecked
 def vlarray_t(t: type) -> type:
-    return vlarray
+    @typechecked
+    def refine_array() -> type:
+        __class__ = _vlarray
+        @typechecked
+        def init(self, x: Union[Sequence[T], _vlarray]) -> None:
+            if not (isinstance(x, Sequence) or isinstance(x, _vlarray)):
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
+            else:
+                super().__init__(x, t)
+                _vlarray(x, t)
+        @typechecked
+        def string(self) -> str:
+            return str(self.__origin__)
+        # We use a random string as class name here. The result has to
+        # get assigend to a type alias, which can be used as class name.
+        u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
+        if DEBUG:
+            print("new class " + u_rand + " - " + str(_vlarray))
+        cl = type(u_rand, (_vlarray,), {'__init__': init , '__origin__': _vlarray})
+        __class__ = cl
+        return cl
+    refinement = refine_array()
+    return refinement
 
 
 @typechecked
 def array_t(t: type, l: int) -> type:
     @typechecked
     def refine_array() -> type:
-        __class__ = vlarray
+        __class__ = _vlarray
         @typechecked
-        def init(self, x: Union[Sequence[T], vlarray]) -> None:
-            if not (isinstance(x, Sequence) or isinstance(x, vlarray)) or not len(x) == l:
-                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of bitvector.")
+        def init(self, x: Union[Sequence[T], _vlarray]) -> None:
+            if not (isinstance(x, Sequence) or isinstance(x, _vlarray)) or not len(x) == self.l:
+                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
             else:
                 super().__init__(x, t)
-                vlarray(x, t)
+                _vlarray(x, t)
         @typechecked
         def string(self) -> str:
             return str(self.__origin__)
-        # We use a random string as class name here. The result of refine3 has to
+        # We use a random string as class name here. The result has to
         # get assigend to a type alias, which can be used as class name.
         u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
         if DEBUG:
-            print("new class " + u_rand + " - " + str(vlarray))
-        cl = type(u_rand, (vlarray,), {'__init__': init , '__origin__': vlarray, '__str__': string})
+            print("new class " + u_rand + " - " + str(_vlarray))
+        cl = type(u_rand, (_vlarray,), {'__init__': init , '__origin__': _vlarray, '__str__': string, 'l': l})
         __class__ = cl
         return cl
     refinement = refine_array()
@@ -1260,8 +1316,8 @@ uint32_t = uint32
 uint64_t = uint64
 uint128_t = uint128
 
-array = vlarray
-bytes = vlbytes
+bytes = vlbytes_t
+vlbytes = vlbytes_t
 
 
 # The libraries below are experimental and need more thought
@@ -1363,7 +1419,7 @@ def prime_field(prime: nat):
 
 
 class gfelem:
-    def __init__(self, x: bitvector, irred: bitvector) -> None:
+    def __init__(self, x: _bitvector, irred: _bitvector) -> None:
         if x.v < 0:
             fail("cannot convert negative integer to gfelem")
         elif x.bits < 1:
@@ -1386,14 +1442,14 @@ class gfelem:
             return gfelem(self.v ^ other.v, self.irred)
         else:
             fail("cannot add gfelem of different fields")
-            return gfelem(bitvector(0, self.bits), self.irred)
+            return gfelem(_bitvector(0, self.bits), self.irred)
 
     def __sub__(self, other: 'gfelem') -> 'gfelem':
         if (other.bits == self.bits and other.irred == self.irred):
             return gfelem(self.v ^ other.v, self.irred)
         else:
             fail("cannot sub gfelem of different fields")
-            return gfelem(bitvector(0, self.bits), self.irred)
+            return gfelem(_bitvector(0, self.bits), self.irred)
 
     def __mul__(self, other: 'gfelem') -> 'gfelem':
         if (other.bits == self.bits and other.irred == self.irred):
@@ -1401,28 +1457,28 @@ class gfelem:
             irred = self.irred
             a = self.v
             b = other.v
-            p = bitvector(0, bits)
+            p = _bitvector(0, bits)
             for i in range(bits):
-                if (bitvector.to_int(b) & 1 == 1):
+                if (_bitvector.to_int(b) & 1 == 1):
                     p = p ^ a
                 b = b >> 1
                 c = a >> (bits - 1)
                 a = a << 1
-                if (bitvector.to_int(a) == 1):
+                if (_bitvector.to_int(a) == 1):
                     a = a ^ irred
             return gfelem(p, irred)
         else:
             fail("cannot mul gfelem of different fields")
-            return gfelem(bitvector(0, self.bits), self.irred)
+            return gfelem(_bitvector(0, self.bits), self.irred)
 
     def __pow__(self, other: int) -> 'gfelem':
         if (other < 0):
             fail("cannot exp with negative number")
-            return gfelem(bitvector(0, self.bits), self.irred)
+            return gfelem(_bitvector(0, self.bits), self.irred)
         else:
             def exp(a, x):
                 if (x == 0):
-                    return gfelem(bitvector(1, self.bits), self.irred)
+                    return gfelem(_bitvector(1, self.bits), self.irred)
                 elif (x == 1):
                     return a
                 elif (x == 2):
@@ -1461,10 +1517,10 @@ class gfelem:
         bits = x.bits
         irred = x.irred
 
-        def degree(v: bitvector, bits: int):
+        def degree(v: _bitvector, bits: int):
             if (v == 0 or bits == 0):
                 return 0
-            elif (bitvector.to_int(v >> (bits - 1)) == 1):
+            elif (_bitvector.to_int(v >> (bits - 1)) == 1):
                 return (bits - 1)
             else:
                 return degree(v >> 1, bits - 1)
@@ -1490,8 +1546,8 @@ class gfelem:
         s = irred
         dr = degree(r, bits)
         ds = degree(s, bits)
-        v = gfelem(bitvector(0, bits), irred)
-        u = gfelem(bitvector(1, bits), irred)
+        v = gfelem(_bitvector(0, bits), irred)
+        u = gfelem(_bitvector(1, bits), irred)
         if (dr == 0):
             return u
         else:
@@ -1500,11 +1556,11 @@ class gfelem:
             return gfelem(gfgcd(s_, r, v_, u), irred)
 
     def __int__(self) -> int:
-        return bitvector.to_int(self.v)
+        return _bitvector.to_int(self.v)
 
     @staticmethod
     def to_int(x: 'gfelem') -> int:
-        return bitvector.to_int(x.v)
+        return _bitvector.to_int(x.v)
 
 
 # Typed versions of all python functions that can be used in specs.

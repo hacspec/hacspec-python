@@ -4,7 +4,7 @@ from hacspec.speclib import *
 
 blocksize = 16
 block_t  = bytes_t(16)
-subblock_t  = refine3(vlbytes, lambda x: array.length(x) <= blocksize)
+subblock_t  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
 
 rowindex_t = range_t(0,4)
 expindex_t = range_t(0,48)
@@ -16,9 +16,9 @@ nonce_t  = bytes_t(12)
 index_t  = range_t(0,16)
 rotval_t = range_t(1,32)
 state_t  = array_t(uint32_t,16)
+sbox_t = array_t(uint8_t,256)
 
-
-sbox : array_t(uint8_t,256) = array([
+sbox = sbox_t([
     uint8(0x63), uint8(0x7C), uint8(0x77), uint8(0x7B), uint8(0xF2), uint8(0x6B), uint8(0x6F), uint8(0xC5), uint8(0x30), uint8(0x01), uint8(0x67), uint8(0x2B), uint8(0xFE), uint8(0xD7), uint8(0xAB), uint8(0x76),
     uint8(0xCA), uint8(0x82), uint8(0xC9), uint8(0x7D), uint8(0xFA), uint8(0x59), uint8(0x47), uint8(0xF0), uint8(0xAD), uint8(0xD4), uint8(0xA2), uint8(0xAF), uint8(0x9C), uint8(0xA4), uint8(0x72), uint8(0xC0),
     uint8(0xB7), uint8(0xFD), uint8(0x93), uint8(0x26), uint8(0x36), uint8(0x3F), uint8(0xF7), uint8(0xCC), uint8(0x34), uint8(0xA5), uint8(0xE5), uint8(0xF1), uint8(0x71), uint8(0xD8), uint8(0x31), uint8(0x15),
@@ -150,7 +150,8 @@ def sub_word(w:word_t) -> word_t:
     out[3] = sbox[uint8.to_int(w[3])]
     return out
 
-rcon : bytes_t(11) = array([uint8(0x8d), uint8(0x01), uint8(0x02), uint8(0x04), uint8(0x08), uint8(0x10), uint8(0x20), uint8(0x40), uint8(0x80), uint8(0x1b), uint8(0x36)])
+rcon_t = bytes_t(11)
+rcon = rcon_t([uint8(0x8d), uint8(0x01), uint8(0x02), uint8(0x04), uint8(0x08), uint8(0x10), uint8(0x20), uint8(0x40), uint8(0x80), uint8(0x1b), uint8(0x36)])
 
 @typechecked
 def aes_keygen_assist(w:word_t,rcon:uint8_t) -> word_t:
@@ -188,14 +189,14 @@ def aes128_block(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
 
 @typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out = bytes(vlbytes.copy(block))
+    out = bytes(vlbytes_t.copy(block))
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
     return out
 
 @typechecked
 def aes128_counter_mode(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t) -> vlbytes_t:
-    blocks,last = vlarray.split_blocks(msg,blocksize)
+    blocks,last = array.split_blocks(msg,blocksize)
     keyblock = bytes(array.create(blocksize,uint8(0)))
     ctr = counter
     for i in range(array.length(blocks)):
@@ -204,7 +205,7 @@ def aes128_counter_mode(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbyt
         ctr += uint32(1)
     keyblock = aes128_block(key,nonce,ctr)
     last = xor_block(bytes(last),keyblock)
-    return vlarray.concat_blocks(blocks,last)
+    return array.concat_blocks(blocks,last)
 
 @typechecked
 def aes128_encrypt(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t) -> vlbytes_t:

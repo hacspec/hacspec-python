@@ -2,7 +2,7 @@ from hacspec.speclib import *
 
 # Four variants of SHA-2
 
-variant_t = refine3(nat, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
+variant_t = refine(nat, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 i_range_t = range_t(0, 4)
 op_range_t = range_t(0, 1)
 
@@ -186,7 +186,7 @@ def sha2(v:variant_t) -> FunctionType:
 
     @typechecked
     def hash(msg:vlbytes_t) -> digest_t:
-        blocks,last = vlarray.split_blocks(msg, blockSize)
+        blocks,last = array.split_blocks(msg, blockSize)
         nblocks = array.length(blocks)
         h:hash_t = h0
         for i in range(nblocks):

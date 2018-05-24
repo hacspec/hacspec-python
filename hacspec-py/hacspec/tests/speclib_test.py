@@ -16,11 +16,12 @@ def test_bytes():
     print("test_bytes success!")
 
 def test_2d_arrays():
-    x: vlarray_t(bytes_t) = vlarray.create_type([], bytes)
+    my_array_t = vlarray_t(bytes)
+    x = my_array_t([])
     x = array.concat(x, bytes.from_ints([0x01, 0x02, 0x03]))
     x = array.concat(x, bytes.from_ints([0x04, 0x05]))
-    y: vlarray_t(bytes_t) = vlarray([bytes.from_ints([0x01, 0x02, 0x03]), bytes.from_ints([0x04, 0x05])], bytes)
-    z: vlarray_t(bytes_t) = vlarray.create_type([], bytes)
+    y = my_array_t([bytes.from_ints([0x01, 0x02, 0x03]), bytes.from_ints([0x04, 0x05])])
+    z = my_array_t([])
     z = array.concat(z, bytes.from_ints([0x01, 0x02, 0x03]))
     z = array.concat(z, bytes.from_ints([0x04, 0x05]))
     if x != y:

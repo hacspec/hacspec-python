@@ -1,7 +1,7 @@
 from mypy_extensions import TypedDict
-from hacspec.speclib import array
+from hacspec.speclib import *
 
-aes128_test = TypedDict('aes128_test', {
+aes128_test_item = TypedDict('aes128_test', {
     'input_len': int,
     'input': str,
     'key' :  str,
@@ -10,7 +10,9 @@ aes128_test = TypedDict('aes128_test', {
     'counter' : int,
     'output' :  str})
 
-aes128_test_vectors = array([
+aes128_test = vlarray_t(dict)
+
+aes128_test_vectors = aes128_test([
 {   'input_len': 16,
     'input': '6bc1bee22e409f96e93d7e117393172a',
     'key' :  '2b7e151628aed2a6abf7158809cf4f3c',

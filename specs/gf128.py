@@ -6,13 +6,13 @@ blocksize = 16
 block_t = bytes_t(16)
 key_t = bytes_t(16)
 tag_t = bytes_t(16)
-subblock_t = refine3(vlbytes, lambda x: vlbytes.length(x) <= 16)
+subblock_t = refine(vlbytes_t, lambda x: vlbytes.length(x) <= 16)
 elem_t = bitvector_t(128)
 
 # Define galois field
 @typechecked
 def elem(x:nat) -> elem_t:
-    return bitvector(x,128)
+    return elem_t(x)
 
 irred = elem(0xE1000000000000000000000000000000)
 
@@ -21,7 +21,7 @@ def elem_from_bytes(b:bytes_t(16)) -> elem_t:
     return elem(uint128.to_int(bytes.to_uint128_be(b)))
 @typechecked
 def elem_to_bytes(e:elem_t) -> bytes_t(16):
-    return bytes.from_uint128_be(uint128(bitvector.to_int(e)))
+    return bytes.from_uint128_be(uint128(elem_t.to_int(e)))
 @typechecked
 def fadd(x:elem_t,y:elem_t) -> elem_t:
     return x ^ y
@@ -55,7 +55,7 @@ def update(r:elem_t,block:subblock_t,acc:elem_t) -> elem_t:
 
 @typechecked
 def poly(text:vlbytes_t,r:elem_t) -> elem_t:
-    blocks,last = vlarray.split_blocks(text,blocksize)
+    blocks,last = array.split_blocks(text,blocksize)
     acc = elem(0)
     for i in range(array.length(blocks)):
         acc = update(r,subblock_t(blocks[i]),acc)

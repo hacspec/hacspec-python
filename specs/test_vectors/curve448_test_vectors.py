@@ -1,14 +1,16 @@
 from mypy_extensions import TypedDict
-from hacspec.speclib import array
+from hacspec.speclib import *
 
-curve448_test = TypedDict('curve448_test', {
+curve448_test_item = TypedDict('curve448_test_item', {
     'private':  str,
     'public' :  str,
     'result' :  str,
     'valid'  :  bool}
 )
 
-curve448_test_vectors : array = array([
+curve448_test = vlarray_t(dict)
+
+curve448_test_vectors = curve448_test([
     {
         'private' : '3d262fddf9ec8e88495266fea19a34d28882acef045104d0d1aae121700a779c984c24f8cdd78fbff44943eba368f54b29259a4f1c600ad3',
         'public' : '06fce640fa3487bfda5f6cf2d5263f8aad88334cbd07437f020f08f9814dc031ddbdc38c19c6da2583fa5429db94ada18aa7a7fb4ef8a086',
