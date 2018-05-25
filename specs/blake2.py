@@ -37,14 +37,14 @@ def blake2(v:variant_t) -> FunctionType:
             x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
         key_t = refine(vlbytes_t, lambda x: array.length(x) <= 64)
         key_size_t = refine(nat, lambda x: x <= 64)
-        to_words_le = vlbytes_t.to_uint64s_le
-        from_words_le = vlbytes_t.from_uint64s_le
+        to_words_le = bytes.to_uint64s_le
+        from_words_le = bytes.from_uint64s_le
         low_bits = to_word
         high_bits = highbits_128
         double_word_t = uint128_t
         to_double_word = uint128
         max_size_t = 2**64 - 1
-        data_t = refine(vlbytes_t, lambda x: vlbytes_t.length(x)
+        data_t = refine(vlbytes_t, lambda x: bytes.length(x)
                             < max_size_t - 2 * block_bytes)
     else:
         bits_in_word = 32
@@ -70,14 +70,14 @@ def blake2(v:variant_t) -> FunctionType:
             x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
         key_t = refine(vlbytes_t, lambda x: array.length(x) <= 32)
         key_size_t = refine(nat, lambda x: x <= 32)
-        to_words_le = vlbytes_t.to_uint32s_le
-        from_words_le = vlbytes_t.from_uint32s_le
+        to_words_le = bytes.to_uint32s_le
+        from_words_le = bytes.from_uint32s_le
         low_bits = to_word
         high_bits = highbits_64
         double_word_t = uint64_t
         to_double_word = uint64
         max_size_t = 2**32 - 1
-        data_t = refine(vlbytes_t, lambda x: vlbytes_t.length(x)
+        data_t = refine(vlbytes_t, lambda x: bytes.length(x)
                         < max_size_t - 2 * block_bytes)
 
 
@@ -101,13 +101,13 @@ def blake2(v:variant_t) -> FunctionType:
     @typechecked
     def _G(v: working_vector_t, a: index_t, b: index_t, c: index_t, d: index_t, x: word_t, y: word_t) -> working_vector_t:
         v[a] = v[a] + v[b] + x
-        v[d] = word_t.rotate_right(v[d] ^ v[a], _R1)
+        v[d] = uintn.rotate_right(v[d] ^ v[a], _R1)
         v[c] = v[c] + v[d]
-        v[b] = word_t.rotate_right(v[b] ^ v[c], _R2)
+        v[b] = uintn.rotate_right(v[b] ^ v[c], _R2)
         v[a] = v[a] + v[b] + y
-        v[d] = word_t.rotate_right(v[d] ^ v[a], _R3)
+        v[d] = uintn.rotate_right(v[d] ^ v[a], _R3)
         v[c] = v[c] + v[d]
-        v[b] = word_t.rotate_right(v[b] ^ v[c], _R4)
+        v[b] = uintn.rotate_right(v[b] ^ v[c], _R4)
         return v
 
 
@@ -137,7 +137,7 @@ def blake2(v:variant_t) -> FunctionType:
 
     @typechecked
     def blake2_internal(data: data_internal_t, input_bytes: double_word_t, kk: key_size_t, nn: out_size_t) \
-            -> contract(vlbytes,
+            -> contract(vlbytes_t,
                         lambda data, input_bytes, kk, nn: True,
                         lambda data, input_bytes, kk, nn, res: array.length(res) == nn):
         h = array.copy(_IV)

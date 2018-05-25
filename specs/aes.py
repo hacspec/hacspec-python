@@ -42,7 +42,7 @@ sbox = sbox_t([
 def subBytes(state:block_t) -> block_t:
     st = bytes(array.copy(state))
     for i in range(16):
-        st[i] = sbox[uint8.to_int(state[i])]
+        st[i] = sbox[uintn.to_int(state[i])]
     return st
 
 @typechecked
@@ -144,10 +144,10 @@ def rotate_word(w:word_t) -> word_t:
 @typechecked
 def sub_word(w:word_t) -> word_t:
     out = bytes(array.copy(w))
-    out[0] = sbox[uint8.to_int(w[0])]
-    out[1] = sbox[uint8.to_int(w[1])]
-    out[2] = sbox[uint8.to_int(w[2])]
-    out[3] = sbox[uint8.to_int(w[3])]
+    out[0] = sbox[uintn.to_int(w[0])]
+    out[1] = sbox[uintn.to_int(w[1])]
+    out[2] = sbox[uintn.to_int(w[2])]
+    out[3] = sbox[uintn.to_int(w[3])]
     return out
 
 rcon_t = bytes_t(11)
@@ -189,7 +189,7 @@ def aes128_block(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
 
 @typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out = bytes(vlbytes_t.copy(block))
+    out = bytes.copy(block)
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
     return out

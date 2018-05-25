@@ -15,7 +15,6 @@ Cargo.lock
 
 # RFC
 .targets.mk
-lib
 draft-hacspec.xml
 draft-hacspec.txt
 draft-hacspec.html

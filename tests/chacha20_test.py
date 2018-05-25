@@ -10,7 +10,7 @@ def main(x: int) -> None:
     b = uint32(0x01020304)
     c = uint32(0x9b8d6f43)
     d = uint32(0x01234567)
-    const_state_t = array_t(uint32, 4)
+    const_state_t = array_t(uint32_t, 4)
     my_state = const_state_t([a, b, c, d])
     my_state = quarter_round(0, 1, 2, 3, my_state)
     exp_state = const_state_t([uint32(0xea2a92f4), uint32(0xcb1cf8ce), uint32(0x4581472e), uint32(0x5881c4bb)])

@@ -7,7 +7,9 @@ p25519 = (2 ** 255) - 19
 
 felem_t = refine(nat, lambda x: x < p25519)
 point_t = tuple2(felem_t, felem_t)  # projective coordinates
-scalar_t = bitvector_t(256)
+scalar_t = uintn_t(256)
+def to_scalar(i:nat):
+    return uintn(i,256)
 serialized_point_t = bytes_t(32)
 serialized_scalar_t = bytes_t(32)
 
@@ -56,11 +58,11 @@ def point(a: int, b: int) -> point_t:
 
 @typechecked
 def decodeScalar(s: serialized_scalar_t) -> scalar_t:
-    k = vlbytes.copy(s)
+    k = bytes.copy(s)
     k[0] &= uint8(248)
     k[31] &= uint8(127)
     k[31] |= uint8(64)
-    return scalar_t(bytes.to_int_le(k))
+    return to_scalar(bytes.to_nat_le(k))
 
 
 @typechecked

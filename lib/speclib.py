@@ -61,13 +61,13 @@ def refine(t: type, f: Callable[[T], bool]) -> type:
             num_init_args = len(getfullargspec(super().__init__).args)
             if num_init_args == 1:
                 super().__init__()
-            elif num_init_args == 2:
+            elif num_init_args >= 2:
                 super().__init__(x)
             elif num_init_args == 0:
                 # Special case for typeguard. Don't do anything.
                 return
             else:
-                fail("refine super.init has more args than we expected (" + str(num_init_args) + ")")
+                fail("refine super.init has more args than we expected (" + str(num_init_args) + ") for type " + str(getfullargspec(super().__init__).args))
             t(x)
     @typechecked
     def string(self) -> str:
@@ -114,17 +114,24 @@ def contract3(pre: Callable[..., bool], post: Callable[..., bool]) -> FunctionTy
         return wrapper
     return decorator
 
-class _uintn:
+
+
+class _intn:
     @typechecked
-    def __init__(self, x: int, bits: int) -> None:
-        if x < 0:
-            fail("cannot convert negative integer to _uintn")
-        elif bits < 1:
-            fail("cannot create uint of size <= 0 bits")
+    def __init__(self, x: Union[int,'_intn'], signed: bool, bits: int) -> None:
+        xv = 0
+        if bits < 1:
+            fail("cannot create _intn of size <= 0 bits")
         else:
+            if isinstance(x,_intn):
+                xv = x.v
+            else:
+                xv = x
             self.bits = bits
-            self.max = (1 << bits) - 1
-            self.v = x & self.max
+            self.signed = signed
+            self.max = ((1 << (bits - 1) - 1)) if signed else (1 << bits) - 1 
+            self.min = - (1 << (bits - 1)) if signed else 0
+            self.v = xv % (1 << bits) if xv >= 0 or not signed else xv % (- (1 << bits))
 
     @typechecked
     def __str__(self) -> str:
@@ -136,758 +143,232 @@ class _uintn:
 
     @typechecked
     def __eq__(self, other) -> bool:
-        if not isinstance(other, _uintn):
+        if not isinstance(other, _intn):
             fail("You can only compare two uints.")
-        return (self.bits == other.bits and self.v == other.v)
+        return (self.bits == other.bits and
+                self.signed == other.signed and
+                self.v == other.v)
 
     @staticmethod
     @typechecked
-    def num_bits(x: '_uintn') -> int:
-        if not isinstance(x, _uintn):
-            fail("num_bits is only valid for uintN.")
+    def num_bits(x: '_intn') -> int:
+        if not isinstance(x, _intn):
+            fail("num_bits is only valid for _intn.")
         return x.bits
 
     @typechecked
     def __int__(self) -> int:
         return self.v
 
-    @staticmethod
     @typechecked
-    def to_int(x: '_uintn') -> int:
-        if not isinstance(x, _uintn):
-            fail("to_int is only valid for uintN.")
-        return x.v
+    def __add__(self, other: '_intn') -> '_intn':
+        if not isinstance(other, _intn) or \
+           other.bits != self.bits or \
+           other.signed != self.signed:
+            fail("+ is only valid for two _intn of same bits and sign.")
+        return _intn(self.v + other.v,self.signed,self.bits)
 
-    @staticmethod
     @typechecked
-    def to_nat(x: '_uintn') -> nat_t:
-        if not isinstance(x, _uintn):
-            fail("to_int is only valid for uintN.")
-        return nat(x.v)
+    def __sub__(self, other: '_intn') -> '_intn':
+        if not isinstance(other, _intn) or \
+           other.bits != self.bits or \
+           other.signed != self.signed:
+            fail("- is only valid for two _intn of same bits and sign.")
+        return _intn(self.v - other.v,self.signed,self.bits)
 
-
-class bit(_uintn):
-    @typechecked
-    def __init__(self, v: Union[int, _uintn]) -> None:
-        if isinstance(v, int):
-            super().__init__(v, 1)
-        else:
-            if not isinstance(v, _uintn):
-                fail("bit() is only valid for int or uintN.")
-            super().__init__(_uintn.to_int(v), 1)
-
-    @typechecked
-    def __add__(self, other: 'bit') -> 'bit':
-        if not isinstance(other, bit):
-            fail("+ is only valid for two bit.")
-        return bit(self.v + other.v)
-
-    @typechecked
-    def __sub__(self, other: 'bit') -> 'bit':
-        if not isinstance(other, bit):
-            fail("- is only valid for two bit.")
-        return bit(self.v - other.v)
-
-    @typechecked
-    def __mul__(self, other: 'bit') -> 'bit':
-        if not isinstance(other, bit):
-            fail("* is only valid for two bit.")
-        return bit(self.v * other.v)
-
-    @typechecked
-    def __inv__(self) -> 'bit':
-        return bit(~ self.v)
-
-    @typechecked
-    def __invert__(self) -> 'bit':
-        return bit(~ self.v & self.max)
-
-    @typechecked
-    def __or__(self, other: 'bit') -> 'bit':
-        if not isinstance(other, bit):
-            fail("| is only valid for two bit.")
-        return bit(self.v | other.v)
-
-    @typechecked
-    def __and__(self, other: 'bit') -> 'bit':
-        if not isinstance(other, bit):
-            fail("& is only valid for two bit.")
-        return bit(self.v & other.v)
-
-    @typechecked
-    def __xor__(self, other: 'bit') -> 'bit':
-        if not isinstance(other, bit):
-            fail("^ is only valid for two bit.")
-        return bit(self.v ^ other.v)
-
-    @typechecked
-    def __lshift__(self, other: int) -> 'bit':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return bit(self.v << other)
-
-    @typechecked
-    def __rshift__(self, other: int) -> 'bit':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return bit(self.v >> other)
-
-    @staticmethod
-    @typechecked
-    def rotate_left(x: 'bit', other: int) -> 'bit':
-        if not isinstance(x, bit):
-            fail("rotate_left is only valid for bit.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x << other | x >> (x.bits - other))
-
-    @staticmethod
-    @typechecked
-    def rotate_right(x: 'bit', other: int) -> 'bit':
-        if not isinstance(x, bit):
-            fail("rotate_right is only valid for bit.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x >> other | x << (x.bits - other))
-
-
-class uint8(_uintn):
-    @typechecked
-    def __init__(self, v: Union[int, _uintn]) -> None:
-        if isinstance(v, int):
-            super().__init__(v, 8)
-        else:
-            if not isinstance(v, _uintn):
-                fail("uint8() is only valid for int or uintN.")
-            super().__init__(_uintn.to_int(v), 8)
-
-    @typechecked
-    def __add__(self, other: 'uint8') -> 'uint8':
-        if not isinstance(other, uint8):
-            fail("+ is only valid for two uint8_t.")
-        return uint8(self.v + other.v)
-
-    @typechecked
-    def __sub__(self, other: 'uint8') -> 'uint8':
-        if not isinstance(other, uint8):
-            fail("- is only valid for two uint8_t.")
-        return uint8(self.v - other.v)
-
-    @typechecked
-    def __mul__(self, other: 'uint8') -> 'uint8':
-        if not isinstance(other, uint8):
-            fail("* is only valid for two uint8_t.")
-        return uint8(self.v * other.v)
-
-    @typechecked
-    def __inv__(self) -> 'uint8':
-        return uint8(~ self.v)
-
-    @typechecked
-    def __invert__(self) -> 'uint8':
-        return uint8(~ self.v & self.max)
-
-    @typechecked
-    def __or__(self, other: 'uint8') -> 'uint8':
-        if not isinstance(other, uint8):
-            fail("| is only valid for two uint8_t.")
-        return uint8(self.v | other.v)
-
-    @typechecked
-    def __and__(self, other: 'uint8') -> 'uint8':
-        if not isinstance(other, uint8):
-            fail("& is only valid for two uint8_t.")
-        return uint8(self.v & other.v)
-
-    @typechecked
-    def __xor__(self, other: 'uint8') -> 'uint8':
-        if not isinstance(other, uint8):
-            fail("^ is only valid for two uint8_t.")
-        return uint8(self.v ^ other.v)
-
-    @typechecked
-    def __lshift__(self, other: int) -> 'uint8':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint8(self.v << other)
-
-    @typechecked
-    def __rshift__(self, other: int) -> 'uint8':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint8(self.v >> other)
-
-    @staticmethod
-    @typechecked
-    def rotate_left(x: 'uint8', other: int) -> 'uint8':
-        if not isinstance(x, uint8):
-            fail("rotate_left is only valid for uint8_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x << other | x >> (x.bits - other))
-
-    @staticmethod
-    @typechecked
-    def rotate_right(x: 'uint8', other: int) -> 'uint8':
-        if not isinstance(x, uint8):
-            fail("rotate_right is only valid for uint8_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x >> other | x << (x.bits - other))
-
-
-class uint16(_uintn):
-    @typechecked
-    def __init__(self, v: Union[int, _uintn]) -> None:
-        if isinstance(v, int):
-            super().__init__(v, 16)
-        else:
-            if not isinstance(v, _uintn):
-                fail("uint16() is only valid for int or uintN.")
-            super().__init__(_uintn.to_int(v), 16)
-
-    @typechecked
-    def __add__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint16):
-            fail("+ is only valid for two uint16_t.")
-        return uint16(self.v + other.v)
-
-    @typechecked
-    def __sub__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint16):
-            fail("- is only valid for two uint16_t.")
-        return uint16(self.v - other.v)
-
-    @typechecked
-    def __mul__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint16):
-            fail("* is only valid for two uint16_t.")
-        return uint16(self.v * other.v)
-
-    @typechecked
-    def __inv__(self) -> 'uint16':
-        return uint16(~ self.v)
-
-    @typechecked
-    def __invert__(self) -> 'uint16':
-        return uint16(~ self.v & self.max)
-
-    @typechecked
-    def __or__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint16):
-            fail("| is only valid for two uint16_t.")
-        return uint16(self.v | other.v)
-
-    @typechecked
-    def __and__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint16):
-            fail("& is only valid for two uint16_t.")
-        return uint16(self.v & other.v)
-
-    @typechecked
-    def __xor__(self, other: 'uint16') -> 'uint16':
-        if not isinstance(other, uint16):
-            fail("^ is only valid for two uint16_t.")
-        return uint16(self.v ^ other.v)
-
-    @typechecked
-    def __lshift__(self, other: int) -> 'uint16':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint16(self.v << other)
-
-    @typechecked
-    def __rshift__(self, other: int) -> 'uint16':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint16(self.v >> other)
-
-    @staticmethod
-    @typechecked
-    def rotate_left(x: 'uint16', other: int) -> 'uint16':
-        if not isinstance(x, uint16):
-            fail("rotate_left is only valid for uint16_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x << other | x >> (x.bits - other))
-
-    @staticmethod
-    @typechecked
-    def rotate_right(x: 'uint16', other: int) -> 'uint16':
-        if not isinstance(x, uint16):
-            fail("rotate_right is only valid for uint16_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x >> other | x << (x.bits - other))
-
-
-class uint32(_uintn):
-    @typechecked
-    def __init__(self, v: Union[int, _uintn]) -> None:
-        if isinstance(v, int):
-            super().__init__(v, 32)
-        else:
-            if not isinstance(v, _uintn):
-                fail("uint32() is only valid for int or uintN.")
-            super().__init__(_uintn.to_int(v), 32)
-
-    @typechecked
-    def __add__(self, other: 'uint32') -> 'uint32':
-        if not isinstance(other, uint32):
-            fail("+ is only valid for two uint32_t.")
-        return uint32(self.v + other.v)
-
     @typechecked
-    def __sub__(self, other: 'uint32') -> 'uint32':
-        if not isinstance(other, uint32):
-            fail("- is only valid for two uint32_t.")
-        return uint32(self.v - other.v)
+    def __mul__(self, other: '_intn') -> '_intn':
+        if not isinstance(other, _intn) or \
+           other.bits != self.bits or \
+           other.signed != self.signed:
+            fail("* is only valid for two _intn of same bits and sign.")
+        return _intn(self.v * other.v,self.signed,self.bits)
 
     @typechecked
-    def __mul__(self, other: 'uint32') -> 'uint32':
-        if not isinstance(other, uint32):
-            fail("* is only valid for two uint32_t.")
-        return uint32(self.v * other.v)
+    def __inv__(self) -> '_intn':
+        return _intn(~ self.v,self.signed,self.bits)
 
     @typechecked
-    def __inv__(self) -> 'uint32':
-        return uint32(~ self.v)
+    def __invert__(self) -> '_intn':
+        return _intn(~ self.v,self.signed,self.bits)
 
     @typechecked
-    def __invert__(self) -> 'uint32':
-        return uint32(~ self.v & self.max)
+    def __or__(self, other: '_intn') -> '_intn':
+        if not isinstance(other, _intn) or \
+           other.bits != self.bits or \
+           other.signed != self.signed:
+            fail("| is only valid for two _intn of same bits and sign.")
+        return _intn(self.v | other.v,self.signed,self.bits)
 
     @typechecked
-    def __or__(self, other: 'uint32') -> 'uint32':
-        if not isinstance(other, uint32):
-            fail("| is only valid for two uint32_t.")
-        return uint32(self.v | other.v)
+    def __and__(self, other: '_intn') -> '_intn':
+        if not isinstance(other, _intn) or \
+           other.bits != self.bits or \
+           other.signed != self.signed:
+            fail("& is only valid for two _intn of same bits and sign.")
+        return _intn(self.v & other.v,self.signed,self.bits)
 
     @typechecked
-    def __and__(self, other: 'uint32') -> 'uint32':
-        if not isinstance(other, uint32):
-            fail("& is only valid for two uint32_t.")
-        return uint32(self.v & other.v)
+    def __xor__(self, other: '_intn') -> '_intn':
+        if not isinstance(other, _intn) or \
+           other.bits != self.bits or \
+           other.signed != self.signed:
+            fail("^ is only valid for two _intn of same bits and sign.")
+        return _intn(self.v ^ other.v,self.signed,self.bits)
 
     @typechecked
-    def __xor__(self, other: 'uint32') -> 'uint32':
-        if not isinstance(other, uint32):
-            fail("^ is only valid for two uint32_t.")
-        return uint32(self.v ^ other.v)
+    def __lshift__(self, other: int) -> '_intn':
+        if not isinstance(other, int) or other < 0 or other > self.bits:
+            fail("lshift value has to be an int between 0 and bits")
+        return _intn(self.v << other,self.signed,self.bits)
 
     @typechecked
-    def __lshift__(self, other: int) -> 'uint32':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint32(self.v << other)
+    def __rshift__(self, other: int) -> '_intn':
+        if not isinstance(other, int) or other < 0 or other > self.bits:
+            fail("rshift value has to be an int between 0 and bits")
+        return _intn(self.v >> other,self.signed,self.bits)
 
-    @typechecked
-    def __rshift__(self, other: int) -> 'uint32':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint32(self.v >> other)
-
-    @staticmethod
-    @typechecked
-    def rotate_left(x: 'uint32', other: int) -> 'uint32':
-        if not isinstance(x, uint32):
-            fail("rotate_left is only valid for uint32_t, not "+str(type(x)))
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x << other | x >> (x.bits - other))
-
-    @staticmethod
-    @typechecked
-    def rotate_right(x: 'uint32', other: int) -> 'uint32':
-        if not isinstance(x, uint32):
-            fail("rotate_right is only valid for uint32_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x >> other | x << (x.bits - other))
-
-
-class uint64(_uintn):
-    @typechecked
-    def __init__(self, v: Union[int, _uintn]) -> None:
-        if isinstance(v, int):
-            super().__init__(v, 64)
-        else:
-            if not isinstance(v, _uintn):
-                fail("uint64() is only valid for int or uintN.")
-            super().__init__(_uintn.to_int(v), 64)
-
-    @typechecked
-    def __add__(self, other: 'uint64') -> 'uint64':
-        if not isinstance(other, uint64):
-            fail("+ is only valid for two uint64_t.")
-        return uint64(self.v + other.v)
-
-    @typechecked
-    def __sub__(self, other: 'uint64') -> 'uint64':
-        if not isinstance(other, uint64):
-            fail("- is only valid for two uint64_t.")
-        return uint64(self.v - other.v)
-
-    @typechecked
-    def __mul__(self, other: 'uint64') -> 'uint64':
-        if not isinstance(other, uint64):
-            fail("* is only valid for two uint64_t.")
-        return uint64(self.v * other.v)
-
-    @typechecked
-    def __inv__(self) -> 'uint64':
-        return uint64(~ self.v)
-
-    @typechecked
-    def __invert__(self) -> 'uint64':
-        return uint64(~ self.v & self.max)
-
-    @typechecked
-    def __or__(self, other: 'uint64') -> 'uint64':
-        if not isinstance(other, uint64):
-            fail("| is only valid for two uint64_t.")
-        return uint64(self.v | other.v)
-
-    @typechecked
-    def __and__(self, other: 'uint64') -> 'uint64':
-        if not isinstance(other, uint64):
-            fail("& is only valid for two uint64_t.")
-        return uint64(self.v & other.v)
-
-    @typechecked
-    def __xor__(self, other: 'uint64') -> 'uint64':
-        if not isinstance(other, uint64):
-            fail("^ is only valid for two uint64_t. other is "+str(other))
-        return uint64(self.v ^ other.v)
-
-    @typechecked
-    def __lshift__(self, other: int) -> 'uint64':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint64(self.v << other)
-
-    @typechecked
-    def __rshift__(self, other: int) -> 'uint64':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint64(self.v >> other)
-
-    @staticmethod
-    @typechecked
-    def rotate_left(x: 'uint64', other: int) -> 'uint64':
-        if not isinstance(x, uint64):
-            fail("rotate_left is only valid for uint64_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x << other | x >> (x.bits - other))
-
-    @staticmethod
-    @typechecked
-    def rotate_right(x: 'uint64', other: int) -> 'uint64':
-        if not isinstance(x, uint64):
-            fail("rotate_right is only valid for uint64_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x >> other | x << (x.bits - other))
-
-
-class uint128(_uintn):
-    @typechecked
-    def __init__(self, v: Union[int, _uintn]) -> None:
-        if isinstance(v, int):
-            super().__init__(v, 128)
-        else:
-            if not isinstance(v, _uintn):
-                fail("uint128() is only valid for int or uintN.")
-            super().__init__(_uintn.to_int(v), 128)
-
-    @typechecked
-    def __add__(self, other: 'uint128') -> 'uint128':
-        if not isinstance(other, uint128):
-            fail("+ is only valid for two uint128_t.")
-        return uint128(self.v + other.v)
-
-    @typechecked
-    def __sub__(self, other: 'uint128') -> 'uint128':
-        if not isinstance(other, uint128):
-            fail("- is only valid for two uint128_t.")
-        return uint128(self.v - other.v)
-
-    @typechecked
-    def __mul__(self, other: 'uint128') -> 'uint128':
-        if not isinstance(other, uint128):
-            fail("* is only valid for two uint128_t.")
-        return uint128(self.v * other.v)
-
-    @typechecked
-    def __inv__(self) -> 'uint128':
-        return uint128(~ self.v)
-
-    @typechecked
-    def __invert__(self) -> 'uint128':
-        return uint128(~ self.v & self.max)
-
-    @typechecked
-    def __or__(self, other: 'uint128') -> 'uint128':
-        if not isinstance(other, uint128):
-            fail("| is only valid for two uint128_t.")
-        return uint128(self.v | other.v)
-
-    @typechecked
-    def __and__(self, other: 'uint128') -> 'uint128':
-        if not isinstance(other, uint128):
-            fail("& is only valid for two uint128_t.")
-        return uint128(self.v & other.v)
-
-    @typechecked
-    def __xor__(self, other: 'uint128') -> 'uint128':
-        if not isinstance(other, uint128):
-            fail("^ is only valid for two uint128_t.")
-        return uint128(self.v ^ other.v)
-
-    @typechecked
-    def __lshift__(self, other: int) -> 'uint128':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint128(self.v << other)
-
-    @typechecked
-    def __rshift__(self, other: int) -> 'uint128':
-        if not isinstance(other, int):
-            fail("Shift value has to be int.")
-        return uint128(self.v >> other)
-
-    @staticmethod
-    @typechecked
-    def rotate_left(x: 'uint128', other: int) -> 'uint128':
-        if not isinstance(x, uint128):
-            fail("rotate_left is only valid for uint128_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x << other | x >> (x.bits - other))
-
-    @staticmethod
-    @typechecked
-    def rotate_right(x: 'uint128', other: int) -> 'uint128':
-        if not isinstance(x, uint128):
-            fail("rotate_right is only valid for uint128_t.")
-        if not isinstance(other, int):
-            fail("Rotate value has to be int.")
-        return (x >> other | x << (x.bits - other))
-
-
-class _bitvector(_uintn):
-    @typechecked
-    def __init__(self, v: Union[int, _uintn], bits: int) -> None:
-        if isinstance(v, int):
-            super().__init__(v, bits)
-        else:
-            super().__init__(_uintn.to_int(v), bits)
-
-    @staticmethod
-    @typechecked
-    def init(v: Union[int, _uintn]) -> '_bitvector':
-        return _bitvector(v, 0)
-
-    @typechecked
-    def __add__(self, other: '_bitvector') -> '_bitvector':
-        if (other.bits == self.bits):
-            return _bitvector(self.v + other.v, self.bits)
-        else:
-            fail("cannot add _bitvector of different lengths")
-            return _bitvector(0, self.bits)
-
-    @typechecked
-    def __sub__(self, other: '_bitvector') -> '_bitvector':
-        if (other.bits == self.bits):
-            return _bitvector(self.v - other.v, self.bits)
-        else:
-            fail("cannot sub _bitvector of different lengths")
-            return _bitvector(0, self.bits)
-
-    @typechecked
-    def __inv__(self) -> '_bitvector':
-        return _bitvector(~self.v, self.bits)
-
-    @typechecked
-    def __invert__(self) -> '_bitvector':
-        return _bitvector(~self.v & self.max, self.bits)
-
-    @typechecked
-    def __or__(self, other: '_bitvector') -> '_bitvector':
-        if (other.bits == self.bits):
-            return _bitvector(self.v | other.v, self.bits)
-        else:
-            fail("cannot or _bitvector of different lengths")
-            return _bitvector(0, self.bits)
-
-    @typechecked
-    def __and__(self, other: '_bitvector') -> '_bitvector':
-        if (other.bits == self.bits):
-            return _bitvector(self.v & other.v, self.bits)
-        else:
-            fail("cannot and _bitvector of different lengths")
-            return _bitvector(0, self.bits)
-
-    @typechecked
-    def __xor__(self, other: '_bitvector') -> '_bitvector':
-        if (other.bits == self.bits):
-            return _bitvector(self.v ^ other.v, self.bits)
-        else:
-            fail("cannot xor _bitvector of different lengths")
-            return _bitvector(0, self.bits)
-
-    @typechecked
-    def __lshift__(self, other: int) -> '_bitvector':
-        if other < 0 or other >= self.bits:
-            fail("_bitvector cannot be shifted by < 0 or >= bits")
-            return _bitvector(0, self.bits,)
-        else:
-            return _bitvector(self.v << other, self.bits)
-
-    @typechecked
-    def __rshift__(self, other: int) -> '_bitvector':
-        if other < 0 or other >= self.bits:
-            fail("_bitvector cannot be shifted by < 0 or >= bits")
-            return _bitvector(0, self.bits)
-        else:
-            return _bitvector(self.v >> other, self.bits)
-
-    @staticmethod
-    @typechecked
-    def rotate_left(x: '_bitvector', other: int) -> '_bitvector':
-        return (x << other | x >> (x.bits - other))
-
-    @staticmethod
-    @typechecked
-    def rotate_right(x: '_bitvector', other: int) -> '_bitvector':
-        return (x >> other | x << (x.bits - other))
 
     @typechecked
     def __getitem__(self, key: Union[int, slice]):
         try:
             if isinstance(key, slice):
-                return _bitvector(self.v >> key.start,
-                                 key.stop - key.start)
+                return _intn(self.v >> key.start,
+                             self.signed,
+                             key.stop - key.start)
             else:
-                return bit(self.v >> key)
+                return _intn(self.v >> key,self.signed,1)
         except:
-            print('_bitvector content:', self.v)
-            print('_bitvector index:', key)
-            fail('_bitvector access error')
+            print('_intn content:', self.v)
+            print('desired index:', key)
+            fail('_intn bit access error')
 
     @typechecked
-    def __getslice__(self, i: int, j: int) -> '_bitvector':
-        return _bitvector(self.v >> i, j - i)
+    def __getslice__(self, i: int, j: int) -> '_intn':
+        return _intn(self.v >> i, self.signd, j - i)
 
 
-class array():
-    def __init__(self) -> None:
-        fail("Don't use array directly. Define one with array_t(your_type)")
+class intn(_intn):
+    @staticmethod
+    @typechecked
+    def to_int(x: '_intn') -> int:
+        if not isinstance(x, _intn):
+            fail("to_int is only valid for _intn.")
+        return x.v
 
     @staticmethod
     @typechecked
-    def create(l: Union[int, _uintn], default) -> '_vlarray':
-        if isinstance(l, _uintn):
-            l = _uintn.to_int(l)
-        res = _vlarray([default] * l)
-        if isinstance(default, uint8_t):
-            res = vlbytes_t(res)
-        return res
+    def to_nat(x: '_intn') -> nat_t:
+        if not isinstance(x, _intn) or x.signed == True:
+            fail("to_nat is only valid for unsigned _intn.")
+        return nat(x.v)
+
 
     @staticmethod
     @typechecked
-    def length(a: '_vlarray') -> int:
-        if not isinstance(a, _vlarray):
-            fail("array.length takes a _vlarray.")
-        return len(a.l)
+    def rotate_left(x: '_intn', other: int) -> 'bit':
+        if not isinstance(x, _intn) or \
+           not isinstance(other, int) or \
+           other <= 0 or other >= x.bits:
+            fail("rotate_left value has to be an int strictly between 0 and bits")
+        return _intn(x.v << other | x.v >> (x.bits - other),x.signed,x.bits)
 
     @staticmethod
     @typechecked
-    def copy(x: '_vlarray') -> '_vlarray':
-        copy = _vlarray(x.l[:])
-        if x.t and x.t.__name__ == "uint8":
-            copy = vlbytes_t(copy)
-        return copy
+    def rotate_right(x: '_intn', other: int) -> 'bit':
+        if not isinstance(x, _intn) or \
+           not isinstance(other, int) or \
+           other <= 0 or other >= x.bits:
+            fail("rotate_right value has to be an int strictly between 0 and bits")
+        return _intn(x.v >> other | x.v << (x.bits - other),x.signed,x.bits)
 
     @staticmethod
     @typechecked
-    def concat(x: '_vlarray', y: '_vlarray') -> '_vlarray':
-        if x.t and \
-           (str(x.t.__name__) == "vlbytes_t" or str(x.t.__name__) == "_vlarray"):
-            tmp = x.l[:]
-            # TODO: only works with vlbytes_t
-            tmp.append(vlbytes_t(y.l[:]))
-            return _vlarray(tmp, x.t)
-        res = _vlarray(x.l[:]+y.l[:], x.t)
-        if x.t is uint8_t:
-            res = vlbytes(res)
-        return res
+    def get_bit(x:'_intn', index:int):
+        if isinstance(x,_intn) and isinstance(index,int) \
+           and index >= 0 and index < x.bits:
+            return x[index]
+        else:
+            fail("get_bit index has to be an int between 0 and bits - 1")
 
     @staticmethod
     @typechecked
-    def zip(x: '_vlarray', y: '_vlarray') -> '_vlarray':
-        return _vlarray(list(zip(x.l, y.l)))
+    def set_bit(x:'_intn', index:int, value:int):
+        if isinstance(x,_intn) and isinstance(index,int) \
+           and index >= 0 and index < x.bits \
+           and value >= 0 and value < 2:
+            tmp1 = ~ (_intn(1,False,x.bits) << index)
+            tmp2 = _intn(value,False,x.bits) << index
+            return (x & tmp1) | tmp2
+        else:
+            fail("set_bit index has to be an int between 0 and bits - 1")
 
-    @staticmethod
+class uintn(intn):
     @typechecked
-    def enumerate(x: '_vlarray') -> '_vlarray':
-        return _vlarray(list(enumerate(x.l)))
+    def __init__(self, x: int, bits: int) -> None:
+        super(uintn, self).__init__(x,False,bits)
 
-    @staticmethod
+def intn_t(signed:bool, bits:int):
+    return _intn
+def uintn_t(bits:int):
+    return intn_t(False,bits)
+
+def bitvector_t(bits:int):
+    return uintn_t(bits)
+def bitvector(n:int,bits:int):
+    return uintn(n,bits)
+        
+bit_t = uintn_t(1)
+def bit(v:int):
+    if isinstance(v,int):
+        return uintn(v,1)
+    else:
+        return uintn(intn.to_int(v),1)
+uint8_t = uintn_t(8)
+def uint8(v:Union[int,_intn]):
+    if isinstance(v,int):
+        return uintn(v,8)
+    else:
+        return uintn(intn.to_int(v),8)
+        
+uint16_t = uintn_t(16)
+def uint16(v:int):
+    if isinstance(v,int):
+        return uintn(v,16)
+    else:
+        return uintn(intn.to_int(v),16)
+uint32_t = uintn_t(32)
+def uint32(v:int):
+    if isinstance(v,int):
+        return uintn(v,32)
+    else:
+        return uintn(intn.to_int(v),32)
+uint64_t = uintn_t(64)
+def uint64(v:int):
+    if isinstance(v,int):
+        return uintn(v,64)
+    else:
+        return uintn(intn.to_int(v),64)
+uint128_t = uintn_t(128)
+def uint128(v:int):
+    if isinstance(v,int):
+        return uintn(v,128)
+    else:
+        return uintn(intn.to_int(v),128)
+            
+
+class _array(Generic[T]):
     @typechecked
-    def split_blocks(a: '_vlarray', blocksize: int) -> 'Tuple[_vlarray,_vlarray]':
-        if not isinstance(a, _vlarray):
-            fail("split_blocks takes a _vlarray as first argument.")
-        if not isinstance(blocksize, int):
-            fail("split_blocks takes an int as second argument.")
-        nblocks = len(a) // blocksize
-        blocks = _vlarray([a[x*blocksize:(x+1)*blocksize]
-                          for x in range(nblocks)])
-        last = _vlarray(a[len(a) - (len(a) % blocksize):len(a)])
-        if not isinstance(blocks, vlbytes_t) and a.t and a.t.__name__ is "uint8":
-            # Cast result to vlbytes_t if necessary.
-            if isinstance(last, _vlarray):
-                last = vlbytes_t(last)
-        return blocks, last
-
-    @staticmethod
-    @typechecked
-    def concat_blocks(blocks: '_vlarray', last: '_vlarray') -> '_vlarray':
-        res = _vlarray.concat(_vlarray([b for block in blocks for b in block]), last)
-        # TODO: make sure blcoska and last both have a type t
-        if last.t and last.t.__name__ == "uint8":
-            res = vlbytes_t(res)
-        return res
-
-    # Only used in ctr. Maybe delete
-    @staticmethod
-    @typechecked
-    def map(f: Callable[[T], U], a: '_vlarray') -> '_vlarray':
-        return _vlarray(list(map(f, a.l)))
-
-    @staticmethod
-    @typechecked
-    def create_random(l: nat_t, t: Type[_uintn]) -> '_vlarray':
-        if not isinstance(l, nat_t):
-            fail("array.create_random's first argument has to be of type nat_t.")
-        r = rand()
-        x = t(0)
-        return array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
-
-
-class _vlarray(array):
-    # TODO: make t arg mandatory
-    @typechecked
-    def __init__(self, x: Union[Sequence[T], '_vlarray'], t: Type=None) -> None:
-        if not (isinstance(x, Sequence) or isinstance(x, _vlarray)):
-            fail("_vlarray() takes a sequence or _vlarray as first argument.")
+    def __init__(self, x: Union[Sequence[T], '_array[T]'], t: Type=None) -> None:
+        if not (isinstance(x, Sequence) or isinstance(x, _array)):
+            fail("_array() takes a sequence or _array as first argument.")
         if t:
             for e in x:
                 if not isinstance(e, t) and t(e) is None:
-                    fail("_vlarray() input element has wrong type. "+\
+                    fail("_array() input element has wrong type. "+\
                          "Got "+str(type(e))+" expected "+str(t)+".")
         self.l = list(x)
+        self.len = len(self.l)
         self.t = t
 
     @typechecked
@@ -907,34 +388,37 @@ class _vlarray(array):
         return iter(self.l)
 
     @typechecked
-    def __eq__(self, other: '_vlarray'):
-        if isinstance(self, other.__class__) or isinstance(other, self.__class__):
+    def __eq__(self, other: '_array[T]') -> bool:
+        if isinstance(other, _array) and other.t == self.t:
             return self.l == other.l
-        fail("_vlarray.__eq__ only works on two _vlarray.")
+        fail("_array.__eq__ only works on two _arrays of the same type.")
 
     @typechecked
-    def __ne__(self, other: '_vlarray'):
-        if isinstance(self, other.__class__) or isinstance(other, self.__class__):
+    def __ne__(self, other: '_array[T]') -> bool:
+        if isinstance(other, _array) and other.t == self.t:
             return self.l != other.l
-        fail("_vlarray.__ne__ only works on two _vlarray.")
+        fail("_array.__ne__ only works on two _arrays of the same type.")
 
     # TODO: Return type should be Union['_vlarray', self.t] but we don't have
     #       access to self at this point.
     @typechecked
-    def __getitem__(self, key: Union[int, slice]) -> Union['_vlarray', T]:
+    def __getitem__(self, key: Union[int, slice]) -> Union['_array[T]', T]:
         try:
             if isinstance(key, slice):
-                return _vlarray(self.l[key.start:key.stop])
-            return self.l[key]
+                return _array(self.l[key.start:key.stop],self.t)
+            elif isinstance(key,int) and key >= 0 and key < self.len:
+                return self.l[key]
         except:
-            print('_vlarray access error:')
-            print('_vlarray content:', self.l)
-            print('_vlarray index:', key)
-            fail('_vlarray index error')
+            print('array access error:')
+            print('array content:', self.l)
+            print('array index:', key)
+            fail('array index error')
 
     @typechecked
-    def __getslice__(self, i: int, j: int) -> '_vlarray':
-        return _vlarray(self.l[i:j])
+    def __getslice__(self, i: int, j: int) -> '_array[T]':
+        if i >= 0 and i < self.len and \
+           i <= j and j <= self.len:
+            return _array(self.l[i:j],self.t)
 
     @typechecked
     def __setitem__(self, key: Union[int, slice], v) -> None:
@@ -943,33 +427,112 @@ class _vlarray(array):
         else:
             self.l[key] = v
 
-class vlbytes_t(_vlarray):
-    # FIXME
-    # @typechecked
-    def __init__(self, x: Union[Sequence[T], 'vlbytes_t']) -> None:
-        super(vlbytes_t, self).__init__(x, uint8_t)
+    
+class array(_array):
+#    def __init__(self) -> None:
+#        fail("Don't use array() directly. Use create.")
 
-    # TODO: this wouldn't be necessary if we could return the correct type in _vlarray.
+    @staticmethod
     @typechecked
-    def __getitem__(self, key: Union[int, slice]) -> Union['vlbytes_t', T]:
-        try:
-            if isinstance(key, slice):
-                return vlbytes_t(self.l[key.start:key.stop])
-            return self.l[key]
-        except:
-            print('_vlarray access error:')
-            print('_vlarray content:', self.l)
-            print('_vlarray index:', key)
-            fail('_vlarray index error')
+    def create(l: int, default:T) -> '_array[T]':
+#        if isinstance(l, _uintn):
+#            l = _uintn.to_int(l)
+        res = _array([default] * l)
+#        if isinstance(default, uint8_t):
+#            res = vlbytes_t(res)
+        return res
+
+
+    @staticmethod
+    @typechecked
+    def length(a: '_array[T]') -> int:
+        if not isinstance(a, _array):
+            fail("array.length takes a _array.")
+        return a.len
+
+    @staticmethod
+    @typechecked
+    def copy(x: '_array[T]') -> '_array[T]':
+        copy = _array(x.l[:],x.t)
+        return copy
+
+    @staticmethod
+    @typechecked
+    def concat(x: '_array[T]', y: '_array[T]') -> '_array[T]':
+        res = _array(x.l[:]+y.l[:], x.t)
+        return res
+
+    @staticmethod
+    @typechecked
+    def zip(x: '_array[T]', y: '_array[U]') -> '_array[tuple2(T,U)]':
+        return _array(list(zip(x.l, y.l)),tuple2(x.t,y.t))
+
+    @staticmethod
+    @typechecked
+    def enumerate(x: '_array[T]') -> '_array[tuple2(int,T)]':
+        return _array(list(enumerate(x.l)),tuple2(int,T))
+
+    @staticmethod
+    @typechecked
+    def split_blocks(a: '_array[T]', blocksize: int) -> 'Tuple[_array[_array[T]],_array[T]]':
+        if not isinstance(a, _array):
+            fail("split_blocks takes a _array as first argument.")
+        if not isinstance(blocksize, int):
+            fail("split_blocks takes an int as second argument.")
+        nblocks = array.length(a) // blocksize
+        rem = array.length(a) % blocksize
+        blocks = _array([a[x*blocksize:(x+1)*blocksize]
+                          for x in range(nblocks)],_array)
+        last = _array(a[array.length(a)-rem:array.length(a)],a.t)
+        return blocks, last
+
+    @staticmethod
+    @typechecked
+    def concat_blocks(blocks: '_array[_array[T]]', last: '_array[T]') -> '_array[T]':
+        res = array.concat(_array([b for block in blocks for b in block]),last)
+        return res
+
+    # Only used in ctr. Maybe delete
+    @staticmethod
+    @typechecked
+    def map(f: Callable[[T], U], a: '_array[T]') -> '_array[U]':
+        return _array(list(map(f, a.l)))
+
+    @staticmethod
+    @typechecked
+    def create_random(l: nat_t, t: Type[_intn]) -> '_array[_intn]':
+        if not isinstance(l, nat_t):
+            fail("array.create_random's first argument has to be of type nat_t.")
+        r = rand()
+        x = t(0)
+        return _array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
+
+    
+def array_t(t: type, l:int):
+    return _array
+
+def vlarray_t(t:type):
+    return _array
+
+def bytes_t(l:int):
+    return _array
+
+vlbytes_t = _array
+
+
+class bytes(array):
+#    def __init__(self, x: Union[Sequence[T], '_array[T]']) -> None:
+#        fail("don't call bytes directly")
 
     @staticmethod
     @typechecked
     def from_ints(x: List[int]) -> 'vlbytes_t':
-        return vlbytes_t([uint8(i) for i in x])
+        res = vlbytes_t([uint8(i) for i in x])
+        return res
 
     @staticmethod
     @typechecked
-    def concat_bytes(blocks: '_vlarray') -> 'vlbytes_t':
+    def concat_bytes(blocks: '_array[vlbytes_t]') -> 'vlbytes_t':
         concat = [b for block in blocks for b in block]
         return vlbytes_t(concat)
 
@@ -981,220 +544,243 @@ class vlbytes_t(_vlarray):
     @staticmethod
     @typechecked
     def to_hex(a: 'vlbytes_t') -> str:
-        return "".join(['{:02x}'.format(uint8.to_int(x)) for x in a])
+        return "".join(['{:02x}'.format(uintn.to_int(x)) for x in a])
 
     @staticmethod
     @typechecked
-    def from_nat_le(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes_t':
-        if not isinstance(x, nat_t):
-            fail("bytes.from_nat_le's argument has to be of type nat.")
+    def from_nat_le(x: int, l: int=0) -> 'vlbytes_t':
+        if not isinstance(x, int):
+            fail("bytes.from_nat_le's argument has to be of type nat, not "+str(type(x)))
         b = x.to_bytes((x.bit_length() + 7) // 8, 'little') or b'\0'
-        pad = _vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
+        pad = _array([uint8(0) for i in range(0, max(0, l-len(b)))])
         result = vlbytes_t([uint8(i) for i in b])
         return vlbytes_t(array.concat(pad, result))
 
-    @staticmethod
-    @typechecked
-    def to_int_le(x: 'vlbytes_t') -> int:
-        b = builtins.bytes([uint8.to_int(u) for u in x])
-        return int.from_bytes(b, 'little')
 
     @staticmethod
     @typechecked
     def to_nat_le(x: 'vlbytes_t') -> nat_t:
-        return nat(vlbytes_t.to_int_le(x))
+        b = builtins.bytes([uintn.to_int(u) for u in x])
+        return int.from_bytes(b, 'little')
 
     @staticmethod
     @typechecked
-    def from_nat_be(x: nat_t, l: nat_t=nat(0)) -> 'vlbytes_t':
-        if not isinstance(x, nat_t):
+    def from_nat_be(x: int, l: int=0) -> 'vlbytes_t':
+        if not isinstance(x, int):
             fail("bytes.from_nat_be's first argument has to be of type nat_t.")
-        if not isinstance(l, nat_t):
+        if not isinstance(l, int):
             fail("bytes.from_nat_be's second argument has to be of type nat_t.")
         b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
-        pad = _vlarray([uint8(0) for i in range(0, max(0, l-len(b)))])
-        result = _vlarray([uint8(i) for i in b])
+        pad = _array([uint8(0) for i in range(0, max(0, l-len(b)))])
+        result = _array([uint8(i) for i in b])
         return vlbytes_t(array.concat(pad, result))
 
     @staticmethod
     @typechecked
     def to_nat_be(x: 'vlbytes_t') -> nat_t:
-        b = builtins.bytes([uint8.to_int(u) for u in x])
+        b = builtins.bytes([uintn.to_int(u) for u in x])
         return int.from_bytes(b, 'big')
 
     @staticmethod
     @typechecked
-    def from_uint32_le(x: uint32) -> 'vlbytes_t':
-        xv = uint32.to_int(x)
-        x0 = uint8(xv & 255)
-        x1 = uint8((xv >> 8) & 255)
-        x2 = uint8((xv >> 16) & 255)
-        x3 = uint8((xv >> 24) & 255)
-        return vlbytes_t([x0, x1, x2, x3])
+    def from_uintn_le(x: uintn_t) -> 'vlbytes_t':
+        nbytes = (x.bits - 1) // 8 + 1
+        by = bytes.create(nbytes,uint8(0))
+        xv = uintn.to_nat(x)
+        for i in range(nbytes):
+            by[i] = uint8(xv & 255)
+            xv = xv >> 8
+        return by
 
     @staticmethod
     @typechecked
-    def to_uint32_le(x: 'vlbytes_t') -> uint32:
-        x0 = uint8.to_int(x[0])
-        x1 = uint8.to_int(x[1]) << 8
-        x2 = uint8.to_int(x[2]) << 16
-        x3 = uint8.to_int(x[3]) << 24
-        return uint32(x0 + x1 + x2 + x3)
+    def to_uintn_le(x: 'vlbytes_t') -> uintn_t:
+        nbits = 8 * bytes.length(x)
+        xv = uintn(0,nbits)
+        for i in range(bytes.length(x)):
+            xv += uintn(x[i],nbits) << (i * 8)
+        return xv
 
     @staticmethod
     @typechecked
-    def from_uint64_le(x: uint64) -> 'vlbytes_t':
-        xv = uint64.to_int(x)
-        x0 = uint32(xv & 0xffffffff)
-        x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlbytes_t = _vlarray.create(8, uint8(0))
-        a[0:4] = vlbytes_t.from_uint32_le(x0)
-        a[4:8] = vlbytes_t.from_uint32_le(x1)
-        return a
+    def from_uintn_be(x: uintn_t) -> 'vlbytes_t':
+        nbytes = (x.bits - 1) // 8 + 1
+        by = bytes.create(nbytes,uint8(0))
+        xv = uintn.to_nat(x)
+        for i in range(nbytes):
+            by[nbytes-i-1] = uint8(xv)
+            xv = xv // 256
+        return by
 
     @staticmethod
     @typechecked
-    def to_uint64_le(x: 'vlbytes_t') -> uint64:
-        x0 = vlbytes_t.to_uint32_le(x[0:4])
-        x1 = vlbytes_t.to_uint32_le(x[4:8])
-        return uint64(uint32.to_int(x0) +
-                      (uint32.to_int(x1) << 32))
+    def to_uintn_be(x: 'vlbytes_t') -> uintn_t:
+        nbits = 8 * bytes.length(x)
+        xv = uintn(0,nbits)
+        nbytes = bytes.length(x)
+        for i in range(nbytes):
+            xv += uintn(x[nbytes - i - 1],nbits) << (i * 8)
+        return xv
 
     @staticmethod
     @typechecked
-    def from_uint128_le(x: uint128) -> 'vlbytes_t':
-        xv = uint128.to_int(x)
-        x0 = uint64(xv & 0xffffffffffffffff)
-        x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = _vlarray.create(16, uint8(0))
-        a[0:8] = vlbytes_t.from_uint64_le(x0)
-        a[8:16] = vlbytes_t.from_uint64_le(x1)
-        return vlbytes_t(a)
+    def from_uintns_le(x: 'vlarray_t(uintn_t)') -> 'vlbytes_t':
+        by = _array([bytes.from_uintn_le(i) for i in x])
+        return bytes.concat_bytes(by)
 
     @staticmethod
     @typechecked
-    def to_uint128_le(x: 'vlbytes_t') -> uint128:
-        x0 = vlbytes_t.to_uint64_le(x[0:8])
-        x1 = vlbytes_t.to_uint64_le(x[8:16])
-        return uint128(uint64.to_int(x0) +
-                       (uint64.to_int(x1) << 64))
+    def from_uintns_be(x: 'vlarray_t(uintn_t)') -> 'vlbytes_t':
+        by = _array([bytes.from_uintn_be(i) for i in x])
+        return bytes.concat_bytes(by)
 
     @staticmethod
     @typechecked
-    def from_uint32_be(x: uint32) -> 'vlbytes_t':
-        xv = uint32.to_int(x)
-        x0 = uint8(xv & 255)
-        x1 = uint8((xv >> 8) & 255)
-        x2 = uint8((xv >> 16) & 255)
-        x3 = uint8((xv >> 24) & 255)
-        return vlbytes_t([x3, x2, x1, x0])
+    def to_uintns_le(x: 'vlbytes_t',bits:int) -> vlarray_t(uintn_t):
+        if bits % 8 != 0 or len(x) * 8 % bits != 0:
+            fail("bytearray length not a multiple of bits//8")
+        nums, x = array.split_blocks(x, bits//8)
+        return(_array([bytes.to_uintn_le(i) for i in nums]))
 
     @staticmethod
     @typechecked
-    def to_uint32_be(x: 'vlbytes_t') -> uint32:
-        x0 = uint8.to_int(x[0]) << 24
-        x1 = uint8.to_int(x[1]) << 16
-        x2 = uint8.to_int(x[2]) << 8
-        x3 = uint8.to_int(x[3])
-        return uint32(x3 + x2 + x1 + x0)
+    def to_uintns_be(x: 'vlbytes_t',bits:int) -> vlarray_t(uintn_t):
+        if bits % 8 != 0 or len(x) * 8 % bits != 0:
+            fail("bytearray length not a multiple of bits/8")
+        nums, x = array.split_blocks(x, bits//8)
+        return(_array([bytes.to_uintn_be(i) for i in nums]))
 
     @staticmethod
     @typechecked
-    def from_uint64_be(x: uint64) -> 'vlbytes_t':
-        xv = uint64.to_int(x)
-        x0 = uint32(xv & 0xffffffff)
-        x1 = uint32((xv >> 32) & 0xffffffff)
-        a: vlbytes_t = _vlarray.create(8, uint8(0))
-        a[0:4] = vlbytes_t.from_uint32_be(x1)
-        a[4:8] = vlbytes_t.from_uint32_be(x0)
-        return a
+    def to_uint16_le(x: 'vlbytes_t') -> uint16_t:
+        return bytes.to_uintn_le(x)
+    @staticmethod
+    @typechecked
+    def to_uint32_le(x: 'vlbytes_t') -> uint32_t:
+        return bytes.to_uintn_le(x)
+    @staticmethod
+    @typechecked
+    def to_uint64_le(x: 'vlbytes_t') -> uint64_t:
+        return bytes.to_uintn_le(x)
+    @staticmethod
+    @typechecked
+    def to_uint128_le(x: 'vlbytes_t') -> uint128_t:
+        return bytes.to_uintn_le(x)
+    @staticmethod
+    @typechecked
+    def to_uint16_be(x: 'vlbytes_t') -> uint16_t:
+        return bytes.to_uintn_be(x)
+    @staticmethod
+    @typechecked
+    def to_uint32_be(x: 'vlbytes_t') -> uint32_t:
+        return bytes.to_uintn_be(x)
+    @staticmethod
+    @typechecked
+    def to_uint64_be(x: 'vlbytes_t') -> uint64_t:
+        return bytes.to_uintn_be(x)
+    @staticmethod
+    @typechecked
+    def to_uint128_be(x: 'vlbytes_t') -> uint128_t:
+        return bytes.to_uintn_be(x)
 
     @staticmethod
     @typechecked
-    def to_uint64_be(x: 'vlbytes_t') -> uint64:
-        x0 = vlbytes_t.to_uint32_be(x[0:4])
-        x1 = vlbytes_t.to_uint32_be(x[4:8])
-        return uint64(uint32.to_int(x1) +
-                      (uint32.to_int(x0) << 32))
+    def from_uint16_le(x: 'uint16_t') -> vlbytes_t:
+        return bytes.from_uintn_le(x)
+    @staticmethod
+    @typechecked
+    def from_uint32_le(x: 'uint32_t') -> vlbytes_t:
+        return bytes.from_uintn_le(x)
+    @staticmethod
+    @typechecked
+    def from_uint64_le(x: 'uint64_t') -> vlbytes_t:
+        return bytes.from_uintn_le(x)
+    @staticmethod
+    @typechecked
+    def from_uint128_le(x: 'uint128_t') -> vlbytes_t:
+        return bytes.from_uintn_le(x)
+    @staticmethod
+    @typechecked
+    def from_uint16_be(x: 'uint16_t') -> vlbytes_t:
+        return bytes.from_uintn_be(x)
+    @staticmethod
+    @typechecked
+    def from_uint32_be(x: 'uint32_t') -> vlbytes_t:
+        return bytes.from_uintn_be(x)
+    @staticmethod
+    @typechecked
+    def from_uint64_be(x: 'uint64_t') -> vlbytes_t:
+        return bytes.from_uintn_be(x)
+    @staticmethod
+    @typechecked
+    def from_uint128_be(x: 'uint128_t') -> vlbytes_t:
+        return bytes.from_uintn_be(x)
 
     @staticmethod
     @typechecked
-    def from_uint128_be(x: uint128) -> 'vlbytes_t':
-        xv = uint128.to_int(x)
-        x0 = uint64(xv & 0xffffffffffffffff)
-        x1 = uint64((xv >> 64) & 0xffffffffffffffff)
-        a = vlbytes_t(_vlarray.create(16, uint8(0)))
-        a[0:8] = vlbytes_t.from_uint64_be(x1)
-        a[8:16] = vlbytes_t.from_uint64_be(x0)
-        return a
+    def to_uint16s_le(x: 'vlbytes_t') -> _array[uint16_t]:
+        return bytes.to_uintns_le(x,16)
+    @staticmethod
+    @typechecked
+    def to_uint32s_le(x: 'vlbytes_t') -> _array[uint32_t]:
+        return bytes.to_uintns_le(x,32)
+    @staticmethod
+    @typechecked
+    def to_uint64s_le(x: 'vlbytes_t') -> _array[uint64_t]:
+        return bytes.to_uintns_le(x,64)
+    @staticmethod
+    @typechecked
+    def to_uint128s_le(x: 'vlbytes_t') -> _array[uint128_t]:
+        return bytes.to_uintns_le(x,128)
+    @staticmethod
+    @typechecked
+    def to_uint16s_be(x: 'vlbytes_t') -> _array[uint16_t]:
+        return bytes.to_uintns_be(x,16)
+    @staticmethod
+    @typechecked
+    def to_uint32s_be(x: 'vlbytes_t') -> _array[uint32_t]:
+        return bytes.to_uintns_be(x,32)
+    @staticmethod
+    @typechecked
+    def to_uint64s_be(x: 'vlbytes_t') -> _array[uint64_t]:
+        return bytes.to_uintns_be(x,64)
+    @staticmethod
+    @typechecked
+    def to_uint128s_be(x: 'vlbytes_t') -> _array[uint128_t]:
+        return bytes.to_uintns_be(x,128)
 
     @staticmethod
     @typechecked
-    def to_uint128_be(x: 'vlbytes_t') -> uint128:
-        x0 = vlbytes_t.to_uint64_be(x[0:8])
-        x1 = vlbytes_t.to_uint64_be(x[8:16])
-        return uint128(uint64.to_int(x1) +
-                       (uint64.to_int(x0) << 64))
-
+    def from_uint16s_le(x: '_array[uint16_t]') -> vlbytes_t:
+        return bytes.from_uintns_le(x)
     @staticmethod
     @typechecked
-    def from_uint32s_le(x: _vlarray) -> 'vlbytes_t':
-        by = _vlarray([vlbytes_t.from_uint32_le(i) for i in x])
-        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
-
+    def from_uint32s_le(x: '_array[uint32_t]') -> vlbytes_t:
+        return bytes.from_uintns_le(x)
     @staticmethod
     @typechecked
-    def to_uint32s_le(x: 'vlbytes_t') -> _vlarray:
-        nums, x = _vlarray.split_blocks(x, 4)
-        if len(x) > 0:
-            fail("array length not a multiple of 4")
-        else:
-            return(_vlarray([vlbytes_t.to_uint32_le(i) for i in nums]))
-
+    def from_uint64s_le(x: '_array[uint64_t]') -> vlbytes_t:
+        return bytes.from_uintns_le(x)
     @staticmethod
     @typechecked
-    def from_uint32s_be(x: _vlarray) -> 'vlbytes_t':
-        by = _vlarray([vlbytes_t.from_uint32_be(i) for i in x])
-        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
-
+    def from_uint128s_le(x: '_array[uint128_t]') -> vlbytes_t:
+        return bytes.from_uintns_le(x)
     @staticmethod
     @typechecked
-    def to_uint32s_be(x: 'vlbytes_t') -> _vlarray:
-        nums, x = _vlarray.split_blocks(x, 4)
-        if len(x) > 0:
-            fail("array length not a multiple of 4")
-        else:
-            return _vlarray([vlbytes_t.to_uint32_be(i) for i in nums])
-
+    def from_uint16s_be(x: '_array[uint16_t]') -> vlbytes_t:
+        return bytes.from_uintns_be(x)
     @staticmethod
     @typechecked
-    def from_uint64s_be(x: _vlarray) -> 'vlbytes_t':
-        by = _vlarray([vlbytes_t.from_uint64_be(i) for i in x])
-        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
-
+    def from_uint32s_be(x: '_array[uint32_t]') -> vlbytes_t:
+        return bytes.from_uintns_be(x)
     @staticmethod
     @typechecked
-    def to_uint64s_be(x: 'vlbytes_t') -> _vlarray:
-        nums, x = _vlarray.split_blocks(x, 8)
-        if len(x) > 0:
-            fail("array length not a multple of 8")
-        else:
-            return(_vlarray([vlbytes_t.to_uint64_be(i) for i in nums]))
-
+    def from_uint64s_be(x: '_array[uint64_t]') -> vlbytes_t:
+        return bytes.from_uintns_be(x)
     @staticmethod
     @typechecked
-    def from_uint64s_le(x: _vlarray) -> 'vlbytes_t':
-        by = _vlarray([vlbytes_t.from_uint64_le(i) for i in x])
-        return vlbytes_t(_vlarray.concat_blocks(by, _vlarray([])))
-
-    @staticmethod
-    @typechecked
-    def to_uint64s_le(x: 'vlbytes_t') -> _vlarray:
-        nums, x = _vlarray.split_blocks(x, 8)
-        if len(x) > 0:
-            fail("array length not a multple of 8")
-        else:
-            return _vlarray([vlbytes_t.to_uint64_le(i) for i in nums])
+    def from_uint128s_be(x: '_array[uint128_t]') -> vlbytes_t:
+        return bytes.from_uintns_be(x)
 
     @staticmethod
     @typechecked
@@ -1203,372 +789,110 @@ class vlbytes_t(_vlarray):
         return vlbytes_t(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
 
-@typechecked
-def bytes_t(l:int) -> type:
-    __class__ = vlbytes_t
+class nat_mod:
     @typechecked
-    def init(self, x: Union[vlbytes_t, Sequence[T]]) -> None:
-        if not (isinstance(x, Sequence) or isinstance(x, _vlarray)) or not len(x) == l:
-            fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(vlbytes_t) + ".")
-        else:
-            super().__init__(x)
-            vlbytes_t(x)
+    def __init__(self, x: int, modulus: int) -> None:
+        if x < 0 or modulus <= 0:
+            fail("nat_mod only defined for nats mod pos")
+        self.v = x % modulus
+        self.modulus = modulus
+
     @typechecked
-    def string(self) -> str:
-        return str(self.__origin__)
-    # We use a random string as class name here. The result of refine has to
-    # get assigend to a type alias, which can be used as class name.
-    u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
-    if DEBUG:
-        print("new class " + u_rand + " - " + str(vlbytes_t))
-    cl = type(u_rand, (vlbytes_t,), {'__init__': init , '__origin__': vlbytes_t})
-    __class__ = cl
-    return cl
-
-
-def bitvector_t(l:int):
-    @typechecked
-    def refine_bitvec() -> type:
-        __class__ = _bitvector
-        @typechecked
-        def f(x:Union[int, _uintn]):
-            return int(x) <= ((1 << l) - 1)
-        @typechecked
-        def init(self, x:Union[int, _uintn]) -> None:
-            if not (isinstance(x, int) or isinstance(x, _uintn)) or not f(x):
-                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of _bitvector.")
-            else:
-                super().__init__(x, l)
-                _bitvector(x, l)
-        @typechecked
-        def string(self) -> str:
-            return str(self.__origin__)
-        # We use a random string as class name here. The result has to
-        # get assigend to a type alias, which can be used as class name.
-        u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
-        if DEBUG:
-            print("new class " + u_rand + " - " + str(_bitvector))
-        cl = type(u_rand, (_bitvector,), {'__init__': init , '__origin__': _bitvector, '__str__': string})
-        __class__ = cl
-        return cl
-    refinement = refine_bitvec()
-    return refinement
-
-
-@typechecked
-def vlarray_t(t: type) -> type:
-    @typechecked
-    def refine_array() -> type:
-        __class__ = _vlarray
-        @typechecked
-        def init(self, x: Union[Sequence[T], _vlarray]) -> None:
-            if not (isinstance(x, Sequence) or isinstance(x, _vlarray)):
-                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
-            else:
-                super().__init__(x, t)
-                _vlarray(x, t)
-        @typechecked
-        def string(self) -> str:
-            return str(self.__origin__)
-        # We use a random string as class name here. The result has to
-        # get assigend to a type alias, which can be used as class name.
-        u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
-        if DEBUG:
-            print("new class " + u_rand + " - " + str(_vlarray))
-        cl = type(u_rand, (_vlarray,), {'__init__': init , '__origin__': _vlarray})
-        __class__ = cl
-        return cl
-    refinement = refine_array()
-    return refinement
-
-
-@typechecked
-def array_t(t: type, l: int) -> type:
-    @typechecked
-    def refine_array() -> type:
-        __class__ = _vlarray
-        @typechecked
-        def init(self, x: Union[Sequence[T], _vlarray]) -> None:
-            if not (isinstance(x, Sequence) or isinstance(x, _vlarray)) or not len(x) == self.l:
-                fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of array_t.")
-            else:
-                super().__init__(x, t)
-                _vlarray(x, t)
-        @typechecked
-        def string(self) -> str:
-            return str(self.__origin__)
-        # We use a random string as class name here. The result has to
-        # get assigend to a type alias, which can be used as class name.
-        u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
-        if DEBUG:
-            print("new class " + u_rand + " - " + str(_vlarray))
-        cl = type(u_rand, (_vlarray,), {'__init__': init , '__origin__': _vlarray, '__str__': string, 'l': l})
-        __class__ = cl
-        return cl
-    refinement = refine_array()
-    return refinement
-
-
-bit_t = bit
-uint8_t = uint8
-uint16_t = uint16
-uint32_t = uint32
-uint64_t = uint64
-uint128_t = uint128
-
-bytes = vlbytes_t
-vlbytes = vlbytes_t
-
-
-# The libraries below are experimental and need more thought
-class pfelem:
-    def __init__(self, x: int, p: int) -> None:
-        if x < 0:
-            fail("cannot convert negative integer to pfelem")
-        elif p < 1:
-            fail("cannot use prime < 1")
-        else:
-            self.p = p
-            self.v = x % p
-
-    def __str__(self) -> str:
-        return hex(self.v)
-
-    def __repr__(self) -> str:
-        return hex(self.v)
-
-    def __add__(self, other: 'pfelem') -> 'pfelem':
-        if (other.p == self.p):
-            return pfelem(self.v + other.v, self.p)
-        else:
-            fail("cannot add pfelem of different fields")
-            return pfelem(0, self.p)
-
-    def __sub__(self, other: 'pfelem') -> 'pfelem':
-        if (other.p == self.p):
-            return pfelem(self.v - other.v, self.p)
-        else:
-            fail("cannot sub pfelem of different fields")
-            return pfelem(0, self.p)
-
-    def __mul__(self, other: 'pfelem') -> 'pfelem':
-        if (other.p == self.p):
-            return pfelem(self.v * other.v, self.p)
-        else:
-            fail("cannot sub pfelem of different fields")
-            return pfelem(0, self.p)
-
-    def __pow__(self, other: int) -> 'pfelem':
-        if (other >= 0):
-            return pfelem(pow(self.v, other, self.p), self.p)
-        else:
-            fail("cannot exp with negative number")
-            return pfelem(0, self.p)
-
-    # See https://github.com/python/mypy/issues/2783
-    def __eq__(self, other: Any) -> Any:
-        return (self.p == other.p and self.v == other.v)
-
-    @staticmethod
-    def pfadd(x: 'pfelem', y: 'pfelem') -> 'pfelem':
-        return (x+y)
-
-    @staticmethod
-    def pfmul(x: 'pfelem', y: 'pfelem') -> 'pfelem':
-        return (x*y)
-
-    @staticmethod
-    def pfsub(x: 'pfelem', y: 'pfelem') -> 'pfelem':
-        return (x-y)
-
-    @staticmethod
-    def pfinv(x: 'pfelem') -> 'pfelem':
-        def egcd(a, b):
-            if a == 0:
-                return (b, 0, 1)
-            else:
-                g, y, x = egcd(b % a, a)
-            return (g, x - (b // a) * y, y)
-
-        def modinv(a, m):
-            g, x, y = egcd(a, m)
-            if g != 1:
-                raise Exception('modular inverse does not exist')
-            else:
-                return x % m
-
-        return pfelem(modinv(x.v, x.p), x.p)
-
-    @staticmethod
-    def prime(x: 'pfelem') -> int:
-        return x.p
-
-    def __int__(self) -> int:
-        return self.v
-
-    @staticmethod
-    def to_int(x: 'pfelem') -> int:
-        return x.v
-
-
-pfelem_t = pfelem
-
-
-def prime_field(prime: nat):
-    return pfelem_t, (lambda x: pfelem(x, prime)), pfelem.to_int
-
-
-class gfelem:
-    def __init__(self, x: _bitvector, irred: _bitvector) -> None:
-        if x.v < 0:
-            fail("cannot convert negative integer to gfelem")
-        elif x.bits < 1:
-            fail("cannot create gfelem with bits < 1")
-        elif x.bits != irred.bits:
-            fail("cannot create gfelem with x.bits <> irred.bits")
-        else:
-            self.bits = x.bits
-            self.irred = irred
-            self.v = x
-
     def __str__(self) -> str:
         return str(self.v)
 
+    @typechecked
     def __repr__(self) -> str:
-        return str(self.v)
-
-    def __add__(self, other: 'gfelem') -> 'gfelem':
-        if (other.bits == self.bits and other.irred == self.irred):
-            return gfelem(self.v ^ other.v, self.irred)
-        else:
-            fail("cannot add gfelem of different fields")
-            return gfelem(_bitvector(0, self.bits), self.irred)
-
-    def __sub__(self, other: 'gfelem') -> 'gfelem':
-        if (other.bits == self.bits and other.irred == self.irred):
-            return gfelem(self.v ^ other.v, self.irred)
-        else:
-            fail("cannot sub gfelem of different fields")
-            return gfelem(_bitvector(0, self.bits), self.irred)
-
-    def __mul__(self, other: 'gfelem') -> 'gfelem':
-        if (other.bits == self.bits and other.irred == self.irred):
-            bits = self.bits
-            irred = self.irred
-            a = self.v
-            b = other.v
-            p = _bitvector(0, bits)
-            for i in range(bits):
-                if (_bitvector.to_int(b) & 1 == 1):
-                    p = p ^ a
-                b = b >> 1
-                c = a >> (bits - 1)
-                a = a << 1
-                if (_bitvector.to_int(a) == 1):
-                    a = a ^ irred
-            return gfelem(p, irred)
-        else:
-            fail("cannot mul gfelem of different fields")
-            return gfelem(_bitvector(0, self.bits), self.irred)
-
-    def __pow__(self, other: int) -> 'gfelem':
-        if (other < 0):
-            fail("cannot exp with negative number")
-            return gfelem(_bitvector(0, self.bits), self.irred)
-        else:
-            def exp(a, x):
-                if (x == 0):
-                    return gfelem(_bitvector(1, self.bits), self.irred)
-                elif (x == 1):
-                    return a
-                elif (x == 2):
-                    return a * a
-                else:
-                    r = exp(a, x/2)
-                    r_ = r * r
-                    if (x % 2 == 0):
-                        return r_
-                    else:
-                        return (a * r_)
-            return exp(self, other)
-
-    # See https://github.com/python/mypy/issues/2783
-    def __eq__(self, other: Any) -> Any:
-        return (self.bits == other.bits and self.v == other.v)
-
-    @staticmethod
-    def gfadd(x: 'gfelem', y: 'gfelem') -> 'gfelem':
-        return (x + y)
-
-    @staticmethod
-    def gfsub(x: 'gfelem', y: 'gfelem') -> 'gfelem':
-        return (x - y)
-
-    @staticmethod
-    def gfmul(x: 'gfelem', y: 'gfelem') -> 'gfelem':
-        return (x * y)
-
-    @staticmethod
-    def gfexp(x: 'gfelem', y: int) -> 'gfelem':
-        return (x ** y)
-
-    @staticmethod
-    def gfinv(x: 'gfelem') -> 'gfelem':
-        bits = x.bits
-        irred = x.irred
-
-        def degree(v: _bitvector, bits: int):
-            if (v == 0 or bits == 0):
-                return 0
-            elif (_bitvector.to_int(v >> (bits - 1)) == 1):
-                return (bits - 1)
-            else:
-                return degree(v >> 1, bits - 1)
-
-        def gfgcd(s, r, v, u):
-            dr = degree(r, bits)
-            ds = degree(s, bits)
-            if (dr == 0):
-                return u
-            elif (ds >= dr):
-                s_ = s ^ (r << (ds - dr))
-                v_ = v ^ (u << (ds - dr))
-                return gfgcd(s_, r, v_, u)
-            else:
-                r_ = s
-                s_ = r
-                v_ = u
-                u_ = v
-                s_ = s_ ^ (r_ << (dr - ds))
-                v_ = v_ ^ (u_ << (dr - ds))
-                return gfgcd(s_, r_, v_, u_)
-        r = x.v
-        s = irred
-        dr = degree(r, bits)
-        ds = degree(s, bits)
-        v = gfelem(_bitvector(0, bits), irred)
-        u = gfelem(_bitvector(1, bits), irred)
-        if (dr == 0):
-            return u
-        else:
-            s_ = s ^ (r << (ds - dr))
-            v_ = v ^ (r << (ds - dr))
-            return gfelem(gfgcd(s_, r, v_, u), irred)
-
-    def __int__(self) -> int:
-        return _bitvector.to_int(self.v)
-
-    @staticmethod
-    def to_int(x: 'gfelem') -> int:
-        return _bitvector.to_int(x.v)
-
-
-# Typed versions of all python functions that can be used in specs.
-class speclib:
-    @typechecked
-    def ceil(x: int) -> nat_t:
-        return nat(ceil(x))
+        return repr(self.v)
 
     @typechecked
-    def log(x: int, b: int) -> float:
-        return log(x, b)
+    def __add__(self, other: 'nat_mod') -> 'nat_mod':
+        if not isinstance(other, nat_mod) or \
+           other.modulus != self.modulus:
+            fail("+ is only valid for two nat_mods with same modulus")
+        return nat_mod(self.v + other.v,self.modulus)
+
+    @typechecked
+    def __sub__(self, other: 'nat_mod') -> 'nat_mod':
+        if not isinstance(other, nat_mod) or \
+           other.modulus != self.modulus:
+            fail("- is only valid for two nat_mods with same modulus")
+        return nat_mod(self.modulus + self.v - other.v,self.modulus)
+
+    @typechecked
+    def __mul__(self, other: 'nat_mod') -> 'nat_mod':
+        if not isinstance(other, nat_mod) or \
+           other.modulus != self.modulus:
+            fail("* is only valid for two nat_mods with same modulus")
+        return nat_mod(self.v * other.v,self.modulus)
+
+    @typechecked
+    def __pow__(self, other: int) -> 'nat_mod':
+        if not isinstance(other, int) or \
+           other < 0:
+            fail("** is only valid for nat exponent")
+        return nat_mod(pow(self.v,other,self.modulus),self.modulus)
+
+def nat_mod_t(q:nat):
+    return nat_mod
+    
+class vector(_array[nat_mod]):
+    @typechecked
+    def __init__(self, x: Union[Sequence[nat_mod],_array[nat_mod]]) -> None:
+        if isinstance(x,Sequence):
+            super().__init__(x,nat_mod)
+        else:
+            super().__init__(x.l,nat_mod)
+            
+    @typechecked
+    def __add__(self, other: 'vector') -> 'vector':
+        if not isinstance(other, vector) or \
+           other.len != self.len:
+            fail("+ is only valid for two vectors of same length")
+        return vector([x + y for (x,y) in zip(self.l,other.l)])
+
+    @typechecked
+    def __sub__(self, other: 'vector') -> 'vector':
+        if not isinstance(other, vector) or \
+           other.len != self.len:
+            fail("- is only valid for two vectors of same length")
+        return vector([x - y for (x,y) in zip(self.l,other.l)])
+
+    @typechecked
+    def __mul__(self, other: 'vector') -> 'vector':
+        if not isinstance(other, vector) or \
+           other.len != self.len:
+            fail("- is only valid for two vectors of same length")
+        return vector([x * y for (x,y) in zip(self.l,other.l)])
+
+def vector_t(t:type,len:nat):
+    return vector
+
+class matrix(_array[vector]):
+    @typechecked
+    def __init__(self, x: Sequence[Sequence[nat_mod]]) -> None:
+        super().__init__([vector(y) for y in x],vector)
+
+    @typechecked
+    def __add__(self, other: 'matrix') -> 'matrix':
+        if not isinstance(other, matrix) or \
+           other.len != self.len:
+            fail("+ is only valid for two matrices of same length")
+        return matrix([x + y for (x,y) in zip(self.l,other.l)])
+
+    @typechecked
+    def __sub__(self, other: 'matrix') -> 'matrix':
+        if not isinstance(other, matrix) or \
+           other.len != self.len:
+            fail("- is only valid for two matrices of same length")
+        return matrix([x - y for (x,y) in zip(self.l,other.l)])
+
+    @typechecked
+    def __mul__(self, other: 'matrix') -> 'matrix':
+        if not isinstance(other, matrix) or \
+           other.len != self.len:
+            fail("- is only valid for two matrices of same length")
+        return matrix([x * y for (x,y) in zip(self.l,other.l)])
+    
+def matrix_t(t:type,rows:nat,columns:nat):
+    return matrix

@@ -2,7 +2,7 @@
 #!/usr/bin/python3
 
 from lib.speclib import *
-from specs.curve25519 import felem_t, to_felem, fadd, fsub, fmul, fsqr, finv, serialized_scalar_t, serialized_point_t, scalar_t, p25519
+from specs.curve25519 import felem_t, to_felem, fadd, fsub, fmul, fsqr, finv, serialized_scalar_t, serialized_point_t, scalar_t, p25519,to_scalar
 from specs.sha2 import sha512
 
 # Define prime field
@@ -85,7 +85,7 @@ def montgomery_ladder(k: scalar_t, init: extended_point_t) -> extended_point_t:
 
 @typechecked
 def point_mul(s: serialized_scalar_t, p: extended_point_t) -> extended_point_t:
-    s_ = scalar_t(bytes.to_nat_le(s))
+    s_ = to_scalar(bytes.to_nat_le(s))
     Q: extended_point_t = extended_point(0, 1, 1, 0)
     Q1 = montgomery_ladder(s_, p)
     return Q1

@@ -40,7 +40,7 @@ def state_permute1(s: state_t, lfsr: uint8_t) -> tuple2(state_t, uint8_t):
 
     s_theta = array.copy(s)
     for x in range(5):
-        _D = _C[(x + 4) % 5] ^ uint64.rotate_left(_C[(x + 1) % 5], 1)
+        _D = _C[(x + 4) % 5] ^ uintn.rotate_left(_C[(x + 1) % 5], 1)
         for y in range(5):
             s_theta = writeLane(s_theta, x, y, readLane(s_theta, x, y) ^ _D)
 
@@ -55,7 +55,7 @@ def state_permute1(s: state_t, lfsr: uint8_t) -> tuple2(state_t, uint8_t):
         x = y
         y = _Y
         temp = readLane(s_pi_rho, x, y)
-        s_pi_rho = writeLane(s_pi_rho, x, y, uint64_t.rotate_left(current, r))
+        s_pi_rho = writeLane(s_pi_rho, x, y, uintn.rotate_left(current, r))
         current = temp
 
     temp = array.copy(s_pi_rho)
@@ -93,7 +93,7 @@ def loadState(rateInBytes: size_nat_200_t,
     block = array.create(200, uint8(0))
     block[0:rateInBytes] = input_b
     for j in range(25):
-        nj = vlbytes_t.to_uint64_le(block[(j * 8):(j * 8 + 8)])
+        nj = bytes.to_uint64_le(block[(j * 8):(j * 8 + 8)])
         s[j] = s[j] ^ nj
     return s
 
@@ -103,7 +103,7 @@ def storeState(rateInBytes: size_nat_200_t,
                s: state_t) -> refine(vlbytes_t, lambda x: array.length(x) == rateInBytes):
     block = bytes(array.create(200, uint8(0)))
     for j in range(25):
-        block[(j * 8):(j * 8 + 8)] = vlbytes_t.from_uint64_le(s[j])
+        block[(j * 8):(j * 8 + 8)] = bytes.from_uint64_le(s[j])
     return block[0:rateInBytes]
 
 

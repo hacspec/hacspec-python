@@ -18,7 +18,7 @@ def blocks(x: size_nat_t, m: size_nat_t) -> size_nat_t:
 
 @typechecked
 def xor_bytes(b1: vlbytes_t, b2: vlbytes_t) -> vlbytes_t:
-    res = vlbytes_t.copy(b1)
+    res = bytes.copy(b1)
     for i in range(array.length(b1)):
         res[i] ^= b2[i]
     return res
@@ -51,7 +51,7 @@ def mgf_sha256(mgfseed: vlbytes_t, maskLen: size_nat_t) -> vlbytes_t:
     mgfseed_counter[0:mgfseedLen] = mgfseed
 
     for i in range(counter_max):
-        c = vlbytes_t.from_uint32_be(uint32(i))
+        c = bytes.from_uint32_be(uint32(i))
         mgfseed_counter[mgfseedLen:(mgfseedLen + 4)] = c
         mHash = hash_sha256(mgfseed_counter)
         acc[(hLen * i):(hLen * i + hLen)] = mHash
