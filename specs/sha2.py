@@ -1,4 +1,4 @@
-from hacspec.speclib import *
+from lib.speclib import *
 
 # Four variants of SHA-2
 

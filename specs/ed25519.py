@@ -1,9 +1,9 @@
 
 #!/usr/bin/python3
 
-from hacspec.speclib import *
-from curve25519 import felem_t, to_felem, fadd, fsub, fmul, fsqr, finv, serialized_scalar_t, serialized_point_t, scalar_t, p25519
-from sha2 import sha512
+from lib.speclib import *
+from specs.curve25519 import felem_t, to_felem, fadd, fsub, fmul, fsqr, finv, serialized_scalar_t, serialized_point_t, scalar_t, p25519
+from specs.sha2 import sha512
 
 # Define prime field
 d25519: felem_t = felem_t(nat(

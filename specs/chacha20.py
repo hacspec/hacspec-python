@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
+from lib.speclib import *
 
 blocksize = 64
 index_t  = range_t(0,16)

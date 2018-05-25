@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
-from chacha20 import chacha20_block, chacha20_encrypt, chacha20_decrypt
-from poly1305 import poly1305_mac
+from lib.speclib import *
+from specs.chacha20 import chacha20_block, chacha20_encrypt, chacha20_decrypt
+from specs.poly1305 import poly1305_mac
 
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)

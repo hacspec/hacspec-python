@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
-from sha2 import sha256
+from lib.speclib import *
+from specs.sha2 import sha256
 
 max_size_t = 2 ** 32 - 1
 size_nat_t = refine(nat, lambda x: x <= max_size_t)
