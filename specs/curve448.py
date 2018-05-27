@@ -4,8 +4,7 @@ from lib.speclib import *
 
 p448 = 2 ** 448 - 2 ** 224 - 1
 
-felem_t = refine(nat, lambda x: x < p448)
-felem = felem_t
+felem_t,felem = refine(nat_t, lambda x: x < p448)
 
 
 @typechecked

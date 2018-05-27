@@ -50,9 +50,9 @@ constants = constants_t(
 def chacha20_init(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
     st = array.create(16,uint32(0))
     st[0:4] = constants
-    st[4:12] = bytes.to_uintns_le(k,32)
+    st[4:12] = bytes.to_uint32s_le(k)
     st[12] = counter
-    st[13:16] = bytes.to_uintns_le(nonce,32)
+    st[13:16] = bytes.to_uint32s_le(nonce)
     return st
 
 @typechecked
@@ -71,7 +71,7 @@ def chacha20(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
 @typechecked
 def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
     st = chacha20(k,counter,nonce)
-    block = bytes.from_uintns_le(st)
+    block = bytes.from_uint32s_le(st)
     # If block is not cast to block_t, the type isn't checked!
     return block_t(block)
 

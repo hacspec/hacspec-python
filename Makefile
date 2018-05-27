@@ -18,7 +18,7 @@ check: $(addsuffix -check, $(SPECS))
 $(SPECS):
 	PYTHONPATH=. $(PYTHON) -O tests/$@_test.py
 
-%-check: examples/%.py
+%-check: specs/%.py
 	hacspec-check $<
-%-test: tests/%.py
-	PYTHONPATH=. $(PYTHON) tests/$@_test.py
+%-test: tests/%_test.py 
+	PYTHONPATH=. $(PYTHON) $<

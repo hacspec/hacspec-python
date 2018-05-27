@@ -1,7 +1,7 @@
 from lib.speclib import *
 
-variant_t = refine(nat, lambda x: x == 0 or x == 1)
-out_size_t = refine(nat, lambda x: x <= 32)
+variant_t,variant = refine(nat_t, lambda x: x == 0 or x == 1)
+out_size_t,out_size = refine(nat_t, lambda x: x <= 32)
 
 @typechecked
 def highbits_128(x:uint128_t) -> uint64_t:
@@ -33,10 +33,10 @@ def blake2(v:variant_t) -> FunctionType:
         to_word = uint64
         word_t = uint64_t
         minus_one = uint64(0xFFFFFFFFFFFFFFFF)
-        data_internal_t = refine(bytes, lambda x: array.length(
+        data_internal_t,data_internal = refine(vlbytes_t, lambda x: array.length(
             x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
-        key_t = refine(vlbytes_t, lambda x: array.length(x) <= 64)
-        key_size_t = refine(nat, lambda x: x <= 64)
+        key_t,key = refine(vlbytes_t, lambda x: array.length(x) <= 64)
+        key_size_t,key_size = refine(nat_t, lambda x: x <= 64)
         to_words_le = bytes.to_uint64s_le
         from_words_le = bytes.from_uint64s_le
         low_bits = to_word
@@ -44,7 +44,7 @@ def blake2(v:variant_t) -> FunctionType:
         double_word_t = uint128_t
         to_double_word = uint128
         max_size_t = 2**64 - 1
-        data_t = refine(vlbytes_t, lambda x: bytes.length(x)
+        data_t,data = refine(vlbytes_t, lambda x: bytes.length(x)
                             < max_size_t - 2 * block_bytes)
     else:
         bits_in_word = 32
@@ -66,10 +66,10 @@ def blake2(v:variant_t) -> FunctionType:
         to_word = uint32
         word_t = uint32_t
         minus_one = uint32(0xFFFFFFFF)
-        data_internal_t = refine(bytes, lambda x: array.length(
+        data_internal_t,data_internal = refine(vlbytes_t, lambda x: array.length(
             x) < 2 ** 64 and (array.length(x) % block_bytes == 0))
-        key_t = refine(vlbytes_t, lambda x: array.length(x) <= 32)
-        key_size_t = refine(nat, lambda x: x <= 32)
+        key_t,key = refine(vlbytes_t, lambda x: array.length(x) <= 32)
+        key_size_t,key_size = refine(nat_t, lambda x: x <= 32)
         to_words_le = bytes.to_uint32s_le
         from_words_le = bytes.from_uint32s_le
         low_bits = to_word
@@ -77,7 +77,7 @@ def blake2(v:variant_t) -> FunctionType:
         double_word_t = uint64_t
         to_double_word = uint64
         max_size_t = 2**32 - 1
-        data_t = refine(vlbytes_t, lambda x: bytes.length(x)
+        data_t,data = refine(vlbytes_t, lambda x: bytes.length(x)
                         < max_size_t - 2 * block_bytes)
 
 
@@ -171,9 +171,9 @@ def blake2(v:variant_t) -> FunctionType:
             padded_data = bytes(array.create(padded_data_length + block_bytes, uint8(0)))
             padded_data[0:kk] = key
             padded_data[block_bytes:block_bytes+ll] = data
-        return blake2_internal(padded_data, to_double_word(ll), key_size_t(nat(kk)), nn)
+        return blake2_internal(padded_data, to_double_word(ll), key_size(nat(kk)), nn)
 
     return blake2
 
-blake2s = blake2(variant_t(nat(0)))
-blake2b = blake2(variant_t(nat(1)))
+blake2s = blake2(variant(nat(0)))
+blake2b = blake2(variant(nat(1)))

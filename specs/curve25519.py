@@ -5,7 +5,7 @@ from lib.speclib import *
 # Define prime field
 p25519 = (2 ** 255) - 19
 
-felem_t = refine(nat, lambda x: x < p25519)
+felem_t,felem = refine(nat_t, lambda x: x < p25519)
 point_t = tuple2(felem_t, felem_t)  # projective coordinates
 scalar_t = uintn_t(256)
 def to_scalar(i:nat):
@@ -18,7 +18,7 @@ g25519: point_t = (9, 1)
 
 @typechecked
 def to_felem(x: nat_t) -> felem_t:
-    return felem_t(nat(x % p25519))
+    return felem(nat(x % p25519))
 
 
 @typechecked
@@ -94,7 +94,7 @@ def point_add_and_double(q: point_t, nq: point_t, nqp1: point_t) -> tuple2(point
     x_3 = fsqr(fadd(da, cb))
     z_3 = fmul(x_1, (fsqr(fsub(da, cb))))
     x_2 = fmul(aa, bb)
-    z_2 = fmul(e, fadd(aa, fmul(felem_t(nat(121665)), e)))
+    z_2 = fmul(e, fadd(aa, fmul(felem(nat(121665)), e)))
     return ((x_2, z_2), (x_3, z_3))
 
 

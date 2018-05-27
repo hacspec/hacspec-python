@@ -9,6 +9,8 @@ import builtins
 from typeguard import typechecked
 from inspect import getfullargspec
 from os import environ
+from inspect import getsource
+from copy import copy,deepcopy
 
 DEBUG = environ.get('HACSPEC_DEBUG')
 
@@ -47,47 +49,27 @@ def tuple4(T: type, U: type, V: type, W: type) -> type:
 def tuple5(T: type, U: type, V: type, W: type, X: type) -> type:
     return Tuple[T, U, V, W, X]
 
-
 @typechecked
-def refine(t: type, f: Callable[[T], bool]) -> type:
-    __class__ = t
-    @typechecked
-    def init(self, x:t) -> None:
-        if not isinstance(x, t):
-            fail("ref "+str(type(x)) + " - "+str(t))
-        if not isinstance(x, t) or not f(x):
-            fail("Type error. You tried to use " + str(x) + " (" + str(type(x)) + ") with subtype of " + str(t) + ".")
-        else:
-            num_init_args = len(getfullargspec(super().__init__).args)
-            if num_init_args == 1:
-                super().__init__()
-            elif num_init_args >= 2:
-                super().__init__(x)
-            elif num_init_args == 0:
-                # Special case for typeguard. Don't do anything.
-                return
-            else:
-                fail("refine super.init has more args than we expected (" + str(num_init_args) + ") for type " + str(getfullargspec(super().__init__).args))
-            t(x)
-    @typechecked
-    def string(self) -> str:
-        return str(self.__origin__)
-    # We use a random string as class name here. The result of refine has to
-    # get assigend to a type alias, which can be used as class name.
-    u_rand = ''.join(random_string(ascii_uppercase + ascii_lowercase, k=15))
-    if DEBUG:
-        print("new class " + u_rand + " - " + str(t))
-    cl = type(u_rand, (t,), {'__init__': init , '__origin__': t})
-    __class__ = cl
-    return cl
+def refine(t: type, f: Callable[[T], bool]) -> tuple2(type,Callable[[T],T]):
+    def refine_check(x):
+        if not isinstance(x,t) or not f(x):
+            print("got :"+str(args[0]))
+            print("expected : x:"+str(t)+"{"+str(f)+"}")
+            fail("refinement check failed")
+        return x
+    return (t,refine_check)
 
-nat = refine(int, lambda x: x >= 0)
-nat_t = nat
+def refine_t(t:type, f:Callable[[T], bool]) -> type:
+    (t,f) = refine(t,f)
+    return t
+
+nat_t,nat = refine(int, lambda x: x >= 0)
+pos_t,pos = refine(nat_t, lambda x: x > 0)
 
 
 @typechecked
 def range_t(min: int, max: int) -> type:
-    return refine(int, lambda x: x >= min and x < max)
+    return refine_t(int, lambda x: x >= min and x < max)
 
 
 # TODO: make this actually do something.
@@ -114,24 +96,19 @@ def contract3(pre: Callable[..., bool], post: Callable[..., bool]) -> FunctionTy
         return wrapper
     return decorator
 
-
-
-class _intn:
+class _natmod:
     @typechecked
-    def __init__(self, x: Union[int,'_intn'], signed: bool, bits: int) -> None:
-        xv = 0
-        if bits < 1:
-            fail("cannot create _intn of size <= 0 bits")
+    def __init__(self, x: Union[int,'_natmod'], modulus: int) -> None:
+        if modulus < 1:
+            fail("cannot create _natmod with modulus <= 0")
         else:
-            if isinstance(x,_intn):
+            xv = 0
+            if isinstance(x,_natmod):
                 xv = x.v
             else:
                 xv = x
-            self.bits = bits
-            self.signed = signed
-            self.max = ((1 << (bits - 1) - 1)) if signed else (1 << bits) - 1 
-            self.min = - (1 << (bits - 1)) if signed else 0
-            self.v = xv % (1 << bits) if xv >= 0 or not signed else xv % (- (1 << bits))
+            self.modulus = modulus
+            self.v = xv % modulus 
 
     @typechecked
     def __str__(self) -> str:
@@ -142,150 +119,201 @@ class _intn:
         return hex(self.v)
 
     @typechecked
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, _intn):
-            fail("You can only compare two uints.")
-        return (self.bits == other.bits and
-                self.signed == other.signed and
-                self.v == other.v)
+    def __int__(self) -> int:
+        return self.v
 
-    @staticmethod
     @typechecked
-    def num_bits(x: '_intn') -> int:
-        if not isinstance(x, _intn):
-            fail("num_bits is only valid for _intn.")
-        return x.bits
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, _natmod):
+            fail("You can only compare two natmods.")
+        return (self.modulus == other.modulus and
+                self.v == other.v)
 
     @typechecked
     def __int__(self) -> int:
         return self.v
 
     @typechecked
-    def __add__(self, other: '_intn') -> '_intn':
-        if not isinstance(other, _intn) or \
-           other.bits != self.bits or \
-           other.signed != self.signed:
-            fail("+ is only valid for two _intn of same bits and sign.")
-        return _intn(self.v + other.v,self.signed,self.bits)
+    def __add__(self, other: '_natmod') -> '_natmod':
+        if not isinstance(other, _natmod) or \
+           other.__class__ != self.__class__ or \
+           other.modulus != self.modulus:
+            fail("+ is only valid for two _natmod of same modulus.")
+        res = copy(self)
+        res.v = (res.v+other.v) % res.modulus
+        return res
 
     @typechecked
-    def __sub__(self, other: '_intn') -> '_intn':
-        if not isinstance(other, _intn) or \
-           other.bits != self.bits or \
-           other.signed != self.signed:
-            fail("- is only valid for two _intn of same bits and sign.")
-        return _intn(self.v - other.v,self.signed,self.bits)
+    def __sub__(self, other: '_natmod') -> '_natmod':
+        if not isinstance(other, _natmod) or \
+           other.__class__ != self.__class__ or \
+           other.modulus != self.modulus:
+            fail("- is only valid for two _natmod of same modulus.")
+        res = copy(self)
+        res.v = (res.v-other.v) % res.modulus
+        return res
 
     @typechecked
-    def __mul__(self, other: '_intn') -> '_intn':
-        if not isinstance(other, _intn) or \
-           other.bits != self.bits or \
-           other.signed != self.signed:
-            fail("* is only valid for two _intn of same bits and sign.")
-        return _intn(self.v * other.v,self.signed,self.bits)
+    def __mul__(self, other: '_natmod') -> '_natmod':
+        if not isinstance(other, _natmod) or \
+           other.__class__ != self.__class__ or \
+           other.modulus != self.modulus:
+            fail("* is only valid for two _natmod of same modulus.")
+        res = copy(self)
+        res.v = (res.v*other.v) % res.modulus
+        return res
 
     @typechecked
-    def __inv__(self) -> '_intn':
-        return _intn(~ self.v,self.signed,self.bits)
+    def __pow__(self, other: nat_t) -> '_natmod':
+        if not isinstance(other, nat_t) or other < 0:
+            fail("* is only valid for two positive exponents")
+        res = copy(self)
+        res.v = pow(res.v,other,res.modulus)
+        return res
 
-    @typechecked
-    def __invert__(self) -> '_intn':
-        return _intn(~ self.v,self.signed,self.bits)
-
-    @typechecked
-    def __or__(self, other: '_intn') -> '_intn':
-        if not isinstance(other, _intn) or \
-           other.bits != self.bits or \
-           other.signed != self.signed:
-            fail("| is only valid for two _intn of same bits and sign.")
-        return _intn(self.v | other.v,self.signed,self.bits)
-
-    @typechecked
-    def __and__(self, other: '_intn') -> '_intn':
-        if not isinstance(other, _intn) or \
-           other.bits != self.bits or \
-           other.signed != self.signed:
-            fail("& is only valid for two _intn of same bits and sign.")
-        return _intn(self.v & other.v,self.signed,self.bits)
-
-    @typechecked
-    def __xor__(self, other: '_intn') -> '_intn':
-        if not isinstance(other, _intn) or \
-           other.bits != self.bits or \
-           other.signed != self.signed:
-            fail("^ is only valid for two _intn of same bits and sign.")
-        return _intn(self.v ^ other.v,self.signed,self.bits)
-
-    @typechecked
-    def __lshift__(self, other: int) -> '_intn':
-        if not isinstance(other, int) or other < 0 or other > self.bits:
-            fail("lshift value has to be an int between 0 and bits")
-        return _intn(self.v << other,self.signed,self.bits)
-
-    @typechecked
-    def __rshift__(self, other: int) -> '_intn':
-        if not isinstance(other, int) or other < 0 or other > self.bits:
-            fail("rshift value has to be an int between 0 and bits")
-        return _intn(self.v >> other,self.signed,self.bits)
-
-
-    @typechecked
-    def __getitem__(self, key: Union[int, slice]):
-        try:
-            if isinstance(key, slice):
-                return _intn(self.v >> key.start,
-                             self.signed,
-                             key.stop - key.start)
-            else:
-                return _intn(self.v >> key,self.signed,1)
-        except:
-            print('_intn content:', self.v)
-            print('desired index:', key)
-            fail('_intn bit access error')
-
-    @typechecked
-    def __getslice__(self, i: int, j: int) -> '_intn':
-        return _intn(self.v >> i, self.signd, j - i)
-
-
-class intn(_intn):
     @staticmethod
     @typechecked
-    def to_int(x: '_intn') -> int:
-        if not isinstance(x, _intn):
-            fail("to_int is only valid for _intn.")
+    def to_int(x: '_natmod') -> nat_t:
+        if not isinstance(x, _natmod):
+            fail("to_int is only valid for _natmod.")
         return x.v
 
     @staticmethod
     @typechecked
-    def to_nat(x: '_intn') -> nat_t:
-        if not isinstance(x, _intn) or x.signed == True:
-            fail("to_nat is only valid for unsigned _intn.")
-        return nat(x.v)
+    def to_nat(x: '_natmod') -> nat_t:
+        if not isinstance(x, _natmod):
+            fail("to_nat is only valid for _natmod.")
+        return x.v
 
+
+class _uintn(_natmod):
+    @typechecked
+    def __init__(self, x: Union[int,'_uintn'], bits: int) -> None:
+        modulus = 1 << bits
+        _natmod.__init__(self,x,modulus)
+        self.bits = bits
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, _uintn):
+            fail("You can only compare two uints.")
+        return (self.bits == other.bits and
+                self.v == other.v)
 
     @staticmethod
     @typechecked
-    def rotate_left(x: '_intn', other: int) -> 'bit':
-        if not isinstance(x, _intn) or \
+    def num_bits(x: '_uintn') -> int:
+        if not isinstance(x, _uintn):
+            fail("num_bits is only valid for _uintn.")
+        return x.bits
+
+    @typechecked
+    def __inv__(self) -> '_uintn':
+        res = copy(self)
+        res.v = ~res.v
+        return res
+
+    @typechecked
+    def __invert__(self) -> '_uintn':
+        res = copy(self)
+        res.v = ~res.v
+        return res
+
+    @typechecked
+    def __or__(self, other: '_uintn') -> '_uintn':
+        if not isinstance(other, _uintn) or \
+           other.__class__ != self.__class__ or \
+           other.bits != self.bits:
+            fail("| is only valid for two _uintn of same bits.")
+        res = copy(self)
+        res.v = res.v | other.v
+        return res
+
+    @typechecked
+    def __and__(self, other: '_uintn') -> '_uintn':
+        if not isinstance(other, _uintn) or \
+           other.__class__ != self.__class__ or \
+           other.bits != self.bits:
+            fail("& is only valid for two _uintn of same bits.")
+        res = copy(self)
+        res.v = res.v & other.v
+        return res
+
+    @typechecked
+    def __xor__(self, other: '_uintn') -> '_uintn':
+        if not isinstance(other, _uintn) or \
+           other.__class__ != self.__class__ or \
+           other.bits != self.bits:
+            fail("^ is only valid for two _uintn of same bits.")
+        res = copy(self)
+        res.v = res.v ^ other.v
+        return res
+
+
+    @typechecked
+    def __lshift__(self, other: int) -> '_uintn':
+        if not isinstance(other, int) or other < 0 or other > self.bits:
+            fail("lshift value has to be an int between 0 and bits")
+        res = copy(self)
+        res.v = (res.v << other) & (res.modulus - 1)
+        return res
+
+    @typechecked
+    def __rshift__(self, other: int) -> '_uintn':
+        if not isinstance(other, int) or other < 0 or other > self.bits:
+            fail("lshift value has to be an int between 0 and bits")
+        res = copy(self)
+        res.v = (res.v >> other) & (res.modulus - 1)
+        return res
+
+    @typechecked
+    def __getitem__(self, key: Union[int, slice]) -> '_uintn':
+        try:
+            if isinstance(key, slice):
+                return _uintn(self.v >> key.start,
+                              key.stop - key.start)
+            else:
+                return _uintn(self.v >> key,1)
+        except:
+            print('_uintn content:', self.v)
+            print('desired index:', key)
+            fail('_uintn bit access error')
+
+    @typechecked
+    def __getslice__(self, i: int, j: int) -> '_uintn':
+        return _uintn(self.v >> i, j - i)
+
+    @staticmethod
+    @typechecked
+    def rotate_left(x: '_uintn', other: int) -> '_uintn':
+        if not isinstance(x, _uintn) or \
            not isinstance(other, int) or \
            other <= 0 or other >= x.bits:
             fail("rotate_left value has to be an int strictly between 0 and bits")
-        return _intn(x.v << other | x.v >> (x.bits - other),x.signed,x.bits)
+        return (x << other) | (x >> (x.bits - other))
 
     @staticmethod
     @typechecked
-    def rotate_right(x: '_intn', other: int) -> 'bit':
-        if not isinstance(x, _intn) or \
+    def rotate_right(x: '_uintn', other: int) -> '_uintn':
+        if not isinstance(x, _uintn) or \
            not isinstance(other, int) or \
            other <= 0 or other >= x.bits:
-            fail("rotate_right value has to be an int strictly between 0 and bits")
-        return _intn(x.v >> other | x.v << (x.bits - other),x.signed,x.bits)
+            fail("rotate_left value has to be an int strictly between 0 and bits")
+        return (x >> other) | (x << (x.bits - other))
 
     @staticmethod
     @typechecked
-    def get_bit(x:'_intn', index:int):
-        if isinstance(x,_intn) and isinstance(index,int) \
+    def reverse(x: '_uintn') -> '_uintn':
+        if not isinstance(x, _uintn): 
+            fail("reverse only works for _uintn")
+        b = '{:0{width}b}'.format(x.v, width=bits)
+        res = copy(x)
+        res.v = int(b[::-1], 2)
+        return res
+
+    @staticmethod
+    @typechecked
+    def get_bit(x:'_uintn', index:int):
+        if isinstance(x,_uintn) and isinstance(index,int) \
            and index >= 0 and index < x.bits:
             return x[index]
         else:
@@ -293,87 +321,84 @@ class intn(_intn):
 
     @staticmethod
     @typechecked
-    def set_bit(x:'_intn', index:int, value:int):
-        if isinstance(x,_intn) and isinstance(index,int) \
+    def set_bit(x:'_uintn', index:int, value:int):
+        if isinstance(x,_uintn) and isinstance(index,int) \
            and index >= 0 and index < x.bits \
            and value >= 0 and value < 2:
-            tmp1 = ~ (_intn(1,False,x.bits) << index)
-            tmp2 = _intn(value,False,x.bits) << index
+            tmp1 = ~ (_uintn(1,x.bits) << index)
+            tmp2 = _uintn(value,x.bits) << index
             return (x & tmp1) | tmp2
         else:
             fail("set_bit index has to be an int between 0 and bits - 1")
 
-class uintn(intn):
+    @staticmethod
     @typechecked
-    def __init__(self, x: int, bits: int) -> None:
-        super(uintn, self).__init__(x,False,bits)
+    def set_bits(x:'_uintn', start:int, end:int, value:'_uintn'):
+        if isinstance(x,_uintn) and isinstance(start,int) \
+           and isinstance(end,int) and isinstance(value,_uintn) \
+           and start >= 0 and start <= end \
+           and end <= x.bits and start < x.bits \
+           and value.bits == end - start:
+            tmp1 = ~ (_uintn((1 << (end - start)) - 1,x.bits) << start)
+            tmp2 = _uintn(value,x.bits) << start
+            return (x & tmp1) | tmp2
+        else:
+            fail("set_bits has to be an interval between 0 and bits - 1")
 
-def intn_t(signed:bool, bits:int):
-    return _intn
+
 def uintn_t(bits:int):
-    return intn_t(False,bits)
+    return refine_t(_uintn,lambda x: x.bits == bits)
+uintn = _uintn
 
-def bitvector_t(bits:int):
-    return uintn_t(bits)
-def bitvector(n:int,bits:int):
-    return uintn(n,bits)
-        
+def natmod_t(modulus:int):
+    return refine_t(_natmod,lambda x: x.modulus == modulus)
+natmod = _natmod
+
+bitvector_t = uintn_t
+bitvector   = uintn
+
+class bit(_uintn):
+    def __init__(self, x: Union[int,'_uintn']) -> None:
+        _uintn.__init__(self,x,1)
 bit_t = uintn_t(1)
-def bit(v:int):
-    if isinstance(v,int):
-        return uintn(v,1)
-    else:
-        return uintn(intn.to_int(v),1)
+
+class uint8(_uintn):
+    def __init__(self, x: Union[int,'_uintn']) -> None:
+        _uintn.__init__(self,x,8)
 uint8_t = uintn_t(8)
-def uint8(v:Union[int,_intn]):
-    if isinstance(v,int):
-        return uintn(v,8)
-    else:
-        return uintn(intn.to_int(v),8)
-        
+
+class uint16(_uintn):
+    def __init__(self, x: Union[int,'_uintn']) -> None:
+        _uintn.__init__(self,x,16)
 uint16_t = uintn_t(16)
-def uint16(v:int):
-    if isinstance(v,int):
-        return uintn(v,16)
-    else:
-        return uintn(intn.to_int(v),16)
+
+class uint32(_uintn):
+    def __init__(self, x: Union[int,'_uintn']) -> None:
+        _uintn.__init__(self,x,32)
 uint32_t = uintn_t(32)
-def uint32(v:int):
-    if isinstance(v,int):
-        return uintn(v,32)
-    else:
-        return uintn(intn.to_int(v),32)
+
+class uint64(_uintn):
+    def __init__(self, x: Union[int,'_uintn']) -> None:
+        _uintn.__init__(self,x,64)
 uint64_t = uintn_t(64)
-def uint64(v:int):
-    if isinstance(v,int):
-        return uintn(v,64)
-    else:
-        return uintn(intn.to_int(v),64)
+
+class uint128(_uintn):
+    def __init__(self, x: Union[int,'_uintn']) -> None:
+        _uintn.__init__(self,x,128)
 uint128_t = uintn_t(128)
-def uint128(v:int):
-    if isinstance(v,int):
-        return uintn(v,128)
-    else:
-        return uintn(intn.to_int(v),128)
-            
+
 
 class _array(Generic[T]):
     @typechecked
-    def __init__(self, x: Union[Sequence[T], '_array[T]'], t: Type=None) -> None:
-        if not (isinstance(x, Sequence) or isinstance(x, _array)):
-            fail("_array() takes a sequence or _array as first argument.")
-        if t:
-            for e in x:
-                if not isinstance(e, t) and t(e) is None:
-                    fail("_array() input element has wrong type. "+\
-                         "Got "+str(type(e))+" expected "+str(t)+".")
+    def __init__(self, x: Union[Sequence[T], List[T], '_array[T]']) -> None:
+        if (not isinstance(x, Sequence)) and (not isinstance(x, _array)) and (not isinstance(x,List)):
+            fail("_array() takes a list or sequence or _array as first argument.")
         self.l = list(x)
         self.len = len(self.l)
-        self.t = t
 
     @typechecked
     def __len__(self) -> int:
-        return len(self.l)
+        return self.len
 
     @typechecked
     def __str__(self) -> str:
@@ -389,23 +414,21 @@ class _array(Generic[T]):
 
     @typechecked
     def __eq__(self, other: '_array[T]') -> bool:
-        if isinstance(other, _array) and other.t == self.t:
+        if isinstance(other, _array):
             return self.l == other.l
-        fail("_array.__eq__ only works on two _arrays of the same type.")
+        fail("_array.__eq__ only works on two _arrays.")
 
     @typechecked
     def __ne__(self, other: '_array[T]') -> bool:
-        if isinstance(other, _array) and other.t == self.t:
+        if isinstance(other, _array):
             return self.l != other.l
-        fail("_array.__ne__ only works on two _arrays of the same type.")
+        fail("_array.__ne__ only works on two _arrays.")
 
-    # TODO: Return type should be Union['_vlarray', self.t] but we don't have
-    #       access to self at this point.
     @typechecked
     def __getitem__(self, key: Union[int, slice]) -> Union['_array[T]', T]:
         try:
             if isinstance(key, slice):
-                return _array(self.l[key.start:key.stop],self.t)
+                return _array(self.l[key.start:key.stop])
             elif isinstance(key,int) and key >= 0 and key < self.len:
                 return self.l[key]
         except:
@@ -418,7 +441,7 @@ class _array(Generic[T]):
     def __getslice__(self, i: int, j: int) -> '_array[T]':
         if i >= 0 and i < self.len and \
            i <= j and j <= self.len:
-            return _array(self.l[i:j],self.t)
+            return _array(self.l[i:j])
 
     @typechecked
     def __setitem__(self, key: Union[int, slice], v) -> None:
@@ -427,19 +450,10 @@ class _array(Generic[T]):
         else:
             self.l[key] = v
 
-    
-class array(_array):
-#    def __init__(self) -> None:
-#        fail("Don't use array() directly. Use create.")
-
     @staticmethod
     @typechecked
     def create(l: int, default:T) -> '_array[T]':
-#        if isinstance(l, _uintn):
-#            l = _uintn.to_int(l)
         res = _array([default] * l)
-#        if isinstance(default, uint8_t):
-#            res = vlbytes_t(res)
         return res
 
 
@@ -448,29 +462,28 @@ class array(_array):
     def length(a: '_array[T]') -> int:
         if not isinstance(a, _array):
             fail("array.length takes a _array.")
-        return a.len
+        return len(a)
 
     @staticmethod
     @typechecked
     def copy(x: '_array[T]') -> '_array[T]':
-        copy = _array(x.l[:],x.t)
-        return copy
+        return deepcopy(x)
 
     @staticmethod
     @typechecked
     def concat(x: '_array[T]', y: '_array[T]') -> '_array[T]':
-        res = _array(x.l[:]+y.l[:], x.t)
+        res = _array(x.l[:]+y.l[:])
         return res
 
     @staticmethod
     @typechecked
     def zip(x: '_array[T]', y: '_array[U]') -> '_array[tuple2(T,U)]':
-        return _array(list(zip(x.l, y.l)),tuple2(x.t,y.t))
+        return _array(list(zip(x.l, y.l)))
 
     @staticmethod
     @typechecked
     def enumerate(x: '_array[T]') -> '_array[tuple2(int,T)]':
-        return _array(list(enumerate(x.l)),tuple2(int,T))
+        return _array(list(enumerate(x.l)))
 
     @staticmethod
     @typechecked
@@ -482,8 +495,8 @@ class array(_array):
         nblocks = array.length(a) // blocksize
         rem = array.length(a) % blocksize
         blocks = _array([a[x*blocksize:(x+1)*blocksize]
-                          for x in range(nblocks)],_array)
-        last = _array(a[array.length(a)-rem:array.length(a)],a.t)
+                          for x in range(nblocks)])
+        last = _array(a[array.length(a)-rem:array.length(a)])
         return blocks, last
 
     @staticmethod
@@ -492,7 +505,6 @@ class array(_array):
         res = array.concat(_array([b for block in blocks for b in block]),last)
         return res
 
-    # Only used in ctr. Maybe delete
     @staticmethod
     @typechecked
     def map(f: Callable[[T], U], a: '_array[T]') -> '_array[U]':
@@ -500,30 +512,28 @@ class array(_array):
 
     @staticmethod
     @typechecked
-    def create_random(l: nat_t, t: Type[_intn]) -> '_array[_intn]':
+    def create_random(l: nat_t, t: Type[_uintn]) -> '_array[_uintn]':
         if not isinstance(l, nat_t):
             fail("array.create_random's first argument has to be of type nat_t.")
         r = rand()
         x = t(0)
         return _array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
 
-    
-def array_t(t: type, l:int):
-    return _array
 
 def vlarray_t(t:type):
-    return _array
+    return refine_t(_array,lambda x: all(isinstance(z,t) for z in x))
+vlarray = _array
 
+def array_t(t: type, l:int):
+   return refine_t(vlarray_t(t),lambda x: x.len == l)
+array = _array
+
+vlbytes_t = vlarray_t(uint8_t)
 def bytes_t(l:int):
-    return _array
-
-vlbytes_t = _array
+    return array_t(uint8_t,l)
 
 
-class bytes(array):
-#    def __init__(self, x: Union[Sequence[T], '_array[T]']) -> None:
-#        fail("don't call bytes directly")
-
+class bytes(_array):
     @staticmethod
     @typechecked
     def from_ints(x: List[int]) -> 'vlbytes_t':
@@ -653,35 +663,35 @@ class bytes(array):
     @staticmethod
     @typechecked
     def to_uint16_le(x: 'vlbytes_t') -> uint16_t:
-        return bytes.to_uintn_le(x)
+        return uint16(bytes.to_uintn_le(x))
     @staticmethod
     @typechecked
     def to_uint32_le(x: 'vlbytes_t') -> uint32_t:
-        return bytes.to_uintn_le(x)
+        return uint32(bytes.to_uintn_le(x))
     @staticmethod
     @typechecked
     def to_uint64_le(x: 'vlbytes_t') -> uint64_t:
-        return bytes.to_uintn_le(x)
+        return uint64(bytes.to_uintn_le(x))
     @staticmethod
     @typechecked
     def to_uint128_le(x: 'vlbytes_t') -> uint128_t:
-        return bytes.to_uintn_le(x)
+        return uint128(bytes.to_uintn_le(x))
     @staticmethod
     @typechecked
     def to_uint16_be(x: 'vlbytes_t') -> uint16_t:
-        return bytes.to_uintn_be(x)
+        return uint16(bytes.to_uintn_be(x))
     @staticmethod
     @typechecked
     def to_uint32_be(x: 'vlbytes_t') -> uint32_t:
-        return bytes.to_uintn_be(x)
+        return uint32(bytes.to_uintn_be(x))
     @staticmethod
     @typechecked
     def to_uint64_be(x: 'vlbytes_t') -> uint64_t:
-        return bytes.to_uintn_be(x)
+        return uint64(bytes.to_uintn_be(x))
     @staticmethod
     @typechecked
     def to_uint128_be(x: 'vlbytes_t') -> uint128_t:
-        return bytes.to_uintn_be(x)
+        return uint128(bytes.to_uintn_be(x))
 
     @staticmethod
     @typechecked
@@ -719,35 +729,35 @@ class bytes(array):
     @staticmethod
     @typechecked
     def to_uint16s_le(x: 'vlbytes_t') -> _array[uint16_t]:
-        return bytes.to_uintns_le(x,16)
+        return array.map(uint16,bytes.to_uintns_le(x,16))
     @staticmethod
     @typechecked
     def to_uint32s_le(x: 'vlbytes_t') -> _array[uint32_t]:
-        return bytes.to_uintns_le(x,32)
+        return array.map(uint32,bytes.to_uintns_le(x,32))
     @staticmethod
     @typechecked
     def to_uint64s_le(x: 'vlbytes_t') -> _array[uint64_t]:
-        return bytes.to_uintns_le(x,64)
+        return array.map(uint64,bytes.to_uintns_le(x,64))
     @staticmethod
     @typechecked
     def to_uint128s_le(x: 'vlbytes_t') -> _array[uint128_t]:
-        return bytes.to_uintns_le(x,128)
+        return array.map(uint128,bytes.to_uintns_le(x,128))
     @staticmethod
     @typechecked
     def to_uint16s_be(x: 'vlbytes_t') -> _array[uint16_t]:
-        return bytes.to_uintns_be(x,16)
+        return array.map(uint16,bytes.to_uintns_be(x,16))
     @staticmethod
     @typechecked
     def to_uint32s_be(x: 'vlbytes_t') -> _array[uint32_t]:
-        return bytes.to_uintns_be(x,32)
+        return array.map(uint32,bytes.to_uintns_be(x,32))
     @staticmethod
     @typechecked
     def to_uint64s_be(x: 'vlbytes_t') -> _array[uint64_t]:
-        return bytes.to_uintns_be(x,64)
+        return array.map(uint64,bytes.to_uintns_be(x,64))
     @staticmethod
     @typechecked
     def to_uint128s_be(x: 'vlbytes_t') -> _array[uint128_t]:
-        return bytes.to_uintns_be(x,128)
+        return array.map(uint128,bytes.to_uintns_be(x,128))
 
     @staticmethod
     @typechecked
@@ -788,111 +798,73 @@ class bytes(array):
         r = rand()
         return vlbytes_t(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
-
-class nat_mod:
+class _vector(_array[T]):
+    @staticmethod
     @typechecked
-    def __init__(self, x: int, modulus: int) -> None:
-        if x < 0 or modulus <= 0:
-            fail("nat_mod only defined for nats mod pos")
-        self.v = x % modulus
-        self.modulus = modulus
+    def create(l: int, default:T) -> '_vector[T]':
+        res = _vector([default] * l)
+        return res
 
     @typechecked
-    def __str__(self) -> str:
-        return str(self.v)
-
-    @typechecked
-    def __repr__(self) -> str:
-        return repr(self.v)
-
-    @typechecked
-    def __add__(self, other: 'nat_mod') -> 'nat_mod':
-        if not isinstance(other, nat_mod) or \
-           other.modulus != self.modulus:
-            fail("+ is only valid for two nat_mods with same modulus")
-        return nat_mod(self.v + other.v,self.modulus)
-
-    @typechecked
-    def __sub__(self, other: 'nat_mod') -> 'nat_mod':
-        if not isinstance(other, nat_mod) or \
-           other.modulus != self.modulus:
-            fail("- is only valid for two nat_mods with same modulus")
-        return nat_mod(self.modulus + self.v - other.v,self.modulus)
-
-    @typechecked
-    def __mul__(self, other: 'nat_mod') -> 'nat_mod':
-        if not isinstance(other, nat_mod) or \
-           other.modulus != self.modulus:
-            fail("* is only valid for two nat_mods with same modulus")
-        return nat_mod(self.v * other.v,self.modulus)
-
-    @typechecked
-    def __pow__(self, other: int) -> 'nat_mod':
-        if not isinstance(other, int) or \
-           other < 0:
-            fail("** is only valid for nat exponent")
-        return nat_mod(pow(self.v,other,self.modulus),self.modulus)
-
-def nat_mod_t(q:nat):
-    return nat_mod
-    
-class vector(_array[nat_mod]):
-    @typechecked
-    def __init__(self, x: Union[Sequence[nat_mod],_array[nat_mod]]) -> None:
-        if isinstance(x,Sequence):
-            super().__init__(x,nat_mod)
-        else:
-            super().__init__(x.l,nat_mod)
-            
-    @typechecked
-    def __add__(self, other: 'vector') -> 'vector':
-        if not isinstance(other, vector) or \
+    def __add__(self, other: '_vector') -> '_vector':
+        if not isinstance(other, _vector) or \
+           other.__class__ != self.__class__ or \
            other.len != self.len:
-            fail("+ is only valid for two vectors of same length")
-        return vector([x + y for (x,y) in zip(self.l,other.l)])
+            fail("+ is only valid for two _vectors of same length")
+        res = deepcopy(self)
+        res.l = [x + y for (x,y) in zip(self.l,other.l)]
+        return res            
 
     @typechecked
-    def __sub__(self, other: 'vector') -> 'vector':
-        if not isinstance(other, vector) or \
+    def __sub__(self, other: '_vector') -> '_vector':
+        if not isinstance(other, _vector) or \
+           other.__class__ != self.__class__ or \
            other.len != self.len:
-            fail("- is only valid for two vectors of same length")
-        return vector([x - y for (x,y) in zip(self.l,other.l)])
+            fail("/ is only valid for two _vectors of same length")
+        res = deepcopy(self)
+        res.l = [x - y for (x,y) in zip(self.l,other.l)]
+        return res            
 
     @typechecked
-    def __mul__(self, other: 'vector') -> 'vector':
-        if not isinstance(other, vector) or \
+    def __mul__(self, other: '_vector') -> '_vector':
+        if not isinstance(other, _vector) or \
+           other.__class__ != self.__class__ or \
            other.len != self.len:
-            fail("- is only valid for two vectors of same length")
-        return vector([x * y for (x,y) in zip(self.l,other.l)])
+            fail("* is only valid for two _vectors of same length")
+        res = deepcopy(self)
+        res.l = [x * y for (x,y) in zip(self.l,other.l)]
+        return res            
 
 def vector_t(t:type,len:nat):
-    return vector
+    return array_t(t,len)
+vector = _vector
 
-class matrix(_array[vector]):
+class _matrix(_vector[_vector[T]]):
     @typechecked
-    def __init__(self, x: Sequence[Sequence[nat_mod]]) -> None:
-        super().__init__([vector(y) for y in x],vector)
+    def __init__(self, x: Union[Sequence[Sequence[T]],List[List[T]],_array[_array[T]]], rows:int, columns:int) -> None:
+        super().__init__(self,[_vector(r) for r in x])
+        if all(r.len == columns for r in self.l) and self.len == rows:
+            self.rows = rows
+            self.cols = columns
+        else:
+            fail("matrix with wrong number of rows and columns")
+            
+    @staticmethod
+    @typechecked
+    def create(r: int, c:int, default:T) -> '_matrix[T]':
+        col = _vector(c,default)
+        mat = _vector(r,c)
+        for i in range(r):
+            mat[i] = _vector(c,default)
+        return mat
 
+    @staticmethod
     @typechecked
-    def __add__(self, other: 'matrix') -> 'matrix':
-        if not isinstance(other, matrix) or \
-           other.len != self.len:
-            fail("+ is only valid for two matrices of same length")
-        return matrix([x + y for (x,y) in zip(self.l,other.l)])
+    def map(f: Callable[[T], U], a: '_matrix[T]') -> '_matrix[U]':
+        return _vector([array.map(f,x) for x in a.l])
 
-    @typechecked
-    def __sub__(self, other: 'matrix') -> 'matrix':
-        if not isinstance(other, matrix) or \
-           other.len != self.len:
-            fail("- is only valid for two matrices of same length")
-        return matrix([x - y for (x,y) in zip(self.l,other.l)])
-
-    @typechecked
-    def __mul__(self, other: 'matrix') -> 'matrix':
-        if not isinstance(other, matrix) or \
-           other.len != self.len:
-            fail("- is only valid for two matrices of same length")
-        return matrix([x * y for (x,y) in zip(self.l,other.l)])
     
 def matrix_t(t:type,rows:nat,columns:nat):
-    return matrix
+    return vector_t(vector_t(t,columns),rows)
+
+matrix = _matrix

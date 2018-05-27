@@ -35,10 +35,10 @@ def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlby
     return ciphertext, mac
 
 @typechecked
-def aead_chacha20poly1305_decrypt(key:key_t,nonce:bytes,
+def aead_chacha20poly1305_decrypt(key:key_t,nonce:nonce_t,
                                   aad:vlbytes_t,
                                   ciphertext:vlbytes_t,
-                                  tag:tag_t) -> bytes:
+                                  tag:tag_t) -> vlbytes_t:
     keyblock0 = chacha20_block(key, uint32(0), nonce)
     mac_key = keyblock0[0:32]
     _, to_mac = padded_aad_msg(aad,ciphertext)
