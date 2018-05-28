@@ -96,7 +96,7 @@ def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlb
         ctr += uint32(1)
     keyblock = chacha20_block(key, ctr, nonce)
     last = xor_block(last, keyblock)
-    return array.concat_blocks(blocks, last)
+    return vlbytes(array.concat_blocks(blocks, last))
 
 @typechecked
 def chacha20_encrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:

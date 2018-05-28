@@ -2,19 +2,21 @@
 PYTHON?=python3.6
 
 SPECS=poly1305 chacha20 aead_chacha20poly1305 sha2 keccak \
-argon2i curve25519 ed25519 p256 curve448 rsapss aes aead_aes128gcm
+curve25519 ed25519 p256 curve448 rsapss aes aead_aes128gcm argon2i 
 OTHER_SPECS=wots
 # vrf and blake2 are currently broken
 
 .PHONY: test $(SPECS) all
 
-all: check test
+all: run check 
 
-test: $(SPECS)
-check: $(addsuffix -check, $(SPECS))
+run: $(addsuffix _test.py, $(SPECS))
+	$(PYTHON) -O $^
+
+check: $(addsuffix -check, $(SPECS)) $(SPECS)
 
 $(SPECS):
-	$(PYTHON) $@_test.py
+	$(PYTHON) -O $@_test.py
 
 %-check: %.py
 	hacspec-check $<
