@@ -10,13 +10,15 @@ OTHER_SPECS=wots
 
 all: run check 
 
-run: $(addsuffix _test.py, $(SPECS))
-	$(PYTHON) -O $^
+run: $(addsuffix -run, $(SPECS))
 
 check: $(addsuffix -check, $(SPECS)) $(SPECS)
 
 $(SPECS):
-	$(PYTHON) -O $@_test.py
+	$(PYTHON) $@_test.py
 
 %-check: %.py
 	hacspec-check $<
+
+%-run: %_test.py
+	$(PYTHON) -O $<
