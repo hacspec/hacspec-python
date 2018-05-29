@@ -312,6 +312,16 @@ class _uintn(_natmod):
 
     @staticmethod
     @typechecked
+    def bit_count(x:'_uintn'):
+        if isinstance(x,_uintn):
+            cnt = 0
+            for i in range(x.bits):
+                cnt += uintn.to_int(x[i])
+        else:
+            fail("bit_count arg must be a uintn")
+
+    @staticmethod
+    @typechecked
     def get_bit(x:'_uintn', index:int):
         if isinstance(x,_uintn) and isinstance(index,int) \
            and index >= 0 and index < x.bits:
@@ -319,6 +329,7 @@ class _uintn(_natmod):
         else:
             fail("get_bit index has to be an int between 0 and bits - 1")
 
+    
     @staticmethod
     @typechecked
     def set_bit(x:'_uintn', index:int, value:int):
@@ -502,7 +513,7 @@ class _array(Generic[T]):
     @staticmethod
     @typechecked
     def concat_blocks(blocks: '_array[_array[T]]', last: '_array[T]') -> '_array[T]':
-        res = array.concat(_array([b for block in blocks for b in block]),last)
+        res = _array.concat(_array([b for block in blocks for b in block]),last)
         return res
 
     @staticmethod
