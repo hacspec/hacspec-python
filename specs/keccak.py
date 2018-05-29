@@ -108,11 +108,11 @@ def storeState(rateInBytes: size_nat_200_t,
 
 
 @typechecked
-def absorb(rateInBytes: refine_t(nat_t, lambda x: 0 < x and x <= 200),
+def absorb(s:state_t,
+           rateInBytes: refine_t(nat_t, lambda x: 0 < x and x <= 200),
            inputByteLen: size_nat_t,
            input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen),
            delimitedSuffix: uint8_t) -> state_t:
-    s = array.create(25, uint64(0))
     n = inputByteLen // rateInBytes
     for i in range(n):
         s = loadState(rateInBytes, input_b[(
@@ -163,7 +163,8 @@ def keccak(rate: size_nat_1600_t, capacity: size_nat_t, inputByteLen: size_nat_t
                 lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen, res:
                 array.length(res) == outputByteLen):
     rateInBytes = nat(rate // 8)
-    s = absorb(rateInBytes, inputByteLen, input_b, delimitedSuffix)
+    s = array.create(25, uint64(0))
+    s = absorb(s, rateInBytes, inputByteLen, input_b, delimitedSuffix)
     output = squeeze(s, rateInBytes, outputByteLen)
     return output
 
