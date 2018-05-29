@@ -109,7 +109,7 @@ class _natmod:
                 xv = x
             self.modulus = modulus
             self.v = xv % modulus 
-
+        
     @typechecked
     def __str__(self) -> str:
         return hex(self.v)
@@ -139,9 +139,7 @@ class _natmod:
            other.__class__ != self.__class__ or \
            other.modulus != self.modulus:
             fail("+ is only valid for two _natmod of same modulus.")
-        res = copy(self)
-        res.v = (res.v+other.v) % res.modulus
-        return res
+        return _natmod.set_val(self, (self.v+other.v) % self.modulus)
 
     @typechecked
     def __sub__(self, other: '_natmod') -> '_natmod':
@@ -149,9 +147,7 @@ class _natmod:
            other.__class__ != self.__class__ or \
            other.modulus != self.modulus:
             fail("- is only valid for two _natmod of same modulus.")
-        res = copy(self)
-        res.v = (res.v-other.v) % res.modulus
-        return res
+        return _natmod.set_val(self, (self.modulus + self.v - other.v) % self.modulus)
 
     @typechecked
     def __mul__(self, other: '_natmod') -> '_natmod':
@@ -159,17 +155,14 @@ class _natmod:
            other.__class__ != self.__class__ or \
            other.modulus != self.modulus:
             fail("* is only valid for two _natmod of same modulus.")
-        res = copy(self)
-        res.v = (res.v*other.v) % res.modulus
-        return res
+        return _natmod.set_val(self, (self.v*other.v) % self.modulus)
 
     @typechecked
     def __pow__(self, other: nat_t) -> '_natmod':
         if not isinstance(other, nat_t) or other < 0:
             fail("* is only valid for two positive exponents")
-        res = copy(self)
-        res.v = pow(res.v,other,res.modulus)
-        return res
+        return _natmod.set_val(self, pow(self.v,other,self.modulus))
+
 
     @staticmethod
     @typechecked
@@ -177,6 +170,15 @@ class _natmod:
         if not isinstance(x, _natmod):
             fail("to_int is only valid for _natmod.")
         return x.v
+
+    @staticmethod
+    @typechecked
+    def set_val(x: '_natmod',v:int) -> '_natmod':
+        if not isinstance(x, _natmod):
+            fail("natmod.copy is only valid for _natmod.")
+        res = copy(x)
+        res.v = v
+        return res
 
     @staticmethod
     @typechecked
@@ -208,15 +210,11 @@ class _uintn(_natmod):
 
     @typechecked
     def __inv__(self) -> '_uintn':
-        res = copy(self)
-        res.v = ~res.v
-        return res
+        return _uintn.set_val(self,~self.v)
 
     @typechecked
     def __invert__(self) -> '_uintn':
-        res = copy(self)
-        res.v = ~res.v
-        return res
+        return _uintn.set_val(self,~self.v)
 
     @typechecked
     def __or__(self, other: '_uintn') -> '_uintn':
@@ -224,9 +222,7 @@ class _uintn(_natmod):
            other.__class__ != self.__class__ or \
            other.bits != self.bits:
             fail("| is only valid for two _uintn of same bits.")
-        res = copy(self)
-        res.v = res.v | other.v
-        return res
+        return _uintn.set_val(self,self.v | other.v)
 
     @typechecked
     def __and__(self, other: '_uintn') -> '_uintn':
@@ -234,9 +230,8 @@ class _uintn(_natmod):
            other.__class__ != self.__class__ or \
            other.bits != self.bits:
             fail("& is only valid for two _uintn of same bits.")
-        res = copy(self)
-        res.v = res.v & other.v
-        return res
+        return _uintn.set_val(self,self.v & other.v)
+
 
     @typechecked
     def __xor__(self, other: '_uintn') -> '_uintn':
@@ -244,26 +239,21 @@ class _uintn(_natmod):
            other.__class__ != self.__class__ or \
            other.bits != self.bits:
             fail("^ is only valid for two _uintn of same bits.")
-        res = copy(self)
-        res.v = res.v ^ other.v
-        return res
+        return _uintn.set_val(self,self.v ^ other.v)
 
 
     @typechecked
     def __lshift__(self, other: int) -> '_uintn':
         if not isinstance(other, int) or other < 0 or other > self.bits:
             fail("lshift value has to be an int between 0 and bits")
-        res = copy(self)
-        res.v = (res.v << other) & (res.modulus - 1)
-        return res
+        return _uintn.set_val(self,self.v << other & (self.modulus - 1))
 
     @typechecked
     def __rshift__(self, other: int) -> '_uintn':
         if not isinstance(other, int) or other < 0 or other > self.bits:
             fail("lshift value has to be an int between 0 and bits")
-        res = copy(self)
-        res.v = (res.v >> other) & (res.modulus - 1)
-        return res
+        return _uintn.set_val(self,self.v >> other & (self.modulus - 1))
+
 
     @typechecked
     def __getitem__(self, key: Union[int, slice]) -> '_uintn':
@@ -306,9 +296,7 @@ class _uintn(_natmod):
         if not isinstance(x, _uintn): 
             fail("reverse only works for _uintn")
         b = '{:0{width}b}'.format(x.v, width=x.bits)
-        res = copy(x)
-        res.v = int(b[::-1], 2)
-        return res
+        return _uintn.set_val(x,int(b[::-1],2))
 
     @staticmethod
     @typechecked
@@ -405,7 +393,12 @@ class _array(Generic[T]):
     def __init__(self, x: Union[Sequence[T], List[T], '_array[T]']) -> None:
         if (not isinstance(x, Sequence)) and (not isinstance(x, _array)) and (not isinstance(x,List)):
             fail("_array() takes a list or sequence or _array as first argument.")
-        self.l = list(x)
+        if isinstance(x,_array):
+            self.l = x.l
+        elif isinstance(x,list):
+            self.l = x
+        else:
+            self.l = list(x)
         self.len = len(self.l)
 
     @typechecked
@@ -501,10 +494,11 @@ class _array(Generic[T]):
     @staticmethod
     @typechecked
     def concat(x: '_array[T]', y: '_array[T]') -> '_array[T]':
-        res = deepcopy(x)
-        res.l = x.l[:]+y.l[:]
-        res.len = x.len + y.len
-        return res
+        res1 = deepcopy(x)
+        res2 = deepcopy(y)
+        res1.l += res2.l
+        res1.len += res2.len
+        return res1
 
     @staticmethod
     @typechecked
@@ -539,7 +533,7 @@ class _array(Generic[T]):
     @staticmethod
     @typechecked
     def map(f: Callable[[T], U], a: '_array[T]') -> '_array[U]':
-        res = deepcopy(a)
+        res = copy(a)
         res.l = list(map(f,res.l))
         return res
 
@@ -844,7 +838,7 @@ class _vector(_array[T]):
            other.__class__ != self.__class__ or \
            other.len != self.len:
             fail("+ is only valid for two _vectors of same length")
-        res = deepcopy(self)
+        res = copy(self)
         res.l = [x + y for (x,y) in zip(self.l,other.l)]
         return res            
 
@@ -854,7 +848,7 @@ class _vector(_array[T]):
            other.__class__ != self.__class__ or \
            other.len != self.len:
             fail("/ is only valid for two _vectors of same length")
-        res = deepcopy(self)
+        res = copy(self)
         res.l = [x - y for (x,y) in zip(self.l,other.l)]
         return res            
 
@@ -864,7 +858,7 @@ class _vector(_array[T]):
            other.__class__ != self.__class__ or \
            other.len != self.len:
             fail("* is only valid for two _vectors of same length")
-        res = deepcopy(self)
+        res = copy(self)
         res.l = [x * y for (x,y) in zip(self.l,other.l)]
         return res            
 
@@ -904,11 +898,13 @@ class _matrix(_vector[_vector[T]]):
     @staticmethod
     @typechecked
     def map(f: Callable[[T], U], a: '_matrix[T]') -> '_matrix[U]':
-        res = deepcopy(a)
-        for i in range(r):
-            for j in range(c):
-                res[i][j] = f(res[i][j])
-        return res
+        return _matrix.createi(a.rows,a.cols,lambda ij: f(res[ij[0]][ij[1]]))
+                               
+        # res = _matrix(a.rows,a.cols,a[0][0])
+        # for i in range(r):
+        #     for j in range(c):
+        #         res[i][j] = f(res[i][j])
+        # return res
     
 def matrix_t(t:type,rows:nat,columns:nat):
     return vector_t(vector_t(t,columns),rows)
