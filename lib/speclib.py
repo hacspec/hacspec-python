@@ -471,6 +471,23 @@ class _array(Generic[T]):
 
     @staticmethod
     @typechecked
+    def empty() -> '_array[T]':
+        return _array([])
+
+    @staticmethod
+    @typechecked
+    def singleton(x:T) -> '_array[T]':
+        return _array([x])
+
+
+    @staticmethod
+    @typechecked
+    def createi(l: int, f:Callable[[int],T]) -> '_array[T]':
+        return _array([f(i) for i in range(l)])
+
+
+    @staticmethod
+    @typechecked
     def length(a: '_array[T]') -> int:
         if not isinstance(a, _array):
             fail("array.length takes a _array.")
@@ -484,7 +501,9 @@ class _array(Generic[T]):
     @staticmethod
     @typechecked
     def concat(x: '_array[T]', y: '_array[T]') -> '_array[T]':
-        res = _array(x.l[:]+y.l[:])
+        res = deepcopy(x)
+        res.l = x.l[:]+y.l[:]
+        res.len = x.len + y.len
         return res
 
     @staticmethod
@@ -520,7 +539,9 @@ class _array(Generic[T]):
     @staticmethod
     @typechecked
     def map(f: Callable[[T], U], a: '_array[T]') -> '_array[U]':
-        return _array(list(map(f, a.l)))
+        res = deepcopy(a)
+        res.l = list(map(f,res.l))
+        return res
 
     @staticmethod
     @typechecked
@@ -872,9 +893,22 @@ class _matrix(_vector[_vector[T]]):
 
     @staticmethod
     @typechecked
-    def map(f: Callable[[T], U], a: '_matrix[T]') -> '_matrix[U]':
-        return _vector([array.map(f,x) for x in a.l])
+    def createi(r: int, c:int, f:Callable[[int,int],T]) -> '_matrix[T]':
+        v = f(0,0)
+        res = _matrix.create(r,c,v)
+        for i in range(r):
+            for j in range(c):
+                res[i][j] = f(i,j)
+        return res
 
+    @staticmethod
+    @typechecked
+    def map(f: Callable[[T], U], a: '_matrix[T]') -> '_matrix[U]':
+        res = deepcopy(a)
+        for i in range(r):
+            for j in range(c):
+                res[i][j] = f(res[i][j])
+        return res
     
 def matrix_t(t:type,rows:nat,columns:nat):
     return vector_t(vector_t(t,columns),rows)
