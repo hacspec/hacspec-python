@@ -305,7 +305,7 @@ class _uintn(_natmod):
     def reverse(x: '_uintn') -> '_uintn':
         if not isinstance(x, _uintn): 
             fail("reverse only works for _uintn")
-        b = '{:0{width}b}'.format(x.v, width=bits)
+        b = '{:0{width}b}'.format(x.v, width=x.bits)
         res = copy(x)
         res.v = int(b[::-1], 2)
         return res
@@ -852,10 +852,10 @@ class _matrix(_vector[_vector[T]]):
     @staticmethod
     @typechecked
     def create(r: int, c:int, default:T) -> '_matrix[T]':
-        col = _vector(c,default)
-        mat = _vector(r,c)
+        col = _vector.create(c,default)
+        mat = _vector.create(r,col)
         for i in range(r):
-            mat[i] = _vector(c,default)
+            mat[i] = _vector.create(c,default)
         return mat
 
     @staticmethod
