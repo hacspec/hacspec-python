@@ -317,6 +317,7 @@ class _uintn(_natmod):
             cnt = 0
             for i in range(x.bits):
                 cnt += uintn.to_int(x[i])
+            return cnt
         else:
             fail("bit_count arg must be a uintn")
 
