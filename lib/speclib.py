@@ -511,13 +511,13 @@ class _array(Generic[T]):
 
     @staticmethod
     @typechecked
-    def split(x: '_array[T]', len:int) -> '_array[T]':
+    def split(x: '_array[T]', len:int) -> '_array[T],_array[T]':
         res1 = copy(x)
         res2 = copy(x)
         res1.len = len
         res2.len = x.len - len
-        res1.l = x[0:len]
-        res2.l = x[len:x.len]
+        res1.l = x.l[0:len]
+        res2.l = x.l[len:x.len]
         return res1,res2
 
     @staticmethod

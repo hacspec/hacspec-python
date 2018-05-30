@@ -1,5 +1,5 @@
 from lib.speclib import *
-from specs.kyber import crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec
+from specs.kyber import Kyber #crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec
 from test_vectors.kyber_test_vectors import kyber_test_vectors
 from sys import exit
 import json
@@ -16,11 +16,12 @@ def main (x: int) -> None :
         ct_expected = bytes.from_hex(kyber_test_vectors[i]['ct_expected'])
         ss_expected = bytes.from_hex(kyber_test_vectors[i]['ss_expected'])
 
+        (crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec) = Kyber(kyber_k,kyber_eta)
         pk, sk = crypto_kem_keypair(keypaircoins, coins)
         ct, ss1 = crypto_kem_enc(pk, msgcoins)
         ss2 = crypto_kem_dec(ct, sk)
 
-        #if (ss1 == ss2 and pk == pk_expected and sk == sk_expected and ct == ct_expected and ss1 == ss_expected):
+        #We do not check (sk == sk_expected) since we use an INV-NTT representation for sk
         if (ss1 == ss2 and ss1 == ss_expected and ct == ct_expected and pk == pk_expected):
             print("Kyber Test "+str(i)+" successful!")
         else:

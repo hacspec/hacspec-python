@@ -202,35 +202,34 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
             if (d < kyber_q):
                 res[j] = zqelem(d)
                 j = j + 1
-                i = i + 2
+            i = i + 2
             if (i > shake128_rate * nblocks - 2):
                 nblocks = 1
                 buf = shake128_squeeze(state, shake128_rate * nblocks)
                 i = 0
         return res
 
-    def genAij(seed:symbytes_t) -> Callable[[uint8_t,uint8_t],zqpoly_t]:
+    def genAij(seed:symbytes_t) -> Callable[[int,int],zqpoly_t]:
         def zqpoly_invntt(p:zqpoly_t) -> zqpoly_t:
             np = vector.create(kyber_n, zqelem(0))
             for i in range(kyber_n):
                 for j in range(kyber_n):
                     np[i] += (p[j] * (omega_inv ** (i * j)))
-                    np[i] *= n_inv * (psi_inv ** i)
+                np[i] *= n_inv * (psi_inv ** i)
             return np
 
         def zqpoly_bit_reverse(p:zqpoly_t) -> zqpoly_t:
             return array.createi(kyber_n, lambda i: p[int(uintn.reverse(uint8(i)))])
 
         def _genAij(a:uint8_t, b:uint8_t) -> zqpoly_t:
-            return zqpoly_invntt(zqpoly_bit_reverse(genAij_hat(seed, a, b)))
+            return zqpoly_invntt(zqpoly_bit_reverse(genAij_hat(seed, uint8(a), uint8(b))))
         return _genAij
 
     @typechecked
     def kyber_cpapke_keypair(coins:symbytes_t) -> \
         tuple2 (bytes_t(kyber_indcpa_publickeybytes(kyber_k)), bytes_t(kyber_indcpa_secretkeybytes(kyber_k))):
         rhosigma = sha3_512(kyber_symbytes, coins)
-        rho = rhosigma[0:kyber_symbytes]
-        sigma = rhosigma[kyber_symbytes:(2*kyber_symbytes)]
+        rho,sigma = bytes.split(rhosigma,kyber_symbytes)
 
         A = matrix.createi(kyber_k, kyber_k, lambda i,j: genAij(rho)(j,i))
         s = vector(vector.createi(kyber_k, zqpoly_getnoise(sigma)))
@@ -276,9 +275,8 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
     @typechecked
     def crypto_kem_enc(pk:kyber_publickey_t(kyber_k),msgcoins:symbytes_t) -> \
                        tuple2 (kyber_ciphertext_t(kyber_k), symbytes_t):
-
-        buf = bytes.concat(sha3_256(kyber_symbytes, msgcoins), sha3_256(kyber_publickeybytes(kyber_k), pk))
-
+        buf = bytes.concat(sha3_256(kyber_symbytes, msgcoins),
+                           sha3_256(kyber_publickeybytes(kyber_k), pk))
         kr = sha3_512(2 * kyber_symbytes, buf)
         ct = kyber_cpapke_encrypt(buf[0:kyber_symbytes], pk, kr[kyber_symbytes:(2*kyber_symbytes)])
         kr[kyber_symbytes:(2*kyber_symbytes)] = sha3_256(kyber_ciphertextbytes(kyber_k), ct)
@@ -288,9 +286,9 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
     @typechecked
     def crypto_kem_dec(ct:kyber_ciphertext_t(kyber_k), sk:kyber_secretkey_t(kyber_k)) -> \
                        symbytes_t:
-        sk1,x = split(sk,kyber_indcpa_secretkeybytes(kyber_k))
-        pk,x = split(x,kyber_indcpa_publickeybytes(kyber_k))
-        sk2,kr_ = split(x,kyber_symbytes)
+        sk1,x = bytes.split(sk,kyber_indcpa_secretkeybytes(kyber_k))
+        pk,x = bytes.split(x,kyber_indcpa_publickeybytes(kyber_k))
+        sk2,kr_ = bytes.split(x,kyber_symbytes)
         buf = bytes.concat(kyber_cpapke_decrypt(ct, sk1), sk2)
         kr = sha3_512(2 * kyber_symbytes, buf)
         cmp1 = kyber_cpapke_encrypt(buf[0:kyber_symbytes], pk, kr[kyber_symbytes:(2 * kyber_symbytes)])
