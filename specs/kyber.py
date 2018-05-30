@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 from lib.speclib import *
 from specs.keccak import *
 from math import floor
@@ -299,6 +298,3 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
         return ss
 
     return (crypto_kem_keypair,crypto_kem_enc,crypto_kem_dec)
-
-(crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec) = Kyber(3,4)
-    
