@@ -228,7 +228,7 @@ def kyber_cpapke_keypair(coins:symbytes_t) -> \
     rho = rhosigma[0:kyber_symbytes]
     sigma = rhosigma[kyber_symbytes:(2*kyber_symbytes)]
 
-    A = matrix.createi(kyber_k, kyber_k, genAij(rho))
+    A = matrix.createi(kyber_k, kyber_k, lambda i,j: genAij(rho)(j,i))
     s = vector(vector.createi(kyber_k, zqpoly_getnoise(sigma)))
     e = vector(vector.createi(kyber_k, lambda i: zqpoly_getnoise(sigma)(kyber_k + i)))
     t = zqpolymatrix_dot(A,s) + e
