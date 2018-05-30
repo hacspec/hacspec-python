@@ -165,7 +165,8 @@ def poly_getnoise(seed:symbytes_t, nonce:uint8_t) -> zqpoly_t:
 @typechecked
 def shake128_absorb(inputByteLen:size_nat_t,
                     input_b:vlbytes_t) -> state_t:
-    return absorb(168, inputByteLen, input_b, uint8(0x1F))
+    s = array.create(25, uint64(0))
+    return absorb(s,168, inputByteLen, input_b, uint8(0x1F))
 
 @typechecked
 def shake128_squeeze(s:state_t,
@@ -178,7 +179,6 @@ def genAij_hat(seed:symbytes_t, a:uint8_t, b:uint8_t) -> zqpoly_t:
     shake128_rate = 168
     res = vector.create(kyber_n, zqelem(0))
     extseed = bytes.concat(bytes.concat(seed, bytes.singleton(a)), bytes.singleton(b))
-
     maxnblocks = 4
     nblocks = maxnblocks
     state = shake128_absorb(kyber_symbytes + 2, extseed)
