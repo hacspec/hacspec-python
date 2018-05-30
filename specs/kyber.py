@@ -1,10 +1,5 @@
 #!/usr/bin/python3
 
-# To run and check this file, you need Python 3 + mypy
-# See install instructions at: http://mypy.readthedocs.io/en/latest/getting_started.html
-# To typecheck this file: mypy kyber.py
-# To run this file: python3 kyber.py
-
 from lib.speclib import *
 from specs.keccak import *
 from math import floor
@@ -28,6 +23,7 @@ def zqelem(n:nat):
     return natmod(n,kyber_q)
 zqpoly_t    = vector_t(zqelem_t,kyber_n)
 zqpolyvec_t = vector_t(zqpoly_t,kyber_k)
+zqpolymatrix_t = vector_t(zqpolyvec_t,kyber_k)
 
 omega     = zqelem(3844)
 psi       = zqelem(62)
@@ -36,14 +32,22 @@ psi_inv   = zqelem(1115)
 omega_inv = zqelem(6584)
 
 def zqpoly_mul(p:zqpoly_t, q:zqpoly_t) -> zqpoly_t:
-    s = array.create(kyber_n + kyber_n, zqelem(0))
-    for i in range(kyber_n):
-        for j in range(kyber_n):
-            s[i+j] += p[i] * q[j]
-    high = s[kyber_n:(kyber_n + kyber_n)]
-    low = s[0:kyber_n]
+    s = vector.poly_mul(p,q,zqelem(0))
+    low,high = vector.split(s,kyber_n)
     r = vector(low) - vector(high)
     return r
+
+def zqpolyvec_dot(p:zqpolyvec_t, q:zqpolyvec_t) -> zqpoly_t:
+    t = vector.create(kyber_n, zqelem(0))
+    for i in range(kyber_k):
+        t += zqpoly_mul(p[i], q[i])
+    return(t)
+
+def zqpolymatrix_dot(p:zqpolymatrix_t, q:zqpolyvec_t) -> zqpolyvec_t:
+    t = vector.create(kyber_k, vector.create(kyber_n, zqelem(0)))
+    for i in range(kyber_k):
+        t[i] = zqpolyvec_dot(p[i],q)
+    return(t)
 
 kyber_symbytes = 32
 kyber_polycompressedbytes = 96
@@ -111,7 +115,7 @@ def poly_to_msg(p:zqpoly_t) -> symbytes_t:
 @typechecked
 def pack_sk(sk:zqpolyvec_t) -> bytes_t(kyber_indcpa_secretkeybytes):
     #encode_13(sk mod+ q)
-    return bytes.concat_blocks(vector.map(lambda x:encode(13)(x), sk), vector.create(0, uint8(0)))
+    return bytes.concat_blocks(vector.map(lambda x:encode(13)(x), sk), vector.empty())
 
 @typechecked
 def unpack_sk(packedsk:bytes_t(kyber_indcpa_secretkeybytes)) -> zqpolyvec_t:
@@ -143,7 +147,7 @@ def unpack_ciphertext(c:bytes_t(kyber_indcpa_bytes)) -> tuple2 (zqpolyvec_t, zqp
     u1, v1 = bytes.split_blocks(c, 352)
     u = vector.map(decode_decompress(kyber_du), u1)
     v = decode_decompress(kyber_dv)(v1)
-    return (u, v)
+    return (vector(u), v)
 
 @typechecked
 def cbd(buf:bytes_t(kyber_eta * kyber_n // 4)) -> zqpoly_t:
@@ -157,10 +161,12 @@ def cbd(buf:bytes_t(kyber_eta * kyber_n // 4)) -> zqpoly_t:
 
 #cbd(prf(seed, nonce)), prf = shake256
 @typechecked
-def poly_getnoise(seed:symbytes_t, nonce:uint8_t) -> zqpoly_t:
-    extseed = bytes.concat(seed, bytes.singleton(nonce))
-    buf = shake256(kyber_symbytes + 1, extseed, kyber_eta * kyber_n // 4)
-    return cbd(buf)
+def zqpoly_getnoise(seed:symbytes_t) -> Callable[[int],zqpoly_t]:
+    def _getnoise(nonce:int) -> zqpoly_t:
+        extseed = bytes.concat(seed, bytes.singleton(uint8(nonce)))
+        buf = shake256(kyber_symbytes + 1, extseed, kyber_eta * kyber_n // 4)
+        return cbd(buf)
+    return _getnoise
 
 @typechecked
 def shake128_absorb(inputByteLen:size_nat_t,
@@ -199,7 +205,7 @@ def genAij_hat(seed:symbytes_t, a:uint8_t, b:uint8_t) -> zqpoly_t:
             i = 0
     return res
 
-def genAij(seed:symbytes_t, a:uint8_t, b:uint8_t) -> zqpoly_t:
+def genAij(seed:symbytes_t) -> Callable[[uint8_t,uint8_t],zqpoly_t]:
     def zqpoly_invntt(p:zqpoly_t) -> zqpoly_t:
         np = vector.create(kyber_n, zqelem(0))
         for i in range(kyber_n):
@@ -211,7 +217,9 @@ def genAij(seed:symbytes_t, a:uint8_t, b:uint8_t) -> zqpoly_t:
     def zqpoly_bit_reverse(p:zqpoly_t) -> zqpoly_t:
         return array.createi(kyber_n, lambda i: p[int(uintn.reverse(uint8(i)))])
 
-    return zqpoly_invntt(zqpoly_bit_reverse(genAij_hat(seed, a, b)))
+    def _genAij(a:uint8_t, b:uint8_t) -> zqpoly_t:
+        return zqpoly_invntt(zqpoly_bit_reverse(genAij_hat(seed, a, b)))
+    return _genAij
 
 @typechecked
 def kyber_cpapke_keypair(coins:symbytes_t) -> \
@@ -220,16 +228,10 @@ def kyber_cpapke_keypair(coins:symbytes_t) -> \
     rho = rhosigma[0:kyber_symbytes]
     sigma = rhosigma[kyber_symbytes:(2*kyber_symbytes)]
 
-    A = matrix.createi(kyber_k, kyber_k, lambda i, j: genAij(rho, uint8(j), uint8(i)))
-    s = vector.createi(kyber_k, lambda i: poly_getnoise(sigma, uint8(i)))
-    e = vector(vector.createi(kyber_k, lambda i: poly_getnoise(sigma, uint8(kyber_k + i))))
-    t = vector.create(kyber_k, vector.create(kyber_n, zqelem(0)))
-
-    for i in range(kyber_k):
-        for j in range(kyber_k):
-            t[i] += zqpoly_mul(A[i][j], s[j])
-
-    t += e
+    A = matrix.createi(kyber_k, kyber_k, genAij(rho))
+    s = vector(vector.createi(kyber_k, zqpoly_getnoise(sigma)))
+    e = vector(vector.createi(kyber_k, lambda i: zqpoly_getnoise(sigma)(kyber_k + i)))
+    t = zqpolymatrix_dot(A,s) + e
     sk = pack_sk(s)
     pk = pack_pk(t, rho)
     return (pk, sk)
@@ -240,24 +242,12 @@ def kyber_cpapke_encrypt(m:symbytes_t,
                          coins:symbytes_t) -> \
                          bytes_t(kyber_indcpa_bytes):
     t, rho = unpack_pk(packedpk)
-
-    At = matrix.createi(kyber_k, kyber_k, lambda i, j: genAij(rho, uint8(i), uint8(j)))
-    r  = vector.createi(kyber_k, lambda i: poly_getnoise(coins, uint8(i)))
-    e1 = vector(vector.createi(kyber_k, lambda i: poly_getnoise(coins, uint8(kyber_k + i))))
-    e2 = poly_getnoise(coins, uint8(kyber_k + kyber_k))
-    u  = vector.create(kyber_k, vector.create(kyber_n, zqelem(0)))
-    v  = vector.create(kyber_n, zqelem(0))
-
-    for i in range(kyber_k):
-        for j in range(kyber_k):
-            u[i] += zqpoly_mul(At[i][j], r[j])
-
-    u += e1
-
-    for i in range(kyber_k):
-        v += zqpoly_mul(t[i], r[i])
-
-    v += e2 + msg_to_poly(m)
+    At = matrix.createi(kyber_k, kyber_k, genAij(rho))
+    r  = vector(vector.createi(kyber_k, zqpoly_getnoise(coins)))
+    e1 = vector(vector.createi(kyber_k, lambda i: zqpoly_getnoise(coins)(kyber_k+i)))
+    e2 = zqpoly_getnoise(coins)(kyber_k + kyber_k)
+    u = zqpolymatrix_dot(At,r) + e1
+    v = zqpolyvec_dot(t,r) + e2 + msg_to_poly(m)
     c = pack_ciphertext(u, v)
     return c
 
@@ -266,12 +256,7 @@ def kyber_cpapke_decrypt(c:bytes_t(kyber_indcpa_bytes),
                          sk:bytes_t(kyber_indcpa_secretkeybytes)) -> symbytes_t:
     u, v = unpack_ciphertext(c)
     s = unpack_sk(sk)
-
-    d = vector.create(kyber_n, zqelem(0))
-
-    for i in range(kyber_k):
-        d += zqpoly_mul(vector(s[i]), vector(u[i]))
-
+    d = zqpolyvec_dot(s,u)
     d = v - d
     msg = poly_to_msg(d)
     return msg

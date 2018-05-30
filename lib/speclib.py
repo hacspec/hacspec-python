@@ -97,6 +97,7 @@ def contract3(pre: Callable[..., bool], post: Callable[..., bool]) -> FunctionTy
     return decorator
 
 class _natmod:
+#    __slots__ = ['v', 'modulus']
     @typechecked
     def __init__(self, x: Union[int,'_natmod'], modulus: int) -> None:
         if modulus < 1:
@@ -189,6 +190,7 @@ class _natmod:
 
 
 class _uintn(_natmod):
+#    __slots__ = ['bits']
     @typechecked
     def __init__(self, x: Union[int,'_uintn'], bits: int) -> None:
         modulus = 1 << bits
@@ -358,37 +360,44 @@ bitvector_t = uintn_t
 bitvector   = uintn
 
 class bit(_uintn):
+#    __slots__ = []
     def __init__(self, x: Union[int,'_uintn']) -> None:
         _uintn.__init__(self,x,1)
 bit_t = uintn_t(1)
 
 class uint8(_uintn):
+#    __slots__ = []
     def __init__(self, x: Union[int,'_uintn']) -> None:
         _uintn.__init__(self,x,8)
 uint8_t = uintn_t(8)
 
 class uint16(_uintn):
+#    __slots__ = []
     def __init__(self, x: Union[int,'_uintn']) -> None:
         _uintn.__init__(self,x,16)
 uint16_t = uintn_t(16)
 
 class uint32(_uintn):
+#    __slots__ = []
     def __init__(self, x: Union[int,'_uintn']) -> None:
         _uintn.__init__(self,x,32)
 uint32_t = uintn_t(32)
 
 class uint64(_uintn):
+#    __slots__ = []
     def __init__(self, x: Union[int,'_uintn']) -> None:
         _uintn.__init__(self,x,64)
 uint64_t = uintn_t(64)
 
 class uint128(_uintn):
+#    __slots__ = []
     def __init__(self, x: Union[int,'_uintn']) -> None:
         _uintn.__init__(self,x,128)
 uint128_t = uintn_t(128)
 
 
 class _array(Generic[T]):
+#    __slots__ = ['l','len']
     @typechecked
     def __init__(self, x: Union[Sequence[T], List[T], '_array[T]']) -> None:
         if (not isinstance(x, Sequence)) and (not isinstance(x, _array)) and (not isinstance(x,List)):
@@ -502,6 +511,17 @@ class _array(Generic[T]):
 
     @staticmethod
     @typechecked
+    def split(x: '_array[T]', len:int) -> '_array[T]':
+        res1 = copy(x)
+        res2 = copy(x)
+        res1.len = len
+        res2.len = x.len - len
+        res1.l = x[0:len]
+        res2.l = x[len:x.len]
+        return res1,res2
+
+    @staticmethod
+    @typechecked
     def zip(x: '_array[T]', y: '_array[U]') -> '_array[tuple2(T,U)]':
         return _array(list(zip(x.l, y.l)))
 
@@ -561,6 +581,7 @@ def bytes_t(l:int):
 
 
 class bytes(_array):
+#    __slots__ = []
     @staticmethod
     @typechecked
     def from_ints(x: List[int]) -> 'vlbytes_t':
@@ -826,6 +847,7 @@ class bytes(_array):
         return vlbytes_t(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
 class _vector(_array[T]):
+#    __slots__ = []
     @staticmethod
     @typechecked
     def create(l: int, default:T) -> '_vector[T]':
@@ -833,7 +855,7 @@ class _vector(_array[T]):
         return res
 
     @typechecked
-    def __add__(self, other: '_vector') -> '_vector':
+    def __add__(self, other: '_vector[T]') -> '_vector[T]':
         if not isinstance(other, _vector) or \
            other.__class__ != self.__class__ or \
            other.len != self.len:
@@ -843,7 +865,7 @@ class _vector(_array[T]):
         return res            
 
     @typechecked
-    def __sub__(self, other: '_vector') -> '_vector':
+    def __sub__(self, other: '_vector[T]') -> '_vector[T]':
         if not isinstance(other, _vector) or \
            other.__class__ != self.__class__ or \
            other.len != self.len:
@@ -853,7 +875,7 @@ class _vector(_array[T]):
         return res            
 
     @typechecked
-    def __mul__(self, other: '_vector') -> '_vector':
+    def __mul__(self, other: '_vector[T]') -> '_vector[T]':
         if not isinstance(other, _vector) or \
            other.__class__ != self.__class__ or \
            other.len != self.len:
@@ -862,11 +884,25 @@ class _vector(_array[T]):
         res.l = [x * y for (x,y) in zip(self.l,other.l)]
         return res            
 
+    @staticmethod
+    @typechecked
+    def poly_mul(x:'_vector[T]', other: '_vector[T]', zero:T) -> '_vector[T]':
+        if not isinstance(other, _vector) or \
+           other.__class__ != x.__class__ or \
+           other.len != x.len:
+            fail("poly_mul is only valid for two _vectors of same length")
+        res = _vector.create(x.len + other.len, zero)
+        for i in range(x.len):
+            for j in range(other.len):
+                res[i+j] += x[i] * other[j]
+        return res            
+
 def vector_t(t:type,len:nat):
     return array_t(t,len)
 vector = _vector
 
 class _matrix(_vector[_vector[T]]):
+#    __slots__ = ['rows','cols']
     @typechecked
     def __init__(self, x: Union[Sequence[Sequence[T]],List[List[T]],_array[_array[T]]], rows:int, columns:int) -> None:
         super().__init__(self,[_vector(r) for r in x])
