@@ -179,13 +179,17 @@ def key_expansion(key:block_t) -> bytes_t(11*16):
     return key_ex
 
 @typechecked
-def aes128_block(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
-    input = bytes(array.create(16,uint8(0)))
-    input[0:12] = n
-    input[12:16] = bytes.from_uint32_be(c)
+def aes128_encrypt_block(k:key_t,input:bytes_t(16)) -> block_t:
     key_ex = key_expansion(k)
     out = block_cipher(input,key_ex)
     return out
+
+@typechecked
+def aes128_ctr_keyblock(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
+    input = bytes(array.create(16,uint8(0)))
+    input[0:12] = n
+    input[12:16] = bytes.from_uint32_be(c)
+    return aes128_encrypt_block(k,input)
 
 @typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
@@ -200,10 +204,10 @@ def aes128_counter_mode(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbyt
     keyblock = bytes(array.create(blocksize,uint8(0)))
     ctr = counter
     for i in range(array.length(blocks)):
-        keyblock = aes128_block(key,nonce,ctr)
+        keyblock = aes128_ctr_keyblock(key,nonce,ctr)
         blocks[i] = xor_block(bytes(blocks[i]),keyblock)
         ctr += uint32(1)
-    keyblock = aes128_block(key,nonce,ctr)
+    keyblock = aes128_ctr_keyblock(key,nonce,ctr)
     last = xor_block(bytes(last),keyblock)
     return array.concat_blocks(blocks,last)
 

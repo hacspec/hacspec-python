@@ -25,7 +25,6 @@ def encode(block: subblock_t) -> felem_t:
     lelem = felem(nat(2 ** (8 * array.length(block))))
     return lelem + welem
 
-
 @typechecked
 def encode_r(r: block_t) -> felem_t:
     ruint = bytes.to_uint128_le(r)
