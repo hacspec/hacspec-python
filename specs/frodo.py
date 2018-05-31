@@ -35,24 +35,8 @@ def zqmatrix_mul(n1:nat, n2:nat, n3:nat, a:zqmatrix_t, b:zqmatrix_t) -> zqmatrix
         for k in range(n3):
             tmp = zqelem(0)
             for j in range(n2):
-                tmp += zqelem(a[i][j]) * zqelem(b[j][k])
+                tmp += a[i][j] * b[j][k]
             res[i][k] = tmp
-    return res
-
-#res[n1; n2] = a[n1; n2] + b[n1; n2]
-def zqmatrix_add(n1:nat, n2:nat, a:zqmatrix_t, b:zqmatrix_t) -> zqmatrix_t:
-    res = matrix.create(n1, n2, zqelem(0))
-    for i in range(n1):
-        for j in range(n2):
-            res[i][j] = zqelem(a[i][j]) + zqelem(b[i][j])
-    return res
-
-#res[n1; n2] = a[n1; n2] - b[n1; n2]
-def zqmatrix_sub(n1:nat, n2:nat, a:zqmatrix_t, b:zqmatrix_t) -> zqmatrix_t:
-    res = matrix.create(n1, n2, zqelem(0))
-    for i in range(n1):
-        for j in range(n2):
-            res[i][j] = zqelem(a[i][j]) - zqelem(b[i][j])
     return res
 
 #FrodoKEM
@@ -64,18 +48,8 @@ def cshake128_frodo(inputByteLen:nat,
     delimitedSuffix = uint8(0x04)
     rateInBytes = 168
 
-    s1 = array.create(8, uint8(0))
-    s1[0] = uint8(0x01)
-    s1[1] = uint8(0xa8)
-    s1[2] = uint8(0x01)
-    s1[3] = uint8(0x00)
-    s1[4] = uint8(0x01)
-    s1[5] = uint8(16)
-    s1[6] = uint8(cstm)
-    s1[7] = uint8(cstm >> 8)
-
     s = array.create(25, uint64(0))
-    s[0] = bytes.to_uint64_le(s1)
+    s[0] = uint64(0x10010001a801) | (uint64(cstm) << 48)
     s = state_permute(s)
 
     s = absorb(s, rateInBytes, inputByteLen, input_b, delimitedSuffix)
@@ -105,18 +79,18 @@ def frodo_pack(n1:nat, n2:nat, a:zqmatrix_t, d:nat) -> bytes_t:
     for i in range(n1):
         for j in range(n2):
             res = uintn.set_bits(res,(i*n2+j)*d,(i*n2+j+1)*d, uintn.reverse(uintn(a[i][j], d)))
-    res = bytes.from_uintn_le(res)
+    res = bytes.from_uintn_be(uintn.reverse(res))
     return res
 
 def frodo_unpack(n1:nat, n2:nat, b:bytes_t, d:nat) -> zqmatrix_t:
-    b = bytes.to_uintn_le(b)
+    b = uintn.reverse(bytes.to_uintn_be(b))
     res = matrix.create(n1, n2, zqelem(0))
     for i in range(n1):
         for j in range(n2):
             res[i][j] = zqelem(uintn.reverse(b[(i*n2+j)*d:(i*n2+j+1)*d]))
     return res
 
-def frodo_sample(r:uint16_t) -> int:
+def frodo_sample(r:uint16_t) -> zqelem_t:
     t = uintn.to_int(r >> 1)
     e = 0
     r0 = uintn.to_int(r & uint16(0x01))
@@ -125,7 +99,7 @@ def frodo_sample(r:uint16_t) -> int:
         if (t > cdf_table[z]):
             e += 1
     e = ((-1) ** r0) * e
-    return e
+    return zqelem(e)
 
 def frodo_sample_matrix(n1:nat, n2:nat, seedLen:nat, seed:bytes_t, ctr:uint16_t) -> zqmatrix_t:
     r = cshake128_frodo(seedLen, seed, ctr, n1 * n2 * 2)
@@ -133,6 +107,14 @@ def frodo_sample_matrix(n1:nat, n2:nat, seedLen:nat, seed:bytes_t, ctr:uint16_t)
     for i in range(n1):
         for j in range(n2):
             res[i][j] = frodo_sample(bytes.to_uint16_le(r[2*(i * n2 + j):2*(i * n2 + j + 2)]))
+    return res
+
+def frodo_sample_matrix_tr(n1:nat, n2:nat, seedLen:nat, seed:bytes_t, ctr:uint16_t) -> zqmatrix_t:
+    r = cshake128_frodo(seedLen, seed, ctr, n1 * n2 * 2)
+    res = matrix.create(n1, n2, zqelem(0))
+    for i in range(n1):
+        for j in range(n2):
+            res[i][j] = frodo_sample(bytes.to_uint16_le(r[2*(j * n1 + i):2*(j * n1 + i + 2)]))
     return res
 
 def frodo_gen_matrix(n:nat, seedLen:nat, seed:bytes_t) -> zqmatrix_t:
@@ -148,13 +130,13 @@ def crypto_kem_keypair(coins:bytes_t(2*crypto_bytes+params_symbytes)) -> \
     s, x = bytes.split(coins, crypto_bytes)
     seed_e, z = bytes.split(x, crypto_bytes)
     seed_a = cshake128_frodo(params_symbytes, z, uint16(0), params_symbytes)
-
+    #Frodo.PKE.KeyGen
     a_matrix = frodo_gen_matrix(params_n, params_symbytes, seed_a)
-    s_matrix = frodo_sample_matrix(params_n, params_nbar, crypto_bytes, seed_e, uint16(1))
+    s_matrix = frodo_sample_matrix_tr(params_n, params_nbar, crypto_bytes, seed_e, uint16(1))
     e_matrix = frodo_sample_matrix(params_n, params_nbar, crypto_bytes, seed_e, uint16(2))
 
     b_matrix = zqmatrix_mul(params_n, params_n, params_nbar, a_matrix, s_matrix)
-    b_matrix = zqmatrix_add(params_n, params_nbar, b_matrix, e_matrix)
+    b_matrix = b_matrix + e_matrix
     b = frodo_pack(params_n, params_nbar, b_matrix, params_logq)
 
     pk = bytes.concat(seed_a, b)
@@ -174,16 +156,16 @@ def crypto_kem_enc(coins:bytes_t, pk:bytes_t(crypro_publickeybytes)) -> \
     ep_matrix = frodo_sample_matrix(params_nbar, params_n, crypto_bytes, seed_e, uint16(5))
     a_matrix = frodo_gen_matrix(params_n, params_symbytes, seed_a)
     bp_matrix = zqmatrix_mul(params_nbar, params_n, params_n, sp_matrix, a_matrix)
-    bp_matrix = zqmatrix_add(params_nbar, params_n, bp_matrix, ep_matrix)
+    bp_matrix = bp_matrix + ep_matrix
     c1 = frodo_pack(params_nbar, params_n, bp_matrix, params_logq)
 
     epp_matrix = frodo_sample_matrix(params_nbar, params_nbar, crypto_bytes, seed_e, uint16(6))
     b_matrix = frodo_unpack(params_n, params_nbar, b, params_logq)
     v_matrix = zqmatrix_mul(params_nbar, params_n, params_nbar, sp_matrix, b_matrix)
-    v_matrix = zqmatrix_add(params_nbar, params_nbar, v_matrix, epp_matrix)
+    v_matrix = v_matrix + epp_matrix
 
     mu_encode = frodo_key_encode(coins, params_extracted_bits)
-    c_matrix = zqmatrix_add(params_nbar, params_nbar, v_matrix, mu_encode)
+    c_matrix = v_matrix + mu_encode
     c2 = frodo_pack(params_nbar, params_nbar, c_matrix, params_logq)
 
     ss_init = bytes.concat(c1, bytes.concat(c2, bytes.concat(k, d)))
@@ -208,7 +190,7 @@ def crypto_kem_dec(ct:bytes_t(crypto_ciphertextbytes), sk:tuple2 (bytes_t(crypto
     bp_matrix = frodo_unpack(params_nbar, params_n, c1, params_logq)
     c_matrix = frodo_unpack(params_nbar, params_nbar, c2, params_logq)
     m_matrix = zqmatrix_mul(params_nbar, params_n, params_nbar, bp_matrix, s_matrix)
-    m_matrix = zqmatrix_sub(params_nbar, params_nbar, c_matrix, m_matrix)
+    m_matrix = c_matrix - m_matrix
     mu_decode = frodo_key_decode(m_matrix, params_extracted_bits)
 
     tmp = bytes.concat(pk, mu_decode)
@@ -220,15 +202,15 @@ def crypto_kem_dec(ct:bytes_t(crypto_ciphertextbytes), sk:tuple2 (bytes_t(crypto
     ep_matrix = frodo_sample_matrix(params_nbar, params_n, crypto_bytes, seed_ep, uint16(5))
     a_matrix = frodo_gen_matrix(params_n, params_symbytes, seed_a)
     bpp_matrix = zqmatrix_mul(params_nbar, params_n, params_n, sp_matrix, a_matrix)
-    bpp_matrix = zqmatrix_add(params_nbar, params_n, bpp_matrix, ep_matrix)
+    bpp_matrix = bpp_matrix + ep_matrix
 
     epp_matrix = frodo_sample_matrix(params_nbar, params_nbar, crypto_bytes, seed_ep, uint16(6))
     b_matrix = frodo_unpack(params_n, params_nbar, b, params_logq)
     v_matrix = zqmatrix_mul(params_nbar, params_n, params_nbar, sp_matrix, b_matrix)
-    v_matrix = zqmatrix_add(params_nbar, params_nbar, v_matrix, epp_matrix)
+    v_matrix = v_matrix + epp_matrix
 
     mu_encode = frodo_key_encode(mu_decode, params_extracted_bits)
-    cp_matrix = zqmatrix_add(params_nbar, params_nbar, v_matrix, mu_encode)
+    cp_matrix = v_matrix + mu_encode
 
     #ss_init = c1 || c2 || (kp or s) || d
     ssiLen = c1Len+c2Len+2*crypto_bytes
