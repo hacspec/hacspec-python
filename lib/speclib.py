@@ -855,27 +855,28 @@ class bytes(_array):
 
 class _vector(_array[T]):
 #    __slots__ = []
+    def __init__(self, x: _array[T], zero:T) -> None:
+        self.l = x.l
+        self.len = x.len
+        self.zero = zero
+        if not (isinstance(zero,int) or
+                isinstance(zero,_natmod) or
+                isinstance(zero,_vector)):
+            fail("vector must have values of numeric type")
+        if not (all(v.__class__ == zero.__class__ for v in self.l)):
+            fail("vector must have all values of same type as zero")
+
     @staticmethod
     @typechecked
-    def create(l: int, default:T) -> '_vector[T]':
-        res = _vector([default] * l)
+    def create(l: int, zero:T) -> '_vector[T]':
+        a = _array([zero] * l)
+        res = _vector(a,zero)
         return res
 
     @staticmethod
     @typechecked
-    def empty() -> '_vector[T]':
-        return _vector(_array.empty())
-
-    @staticmethod
-    @typechecked
-    def singleton(x:T) -> '_vector[T]':
-        return _vector(_array.singleton(x))
-
-
-    @staticmethod
-    @typechecked
-    def createi(l: int, f:Callable[[int],T]) -> '_vector[T]':
-        return _vector(_array.createi(l,f))
+    def createi(l: int, zero:T, f:Callable[[int],T]) -> '_vector[T]':
+        return _vector(_array.createi(l,f),zero)
 
 
     @typechecked
@@ -921,6 +922,11 @@ class _vector(_array[T]):
                 res[i+j] += x[i] * other[j]
         return res            
 
+    @staticmethod
+    @typechecked
+    def map(f: Callable[[T], U], a: '_vector[T]') -> '_vector[U]':
+        return _array.map(f,a)
+
 def vector_t(t:type,len:nat):
     return array_t(t,len)
 vector = _vector
@@ -928,14 +934,32 @@ vector = _vector
 class _matrix(_vector[_vector[T]]):
 #    __slots__ = ['rows','cols']
     @typechecked
-    def __init__(self, x: Union[Sequence[Sequence[T]],List[List[T]],_array[_array[T]]], rows:int, columns:int) -> None:
-        super().__init__(self,[_vector(r) for r in x])
-        if all(r.len == columns for r in self.l) and self.len == rows:
-            self.rows = rows
-            self.cols = columns
-        else:
-            fail("matrix with wrong number of rows and columns")
-            
+    def __init__(self, x: _vector[_vector[T]]) -> None:
+        self.l = x.l
+        self.len = x.len
+        if x.len == 0 or x.l[0].len == 0:
+            fail("matrix must be non-empty and have non-empty vectors")
+        self.rows = x.len
+        self.cols = x[0].len
+        self.zero = x[0].zero
+        if any(not isinstance(v,_vector) or v.len != self.cols or v.zero != self.zero for v in self.l):
+            fail("matrix must have columns that are vectors of same lengths and type")
+
+    def __matmul__(self,other:'_matrix[T]') -> '_matrix[T]':
+        if not isinstance(other, _matrix) or \
+           other.__class__ != self.__class__ or \
+           other.rows != self.cols or \
+           other.zero != self.zero :
+            fail("@ is only valid for matrices of size M*N and N*K")
+        res = _matrix.create(self.rows,other.cols,self.zero)
+        for i in range(res.rows):
+            for k in range(res.cols):
+                tmp = res.zero
+                for j in range(self.cols):
+                    tmp += self[i][j] * other[j][k]
+                res[i][k] = tmp
+        return res
+        
     @staticmethod
     @typechecked
     def create(r: int, c:int, default:T) -> '_matrix[T]':
@@ -943,7 +967,7 @@ class _matrix(_vector[_vector[T]]):
         mat = _vector.create(r,col)
         for i in range(r):
             mat[i] = _vector.create(c,default)
-        return mat
+        return _matrix(mat)
 
     @staticmethod
     @typechecked
@@ -959,21 +983,11 @@ class _matrix(_vector[_vector[T]]):
     @typechecked
     def copy(x: '_matrix[T]') -> '_matrix[T]':
         return _matrix.createi(x.rows,x.cols,lambda ij: x[ij[0]][ij[1]])
-#        res = copy(x)
-#        res.l = list(x.l)
-#        return res
-
 
     @staticmethod
     @typechecked
     def map(f: Callable[[T], U], a: '_matrix[T]') -> '_matrix[U]':
         return _matrix.createi(a.rows,a.cols,lambda ij: f(res[ij[0]][ij[1]]))
-                               
-        # res = _matrix(a.rows,a.cols,a[0][0])
-        # for i in range(r):
-        #     for j in range(c):
-        #         res[i][j] = f(res[i][j])
-        # return res
     
 def matrix_t(t:type,rows:nat,columns:nat):
     return vector_t(vector_t(t,columns),rows)

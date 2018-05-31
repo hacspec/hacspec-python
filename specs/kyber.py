@@ -40,6 +40,7 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
     zqpolyvec_t = vector_t(zqpoly_t,kyber_k)
     zqpolymatrix_t = vector_t(zqpolyvec_t,kyber_k)
 
+    zqpoly0   = vector.create(kyber_n,zqelem(0))
     omega     = zqelem(3844)
     psi       = zqelem(62)
     n_inv     = zqelem(7651)
@@ -49,7 +50,7 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
     def zqpoly_mul(p:zqpoly_t, q:zqpoly_t) -> zqpoly_t:
         s = vector.poly_mul(p,q,zqelem(0))
         low,high = vector.split(s,kyber_n)
-        r = vector(low) - vector(high)
+        r = low - high
         return r
 
     def zqpolyvec_dot(p:zqpolyvec_t, q:zqpolyvec_t) -> zqpoly_t:
@@ -99,7 +100,7 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
 
     def decode_decompress(d:int):
         def _decode_decompress(b:bytes_t):
-            return vector(vector.map(decompress(d), decode(d)(b)))
+            return vector.map(decompress(d), decode(d)(b))
         return _decode_decompress
 
     def compress_encode(d:int):
@@ -150,17 +151,17 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
         u1, v1 = bytes.split_blocks(c, 352)
         u = vector.map(decode_decompress(kyber_du), u1)
         v = decode_decompress(kyber_dv)(v1)
-        return (vector(u), v)
+        return (u, v)
 
     @typechecked
     def cbd(buf:bytes_t(kyber_eta * kyber_n // 4)) -> zqpoly_t:
         beta = bytes.to_uintn_le(buf)
-        res = array.create(kyber_n, zqelem(0))
+        res = vector.create(kyber_n, zqelem(0))
         for i in range(kyber_n):
             a = uintn.bit_count(beta[2 * i * kyber_eta: (2 * i + 1) * kyber_eta])
             b = uintn.bit_count(beta[(2 * i + 1) * kyber_eta:(2 * i + 2) * kyber_eta])
             res[i] = zqelem(a - b)
-        return vector(res)
+        return res
 
     #cbd(prf(seed, nonce)), prf = shake256
     @typechecked
@@ -218,7 +219,7 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
             return np
 
         def zqpoly_bit_reverse(p:zqpoly_t) -> zqpoly_t:
-            return array.createi(kyber_n, lambda i: p[int(uintn.reverse(uint8(i)))])
+            return vector.createi(kyber_n, zqelem(0), lambda i: p[int(uintn.reverse(uint8(i)))])
 
         def _genAij(a:uint8_t, b:uint8_t) -> zqpoly_t:
             return zqpoly_invntt(zqpoly_bit_reverse(genAij_hat(seed, uint8(a), uint8(b))))
@@ -231,8 +232,8 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
         rho,sigma = bytes.split(rhosigma,kyber_symbytes)
 
         A = matrix.createi(kyber_k, kyber_k, lambda i,j: genAij(rho)(j,i))
-        s = vector(vector.createi(kyber_k, zqpoly_getnoise(sigma)))
-        e = vector(vector.createi(kyber_k, lambda i: zqpoly_getnoise(sigma)(kyber_k + i)))
+        s = vector.createi(kyber_k, zqpoly0, zqpoly_getnoise(sigma))
+        e = vector.createi(kyber_k, zqpoly0, lambda i: zqpoly_getnoise(sigma)(kyber_k + i))
         t = zqpolymatrix_dot(A,s) + e
         sk = pack_sk(s)
         pk = pack_pk(t, rho)
@@ -245,8 +246,8 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
                              bytes_t(kyber_indcpa_bytes(kyber_k)):
         t, rho = unpack_pk(packedpk)
         At = matrix.createi(kyber_k, kyber_k, genAij(rho))
-        r  = vector(vector.createi(kyber_k, zqpoly_getnoise(coins)))
-        e1 = vector(vector.createi(kyber_k, lambda i: zqpoly_getnoise(coins)(kyber_k+i)))
+        r  = vector.createi(kyber_k, zqpoly0, zqpoly_getnoise(coins))
+        e1 = vector.createi(kyber_k, zqpoly0, lambda i: zqpoly_getnoise(coins)(kyber_k+i))
         e2 = zqpoly_getnoise(coins)(kyber_k + kyber_k)
         u = zqpolymatrix_dot(At,r) + e1
         v = zqpolyvec_dot(t,r) + e2 + msg_to_poly(m)
