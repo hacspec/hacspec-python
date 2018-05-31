@@ -498,15 +498,16 @@ class _array(Generic[T]):
     @staticmethod
     @typechecked
     def copy(x: '_array[T]') -> '_array[T]':
-        return deepcopy(x)
+        res = copy(x)
+        res.l = list([copy(x) for x in res.l])
+        return res
 
     @staticmethod
     @typechecked
     def concat(x: '_array[T]', y: '_array[T]') -> '_array[T]':
-        res1 = deepcopy(x)
-        res2 = deepcopy(y)
-        res1.l += res2.l
-        res1.len += res2.len
+        res1 = copy(x)
+        res1.l = list([copy(n) for n in res1.l+y.l])
+        res1.len += y.len
         return res1
 
     @staticmethod
@@ -854,6 +855,23 @@ class _vector(_array[T]):
         res = _vector([default] * l)
         return res
 
+    @staticmethod
+    @typechecked
+    def empty() -> '_vector[T]':
+        return _vector(_array.empty())
+
+    @staticmethod
+    @typechecked
+    def singleton(x:T) -> '_vector[T]':
+        return _vector(_array.singleton(x))
+
+
+    @staticmethod
+    @typechecked
+    def createi(l: int, f:Callable[[int],T]) -> '_vector[T]':
+        return _vector(_array.createi(l,f))
+
+
     @typechecked
     def __add__(self, other: '_vector[T]') -> '_vector[T]':
         if not isinstance(other, _vector) or \
@@ -930,6 +948,15 @@ class _matrix(_vector[_vector[T]]):
             for j in range(c):
                 res[i][j] = f(i,j)
         return res
+
+    @staticmethod
+    @typechecked
+    def copy(x: '_matrix[T]') -> '_matrix[T]':
+        return _matrix.createi(x.rows,x.cols,lambda ij: x[ij[0]][ij[1]])
+#        res = copy(x)
+#        res.l = list(x.l)
+#        return res
+
 
     @staticmethod
     @typechecked
