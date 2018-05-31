@@ -53,7 +53,7 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> type:
 def refine(t: type, f: Callable[[T], bool]) -> tuple2(type,Callable[[T],T]):
     def refine_check(x):
         if not isinstance(x,t) or not f(x):
-            print("got :"+str(args[0]))
+            print("got :"+str(x))
             print("expected : x:"+str(t)+"{"+str(f)+"}")
             fail("refinement check failed")
         return x
@@ -162,6 +162,12 @@ class _natmod:
     def __pow__(self, other: nat_t) -> '_natmod':
         if not isinstance(other, nat_t) or other < 0:
             fail("* is only valid for two positive exponents")
+        if other == 0:
+            return _natmod.set_val(self, 1)
+        elif other == 1:
+            return _natmod.set_val(self, self.v)
+        if other == 2:
+            return self * self
         return _natmod.set_val(self, pow(self.v,other,self.modulus))
 
 
