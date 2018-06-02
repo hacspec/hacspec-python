@@ -7,10 +7,12 @@ setup(name='hacspec',
       author='Franziskus Kiefer et al.',
       author_email='franziskuskiefer@gmail.com',
       license='MIT',
-      packages=['hacspec'],
+      # package_dir = {'hacspec': '.'},
+      # packages=['.'],
+      py_modules = ['speclib'],
       install_requires = ['setuptools', 'typeguard'],
       entry_points={
           'console_scripts': [
-              'hacspec-check=hacspec.check:main',
+              'hacspec-check=check:main',
           ],
       })

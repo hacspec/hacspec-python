@@ -51,8 +51,10 @@ def point(a: int, b: int) -> point_t:
 
 
 scalar_t = bitvector_t(448)
-def scalar(n:nat):
-    return bitvector(n,448)
+
+@typechecked
+def scalar(n:nat_t) -> scalar_t:
+    return bitvector(n, 448)
 
 serialized_point_t = bytes_t(56)
 serialized_scalar_t = bytes_t(56)

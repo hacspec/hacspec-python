@@ -5,18 +5,18 @@ PYTHON?=python3.6
 
 .PHONY: test all speclib_test build publish
 
-all: test
+all: test build publish
 
-test: speclib_test check check_fail
+test: speclib_test check_test check_fail_test
 
 speclib_test:
 	$(PYTHON) hacspec/tests/speclib_test.py
-	$(PYTHON) hacspec/tests/check_test.py
+	$(PYTHON) hacspec/tests/check_test_run.py
 
-check:
+check_test:
 	hacspec-check hacspec/tests/check.py
 
-check_fail:
+check_fail_test:
 	if hacspec-check hacspec/tests/check_fail.py; then \
 		echo check_fail should have failed!; \
 		exit 1; \
@@ -24,15 +24,21 @@ check_fail:
 		echo check_fail failed as expected; \
 	fi
 
-build:
-	rm -rf dist
+copy: clean
+	cp ../lib/speclib/check.py .
+	cp ../lib/speclib/speclib.py .
+
+build: copy
 	$(PYTHON) setup.py sdist
+
+install: copy
+	pip install .
 
 publish: build
 	twine upload dist\*
 
 clean:
-	rm -rf dist
+	rm -rf dist check.py speclib.py
 	rm -rf hacspec.egg-info
 	rm -rf MANIFEST
 	rm -rf hacspec/__pycache__

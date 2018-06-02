@@ -3,8 +3,8 @@ from lib.speclib import *
 from specs.keccak import *
 from math import floor
 
-variant_k   = refine(nat_t, lambda x: x == 2 or x == 3 or x == 4)
-variant_eta = refine(nat_t, lambda x: x == 5 or x == 4 or x == 3)
+variant_k_t   = refine(nat_t, lambda x: x == 2 or x == 3 or x == 4)
+variant_eta_t = refine(nat_t, lambda x: x == 5 or x == 4 or x == 3)
 
 kyber_q   = 7681
 kyber_n   =  256
@@ -25,16 +25,22 @@ kyber_secretkeybytes = lambda kyber_k: kyber_indcpa_secretkeybytes(kyber_k) + ky
 kyber_ciphertextbytes = kyber_indcpa_bytes
 
 symbytes_t = bytes_t(kyber_symbytes)
-def kyber_publickey_t(kyber_k:variant_k):
-    return bytes_t(kyber_publickeybytes(kyber_k))
-def kyber_secretkey_t(kyber_k:variant_k):
-    return bytes_t(kyber_secretkeybytes(kyber_k))
-def kyber_ciphertext_t(kyber_k:variant_k):
-    return bytes_t(kyber_ciphertextbytes(kyber_k))
-    
-def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
+@typechecked
+def kyber_publickey_t(kyber_k:variant_k_t) -> bytes_t:
+    return bytes(kyber_publickeybytes(kyber_k))
+@typechecked
+def kyber_secretkey_t(kyber_k:variant_k_t) -> bytes_t:
+    return bytes(kyber_secretkeybytes(kyber_k))
+@typechecked
+def kyber_ciphertext_t(kyber_k:variant_k_t) -> bytes_t:
+    return bytes(kyber_ciphertextbytes(kyber_k))
+
+@typechecked
+def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
+    -> tuple3(FunctionType, FunctionType, FunctionType):
     zqelem_t = natmod_t(kyber_q)
-    def zqelem(n:nat):
+    @typechecked
+    def zqelem(n:nat_t) -> nat_t:
         return natmod(n,kyber_q)
     zqpoly_t    = vector_t(zqelem_t,kyber_n)
     zqpolyvec_t = vector_t(zqpoly_t,kyber_k)
@@ -47,25 +53,30 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
     psi_inv   = zqelem(1115)
     omega_inv = zqelem(6584)
 
+    @typechecked
     def zqpoly_mul(p:zqpoly_t, q:zqpoly_t) -> zqpoly_t:
         s = vector.poly_mul(p,q,zqelem(0))
         low,high = vector.split(s,kyber_n)
         r = low - high
         return r
 
+    @typechecked
     def zqpolyvec_dot(p:zqpolyvec_t, q:zqpolyvec_t) -> zqpoly_t:
         t = vector.create(kyber_n, zqelem(0))
         for i in range(kyber_k):
             t += zqpoly_mul(p[i], q[i])
         return(t)
 
+    @typechecked
     def zqpolymatrix_dot(p:zqpolymatrix_t, q:zqpolyvec_t) -> zqpolyvec_t:
         t = vector.create(kyber_k, vector.create(kyber_n, zqelem(0)))
         for i in range(kyber_k):
             t[i] = zqpolyvec_dot(p[i],q)
         return(t)
 
-    def decode(l:nat) -> Callable[[bytes_t], zqpoly_t]:
+    @typechecked
+    def decode(l:nat_t) -> FunctionType: # Callable[[bytes_t], zqpoly_t]
+        @typechecked
         def _decode(b:bytes_t) -> zqpoly_t:
             beta = bytes.to_uintn_le(b)
             res = vector.create(kyber_n, zqelem(0))
@@ -74,15 +85,19 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
             return res
         return _decode
 
-    def encode(l:nat) -> Callable[[zqpoly_t],bytes_t]:
+    @typechecked
+    def encode(l:nat_t) -> FunctionType: # Callable[[zqpoly_t],bytes_t]:
+        @typechecked
         def _encode(p:zqpoly_t) -> bytes_t:
             beta = uintn(0,256*l)
             for i in range(kyber_n):
                 beta = uintn.set_bits(beta,i*l,(i+1)*l, uintn(p[i], l))
-            return (bytes.from_uintn_le(beta))
+            return bytes.from_uintn_le(beta)
         return _encode
 
-    def compress(d:int) -> Callable[[zqelem_t],zqelem_t]:
+    @typechecked
+    def compress(d:int) -> FunctionType: # Callable[[zqelem_t],zqelem_t]:
+        @typechecked
         def _compress(x:zqelem_t) -> zqelem_t:
             x = natmod.to_int(x)
             d2 = 2 ** d
@@ -90,7 +105,9 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
             return zqelem(res % d2)
         return _compress
 
-    def decompress(d:int) -> Callable[[zqelem_t],zqelem_t]:
+    @typechecked
+    def decompress(d:int) -> FunctionType: # Callable[[zqelem_t],zqelem_t]:
+        @typechecked
         def _decompress(x:zqelem_t) -> zqelem_t:
             x = natmod.to_int(x)
             d2 = 2 ** d
@@ -98,13 +115,17 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
             return zqelem(res)
         return _decompress
 
-    def decode_decompress(d:int):
-        def _decode_decompress(b:bytes_t):
+    @typechecked
+    def decode_decompress(d:int) -> FunctionType:
+        @typechecked
+        def _decode_decompress(b:bytes_t) -> vector_t:
             return vector.map(decompress(d), decode(d)(b))
         return _decode_decompress
 
-    def compress_encode(d:int):
-        def _compress_encode(b:zqpoly_t):
+    @typechecked
+    def compress_encode(d:int) -> FunctionType:
+        @typechecked
+        def _compress_encode(b:zqpoly_t) -> bytes_t:
             return encode(d)(vector.map(compress(d), b))
         return _compress_encode
 
@@ -165,7 +186,8 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
 
     #cbd(prf(seed, nonce)), prf = shake256
     @typechecked
-    def zqpoly_getnoise(seed:symbytes_t) -> Callable[[int],zqpoly_t]:
+    def zqpoly_getnoise(seed:symbytes_t) -> FunctionType: # Callable[[int],zqpoly_t]:
+        @typechecked
         def _getnoise(nonce:int) -> zqpoly_t:
             extseed = bytes.concat(seed, bytes.singleton(uint8(nonce)))
             buf = shake256(kyber_symbytes + 1, extseed, kyber_eta * kyber_n // 4)
@@ -209,7 +231,9 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
                 i = 0
         return res
 
-    def genAij(seed:symbytes_t) -> Callable[[int,int],zqpoly_t]:
+    @typechecked
+    def genAij(seed:symbytes_t) -> FunctionType: # Callable[[int,int],zqpoly_t]:
+        @typechecked
         def zqpoly_invntt(p:zqpoly_t) -> zqpoly_t:
             np = vector.create(kyber_n, zqelem(0))
             for i in range(kyber_n):
@@ -218,9 +242,11 @@ def Kyber(kyber_k:variant_k,kyber_eta:variant_eta):
                 np[i] *= n_inv * (psi_inv ** i)
             return np
 
+        @typechecked
         def zqpoly_bit_reverse(p:zqpoly_t) -> zqpoly_t:
             return vector.createi(kyber_n, zqelem(0), lambda i: p[int(uintn.reverse(uint8(i)))])
 
+        @typechecked
         def _genAij(a:uint8_t, b:uint8_t) -> zqpoly_t:
             return zqpoly_invntt(zqpoly_bit_reverse(genAij_hat(seed, uint8(a), uint8(b))))
         return _genAij

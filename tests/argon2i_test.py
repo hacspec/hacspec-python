@@ -1,9 +1,17 @@
 from specs.argon2i import *
 
 from test_vectors.argon2i_test_vectors import *
-from sys import exit
+from sys import exit, stdout
+import threading
+
+
+def do_every():
+    threading.Timer (1, do_every, []).start()
+    print(".", end="")
+    stdout.flush()
 
 def main(x:int) -> None:
+    do_every()
     for i, vec in enumerate(argon2i_test_vectors):
         p = bytes.from_hex(vec['p'])
         s = bytes.from_hex(vec['s'])

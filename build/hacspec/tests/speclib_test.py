@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
+from speclib import *
 from sys import exit
 
 # Tests for speclib
@@ -16,14 +16,14 @@ def test_bytes():
     print("test_bytes success!")
 
 def test_2d_arrays():
-    my_array_t = vlarray_t(bytes)
-    x = my_array_t([])
-    x = array.concat(x, bytes.from_ints([0x01, 0x02, 0x03]))
-    x = array.concat(x, bytes.from_ints([0x04, 0x05]))
+    my_array_t = vlvector_t(bytes)
+    x = my_array_t.create(2, bytes([]))
+    x[0] = bytes.from_ints([0x01, 0x02, 0x03])
+    x[1] = bytes.from_ints([0x04, 0x05])
     y = my_array_t([bytes.from_ints([0x01, 0x02, 0x03]), bytes.from_ints([0x04, 0x05])])
-    z = my_array_t([])
-    z = array.concat(z, bytes.from_ints([0x01, 0x02, 0x03]))
-    z = array.concat(z, bytes.from_ints([0x04, 0x05]))
+    z = my_array_t.create(2, bytes([]))
+    z[0] = bytes.from_ints([0x01, 0x02, 0x03])
+    z[1] = bytes.from_ints([0x04, 0x05])
     if x != y:
         print("got      " + str(x))
         print("expected " + str(y))
@@ -34,10 +34,10 @@ def test_2d_arrays():
         exit(1)
     print("test_2d_arrays success!")
 
-def main(x: int) -> None:
+def main():
     test_bytes()
     test_2d_arrays()
 
 
 if __name__ == "__main__":
-    main(0)
+    main()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from wots import *
+from specs.wots import *
 from hacspec.speclib import *
 from sys import exit
 

@@ -11,7 +11,8 @@ d25519: felem_t = (to_felem(
 
 q25519 = nat((1 << 252) + 27742317777372353535851937790883648493)
 qelem_t = natmod_t(q25519)
-def to_qelem(n:nat) -> qelem_t:
+@typechecked
+def to_qelem(n:nat_t) -> qelem_t:
     return natmod(n,q25519)
 
 extended_point_t = tuple4(felem_t, felem_t, felem_t, felem_t)
@@ -105,7 +106,7 @@ fsqrt_m1: felem_t = (to_felem(pow(2, ((p25519 - 1) // 4), p25519)))
   
 
 @typechecked
-def recover_x_coordinate(y:nat,sign:bool) -> Union[felem_t, None]:
+def recover_x_coordinate(y:nat_t,sign:bool) -> option_t(felem_t):
     if y >= p25519:
         return None
     else:
@@ -131,7 +132,7 @@ def recover_x_coordinate(y:nat,sign:bool) -> Union[felem_t, None]:
 
 
 @typechecked
-def point_decompress(s:serialized_point_t) ->Union[extended_point_t, None] :
+def point_decompress(s:serialized_point_t) -> option_t(extended_point_t) :
     y = bytes.to_nat_le(s)
     sign = (y // (1 << 255)) % 2 == 1
     y = y % (1 << 255)

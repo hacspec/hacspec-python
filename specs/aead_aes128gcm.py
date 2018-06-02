@@ -9,7 +9,7 @@ nonce_t  = bytes_t(12)
 tag_t    = bytes_t(16)
 
 @typechecked
-def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> Tuple[int,vlbytes_t]:
+def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple2(int,vlbytes_t):
     laad = len(aad)
     lmsg = len(msg)
     pad_aad = laad
@@ -26,7 +26,7 @@ def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> Tuple[int,vlbytes_t]:
     return pad_aad+pad_msg+16, to_mac
 
 @typechecked
-def aead_aes128gcm_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> Tuple[vlbytes_t,tag_t]:
+def aead_aes128gcm_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> tuple2(vlbytes_t,tag_t):
     nonce0 = bytes(array.create(12,uint8(0)))
     mac_key = aes128_ctr_keyblock(key,nonce0,uint32(0))
     tag_mix = aes128_ctr_keyblock(key,nonce,uint32(1))
