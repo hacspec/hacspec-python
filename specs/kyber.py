@@ -27,13 +27,13 @@ kyber_ciphertextbytes = kyber_indcpa_bytes
 symbytes_t = bytes_t(kyber_symbytes)
 @typechecked
 def kyber_publickey_t(kyber_k:variant_k_t) -> bytes_t:
-    return bytes(kyber_publickeybytes(kyber_k))
+    return bytes_t(kyber_publickeybytes(kyber_k))
 @typechecked
 def kyber_secretkey_t(kyber_k:variant_k_t) -> bytes_t:
-    return bytes(kyber_secretkeybytes(kyber_k))
+    return bytes_t(kyber_secretkeybytes(kyber_k))
 @typechecked
 def kyber_ciphertext_t(kyber_k:variant_k_t) -> bytes_t:
-    return bytes(kyber_ciphertextbytes(kyber_k))
+    return bytes_t(kyber_ciphertextbytes(kyber_k))
 
 @typechecked
 def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
