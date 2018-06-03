@@ -7,6 +7,10 @@ import os
 
 file_dir = None
 
+def fail(s):
+    print("\n *** " + s + "\n")
+    exit(1)
+
 def read_function_signature(f):
     fun_name = f.name
     rt = -1
@@ -44,8 +48,7 @@ def read_function_signature(f):
                     elif isinstance(x, NameConstant):
                         tmp2.append(x.value)
                     else:
-                        print("\n *** Couldn't parse function return values: \"" + fun_name+"\"")
-                        exit(1)
+                        fail("Couldn't parse function return values: \"" + fun_name+"\"")
                 rt += str(tmp2)
             else:
                 rt += str(tmp)
@@ -60,8 +63,7 @@ def read_function_signature(f):
         elif isinstance(d, Call):
             decorators.append(d.func.id)
         else:
-            print("\n *** Function decorators must be names or calls not " + str(d))
-            exit(1)
+            fail("Function decorators must be names or calls not " + str(d))
     # Every function must have a typechecked decorator.
     typechecked = False
     for decorator in decorators:
@@ -69,25 +71,21 @@ def read_function_signature(f):
             typechecked = True
             break
     if not typechecked:
-        print("\n *** Every hacpsec function must have a @typechecked decorator: \"" + fun_name+"\"")
-        exit(1)
+        fail("Every hacpsec function must have a @typechecked decorator: \"" + fun_name+"\"")
     try:
         arg_names.remove("self")
     except:
         pass
     # Every argument must be typed.
     if len(arg_types) != len(arg_names):
-        print("\n *** Every hacpsec function argument must be typed: \"" + fun_name+"\"")
-        exit(1)
+        fail("Every hacpsec function argument must be typed: \"" + fun_name+"\"")
     # Check arg_types.
     for arg_type in arg_types:
         if not is_valid_type(arg_type):
-            print("\n *** Invalid argument type in function signature " + fun_name + " - " + str(arg_type))
-            exit(1)
+            fail("Invalid argument type in function signature " + fun_name + " - " + str(arg_type))
     # Every function must have a return type.
     if rt is -1 or not is_valid_type(rt):
-        print("\n *** Every hacpsec function must have a return type: \"" + fun_name+"\"")
-        exit(1)
+        fail("Every hacpsec function must have a return type: \"" + fun_name+"\"")
     return
 
 
@@ -98,8 +96,7 @@ def import_is_hacspec(filename):
     # TODO: This currently doesn't work with PYTHONPATH set.
     return True
     if not file_dir:
-        print(" *** No file_dir set :/ Something is wrong. ***")
-        exit(1)
+        fail("No file_dir set :/ Something is wrong.")
     print(filename.split('.'))
     filename = os.path.join(*filename.split('.'))
     filename = os.path.join(file_dir, filename + ".py")
@@ -107,8 +104,7 @@ def import_is_hacspec(filename):
         with open(filename, 'r', encoding='utf-8') as py_file:
             return True
     except:
-        print(" *** File is not a valid hacspec. Import \"" + filename + "\" is not a local spec.")
-        exit(1)
+        fail("File is not a valid hacspec. Import \"" + filename + "\" is not a local spec.")
     return True
 
 def is_valid_binop(op):
@@ -218,8 +214,7 @@ def read(node) -> None:
     if isinstance(node, ImportFrom):
         # Check that the imported file is a local hacspec or speclib.
         if not import_is_hacspec(node.module):
-            print("Import " + f + " is not a local hacspec file or speclib.")
-            exit(1)
+            fail("Import " + f + " is not a local hacspec file or speclib.")
         return
 
     if isinstance(node, Tuple):
@@ -238,19 +233,15 @@ def read(node) -> None:
                 valid_left = True
                 break
             else:
-                print("\n *** Invalid assignment " + str(t))
-                exit(1)
+                fail("Invalid assignment " + str(t))
         if not valid_left:
-            print("\n *** Invalid assign.")
-            exit(1)
+            fail("Invalid assign.")
         # The right side of the assignment can be any expression.
         read(node.value)
         if not is_expression(node.value):
-            print("\n *** Invalid assignment. Right side must be expression not " + str(node.value))
-            exit(1)
+            fail("Invalid assignment. Right side must be expression not " + str(node.value))
         if node.type_comment:
-            print("\n *** Type comments are not supported by hacspec.")
-            exit(1)
+            fail("Type comments are not supported by hacspec.")
         # Check that types are named _t.
         # Types come from _t functions or refine.
         if isinstance(node.value, Call):
@@ -260,20 +251,17 @@ def read(node) -> None:
                 if fun_name is "range_t" or fun_name is "array_t" or \
                    fun_name is "bytes_t" or fun_name is "refine":
                     if len(node.targets) > 1:
-                        print("\n *** Custom type assignment must have single assignment target " + str(fun_name))
-                        exit(1)
+                        fail("Custom type assignment must have single assignment target " + str(fun_name))
                     type_name = node.targets[0]
                     if not isinstance(type_name, Name) and not isinstance(type_name, Tuple):
-                        print("\n *** Custom type assignment has wrong assignment target " + str(type_name))
-                        exit(1)
+                        fail("Custom type assignment has wrong assignment target " + str(type_name))
                     type_name_string = ""
                     if isinstance(type_name, Name):
                         type_name_string = type_name.id
                     else:
                         type_name_string = type_name.elts[0].id
                     if not type_name_string.endswith("_t"):
-                        print("\n *** Custom type names must end on _t " + str(type_name.id))
-                        exit(1)
+                        fail("Custom type names must end on _t " + str(type_name.id))
         return
 
     if isinstance(node, AugAssign):
@@ -283,32 +271,26 @@ def read(node) -> None:
            (isinstance(node.target, Subscript) and isinstance(node.target.slice, Index)):
             pass
         else:
-            print("\n *** Invalid aug assignment " + str(node.target))
-            exit(1)
+            fail("Invalid aug assignment " + str(node.target))
         read(node.op)
         if not is_valid_binop(node.op):
-            print("\n *** Invalid aug assignment " + str(node.target))
-            exit(1)
+            fail("Invalid aug assignment " + str(node.target))
         read(node.value)
         if not is_expression(node.value):
-            print("\n *** Invalid aug assignment. Right side must be expression " + str(node.value))
-            exit(1)
+            fail("Invalid aug assignment. Right side must be expression " + str(node.value))
         return
 
     if isinstance(node, AnnAssign):
         # Allowed targets are variables.
         read(node.target)
         if not isinstance(node.target, Name):
-            print("\n *** Invalid ann assignment (Name) " + str(node.target))
-            exit(1)
+            fail("Invalid ann assignment (Name) " + str(node.target))
         read(node.annotation)
         if not is_valid_type(node.annotation):
-            print("\n *** Invalid ann assignment (annotation) " + str(node.target))
-            exit(1)
+            fail("Invalid ann assignment (annotation) " + str(node.target))
         read(node.value)
         if not is_expression(node.value):
-            print("\n *** Invalid ann assignment. Right side must be expression " + str(node.value))
-            exit(1)
+            fail("Invalid ann assignment. Right side must be expression " + str(node.value))
         return
 
     # Lists are ok as long as they aren't assigned directly.
@@ -328,8 +310,7 @@ def read(node) -> None:
         read(node.left)
         read(node.op)
         if not is_valid_binop(node.op):
-            print("\n *** Not a valid hacspec with " + str(node.op))
-            exit(1)
+            fail("Not a valid hacspec with " + str(node.op))
         read(node.right)
         return
 
@@ -359,11 +340,9 @@ def read(node) -> None:
         if node.body:
             read(node.body)
             if not is_statement(node.body):
-                print("\n *** For loop body is not a statement "+str(node.body))
-                exit(1)
+                fail("For loop body is not a statement "+str(node.body))
         if node.orelse:
             read(node.orelse)
-            print(node.orelse)
         if node.iter:
             read(node.iter)
         return
@@ -421,8 +400,7 @@ def read(node) -> None:
     if isinstance(node, Return):
         read(node.value)
         if not is_expression(node.value):
-            print("\n *** Invalid return statement. " + str(node.value))
-            exit(1)
+            fail("Invalid return statement. " + str(node.value))
         return
 
     if isinstance(node, Call):
@@ -430,8 +408,7 @@ def read(node) -> None:
         if node.args:
             read(node.args)
         if len(node.keywords) > 0:
-            print("\n *** Keywords aren't allowed in hacspec function calls.")
-            exit(1)
+            fail("Keywords aren't allowed in hacspec function calls.")
         return
 
     if isinstance(node, bool):
@@ -441,28 +418,35 @@ def read(node) -> None:
         # A simple function call
         read(node.value)
         if not is_expression(node.value):
-            print("\n *** Invalid expression " + str(node))
-            exit(1)
+            fail("Invalid expression " + str(node))
         return
 
     if isinstance(node, If):
         read(node.test)
         if not is_expression(node.test):
-            print("\n *** Invalid if statement (test). " + str(node.test))
-            exit(1)
+            fail("Invalid if statement (test). " + str(node.test))
         read(node.body)
         if not is_statement(node.body):
-            print("\n *** Invalid if statement (body). " + str(node.body))
-            exit(1)
+            fail("Invalid if statement (body). " + str(node.body))
         read(node.orelse)
         if node.orelse and not is_statement(node.orelse):
-            print("\n *** Invalid if statement (orelse). " + str(node.orelse))
-            exit(1)
+            fail("Invalid if statement (orelse). " + str(node.orelse))
         return
 
     if isinstance(node, While):
-        print("\n *** While statements are not allowed in hacspec.")
-        exit(1)
+        # TODO: decide if this is legal.
+        # fail("While statements are not allowed in hacspec.")
+        read(node.test)
+        if not is_expression(node.test):
+            fail("Invalid expression in while test " + str(node.test))
+        read(node.body)
+        if not is_statement(node.body):
+            fail("Invalid statement in while body " + str(node.body))
+        if node.orelse:
+            read(node.orelse)
+            if not is_statement(node.orelse):
+                fail("Invalid statement in while orelse " + str(node.orelse))
+        return
 
     if isinstance(node, Str):
         # node.s
@@ -472,20 +456,15 @@ def read(node) -> None:
         for a in node.args:
             read(a)
         if len(node.defaults) != 0:
-            print("\n *** Default arguments are not supported in hacspec.")
-            exit(1)
+            fail("Default arguments are not supported in hacspec.")
         if len(node.kwonlyargs) != 0:
-            print("\n *** keyword only args are not allowed in hacspec.")
-            exit(1)
+            fail("keyword only args are not allowed in hacspec.")
         if node.vararg is not None:
-            print("\n *** varargs are not allowed in hacspec")
-            exit(1)
+            fail("varargs are not allowed in hacspec")
         if len(node.kw_defaults) != 0:
-            print("\n *** keyword defaults are not allowed in hacspec")
-            exit(1)
+            fail("keyword defaults are not allowed in hacspec")
         if node.kwarg is not None:
-            print("\n *** keyword args are not allowed in hacspec")
-            exit(1)
+            fail("keyword args are not allowed in hacspec")
         return
 
     if isinstance(node, arg):
@@ -503,14 +482,12 @@ def read(node) -> None:
             read(x)
         return
 
-    print("\n *** " + str(type(node)) + " is not allowed in hacspecs.\n")
-    exit(1)
+    fail(str(type(node)) + " is not allowed in hacspecs.")
 
 
 def main():
     if len(argv) != 2:
-        print("Usage: hacspec-check <hacspec>")
-        exit(1)
+        fail("Usage: hacspec-check <hacspec>")
     path = argv[1]
     with open(path, 'r', encoding='utf-8') as py_file:
         global file_dir

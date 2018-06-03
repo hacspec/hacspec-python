@@ -9,10 +9,10 @@ setup(name='hacspec',
       license='MIT',
       # package_dir = {'hacspec': '.'},
       # packages=['.'],
-      py_modules = ['speclib'],
+      py_modules = ['hacspec'],
       install_requires = ['setuptools', 'typeguard'],
       entry_points={
           'console_scripts': [
-              'hacspec-check=check:main',
+              'hacspec-check=hacspec.check:main',
           ],
       })

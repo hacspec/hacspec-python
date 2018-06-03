@@ -2,10 +2,8 @@
 PYTHON?=python3.6
 
 SPECS=poly1305 chacha20 aead_chacha20poly1305 sha2 keccak \
-curve25519 ed25519 p256 curve448 rsapss aes gf128 aead_aes128gcm blake2 argon2i wots
-OTHER_SPECS=kyber
-# vrf is currently broken
-
+curve25519 ed25519 p256 curve448 rsapss aes gf128 aead_aes128gcm blake2 wots kyber
+OTHER_SPECS=vrf argon2i # currently broken
 
 .PHONY: test $(SPECS) all
 
@@ -19,6 +17,6 @@ $(SPECS):
 	PYTHONPATH=. $(PYTHON) -O tests/$@_test.py
 
 %-check: specs/%.py
-	hacspec-check $<
+	PYTHONPATH=. $(PYTHON) lib/check.py $<
 %-test: tests/%_test.py 
 	PYTHONPATH=. $(PYTHON) $<

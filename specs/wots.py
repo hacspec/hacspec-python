@@ -180,7 +180,7 @@ def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
 
 
 @typechecked
-def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> Tuple[pk_t, address_t]:
+def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> tuple2(pk_t, address_t):
     m = wots_msg(msg)
     pk2 = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     for i in range(0, uint32.to_int(length)):
