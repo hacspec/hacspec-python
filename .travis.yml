@@ -14,12 +14,14 @@ install:
 
 jobs:
   include:
-    - stage: test
-      script: make run
-      script: make check
-      script: make test
     - stage: build
       script:
         - make -C build test
         - make -C spec-compilers
         - make -C rfc
+    - stage: test
+      script: make run
+    -
+      script: make check
+    -
+      script: make test
