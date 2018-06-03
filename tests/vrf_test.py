@@ -1,4 +1,4 @@
-from vrf import *
+from specs.vrf import *
 from sys import exit
 
 def main (x: int) -> None :
