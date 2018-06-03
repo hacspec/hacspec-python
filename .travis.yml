@@ -1,6 +1,9 @@
 language: python
 python:
   - "3.6.4"
+env:
+  global:
+    - MAKEFLAGS="-j 2"
 
 install:
   - pip install mypy
@@ -9,8 +12,14 @@ install:
   - pip install typeguard
   - gem install --no-doc kramdown-rfc2629
 
-script:
-  # - make -C build test
-  - make # travis_wait 40
-  - make -C spec-compilers
-  - make -C rfc
+jobs:
+  include:
+    - stage: test
+      script: make run
+      script: make check
+      script: make test
+    - stage: build
+      script:
+        - make -C build test
+        - make -C spec-compilers
+        - make -C rfc
