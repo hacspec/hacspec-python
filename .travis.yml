@@ -13,7 +13,7 @@ jobs:
   include:
     - stage: build
       script:
-        - make -C build test
+        # - make -C build test
         - make -C spec-compilers
         - make -C rfc
     - stage: test
