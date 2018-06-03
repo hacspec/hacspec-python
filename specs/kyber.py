@@ -40,7 +40,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     -> tuple3(FunctionType, FunctionType, FunctionType):
     zqelem_t = natmod_t(kyber_q)
     @typechecked
-    def zqelem(n:nat_t) -> nat_t:
+    def zqelem(n:nat_t) -> natmod_t:
         return natmod(n,kyber_q)
     zqpoly_t    = vector_t(zqelem_t,kyber_n)
     zqpolyvec_t = vector_t(zqpoly_t,kyber_k)

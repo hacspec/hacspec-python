@@ -7,7 +7,7 @@ PYTHON?=python3.6
 
 all:
 
-test: build install speclib_test check_test check_fail_test
+test: install speclib_test check_test check_fail_test
 
 speclib_test:
 	$(PYTHON) hacspec/tests/speclib_test.py
@@ -31,7 +31,7 @@ copy: clean
 build: copy
 	$(PYTHON) setup.py sdist
 
-install: copy
+install: build
 	pip install .
 
 publish: build

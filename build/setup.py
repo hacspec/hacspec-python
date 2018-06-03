@@ -7,9 +7,7 @@ setup(name='hacspec',
       author='Franziskus Kiefer et al.',
       author_email='franziskuskiefer@gmail.com',
       license='MIT',
-      # package_dir = {'hacspec': '.'},
-      # packages=['.'],
-      py_modules = ['hacspec'],
+      packages=['hacspec'],
       install_requires = ['setuptools', 'typeguard'],
       entry_points={
           'console_scripts': [
