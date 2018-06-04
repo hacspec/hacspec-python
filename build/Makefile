@@ -39,7 +39,7 @@ publish: build
 
 clean:
 	# pip uninstall hacspec
-	rm -rf dist check.py speclib.py
+	rm -rf dist hacspec/check.py hacspec/speclib.py
 	rm -rf hacspec.egg-info
 	rm -rf MANIFEST
 	rm -rf hacspec/__pycache__

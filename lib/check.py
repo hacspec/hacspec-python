@@ -199,7 +199,7 @@ def is_valid_type(node):
         return False
     if not (node.endswith("_t") or node is "tuple2" or node is "tuple3" \
         or node is "tuple4" or node is "tuple5" or node is "FunctionType" \
-        or node is "int" or node is "bool"):
+        or node is "int" or node is "bool") or node is "refine_t":
         return False
     return True
 

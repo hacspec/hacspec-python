@@ -81,7 +81,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
             beta = bytes.to_uintn_le(b)
             res = vector.create(kyber_n, zqelem(0))
             for i in range(kyber_n):
-                res[i] = zqelem(beta[i*l:(i+1)*l])
+                res[i] = zqelem(uintn.to_int(beta[i*l:(i+1)*l]))
             return res
         return _decode
 
@@ -91,7 +91,8 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
         def _encode(p:zqpoly_t) -> bytes_t:
             beta = uintn(0,256*l)
             for i in range(kyber_n):
-                beta = uintn.set_bits(beta,i*l,(i+1)*l, uintn(p[i], l))
+                beta = uintn.set_bits(beta,i*l,(i+1)*l,
+                                      uintn(natmod.to_nat(p[i]), l))
             return bytes.from_uintn_le(beta)
         return _encode
 
@@ -247,7 +248,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
             return vector.createi(kyber_n, zqelem(0), lambda i: p[int(uintn.reverse(uint8(i)))])
 
         @typechecked
-        def _genAij(a:uint8_t, b:uint8_t) -> zqpoly_t:
+        def _genAij(a:int, b:int) -> zqpoly_t:
             return zqpoly_invntt(zqpoly_bit_reverse(genAij_hat(seed, uint8(a), uint8(b))))
         return _genAij
 
