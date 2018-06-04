@@ -1,8 +1,7 @@
-from hacspec.speclib import *
-from curve25519 import *
-from sha2 import *
-
-from ed25519 import *
+from lib.speclib import *
+from specs.curve25519 import *
+from specs.sha2 import *
+from specs.ed25519 import *
 
 n = 16
 

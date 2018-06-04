@@ -8,11 +8,12 @@ key_t = bytes_t(16)
 tag_t = bytes_t(16)
 subblock_t,subblock = refine(vlbytes_t, lambda x: bytes.length(x) <= 16)
 elem_t = bitvector_t(128)
+elem = elem_t
 
 # Define galois field
 @typechecked
-def elem(x:nat) -> elem_t:
-    return bitvector(x,128)
+def elem(x:nat_t) -> elem_t:
+    return bitvector(x, 128)
 
 irred = elem(0xE1000000000000000000000000000000)
 

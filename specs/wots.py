@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from hacspec.speclib import *
-from sha2 import sha256
+from lib.speclib import *
+from specs.sha2 import sha256
 
 # Influences signature length, not security
 w_four = uint32(4)
@@ -63,14 +63,14 @@ def H_msg(key: key_t, m: vlbytes_t) -> digest_t:
 
 @typechecked
 def PRF(key: key_t, m: address_t) -> digest_t:
-    m_ = vlbytes.from_uint32_be(m[0])
-    m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[1]))
-    m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[2]))
-    m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[3]))
-    m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[4]))
-    m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[5]))
-    m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[6]))
-    m_ = vlbytes.concat(m_, vlbytes.from_uint32_be(m[7]))
+    m_ = bytes.from_uint32_be(m[0])
+    m_ = bytes.concat(m_, bytes.from_uint32_be(m[1]))
+    m_ = bytes.concat(m_, bytes.from_uint32_be(m[2]))
+    m_ = bytes.concat(m_, bytes.from_uint32_be(m[3]))
+    m_ = bytes.concat(m_, bytes.from_uint32_be(m[4]))
+    m_ = bytes.concat(m_, bytes.from_uint32_be(m[5]))
+    m_ = bytes.concat(m_, bytes.from_uint32_be(m[6]))
+    m_ = bytes.concat(m_, bytes.from_uint32_be(m[7]))
     return hash(bytes.from_nat_be(nat(3), nat(32)), key, m_)
 
 
@@ -126,8 +126,8 @@ def wots_chain(x: bytes_t, start: int, steps: int, seed: seed_t, adr: address_t)
 @typechecked
 def key_gen(adr: address_t, seed: seed_t) -> key_pair_t:
     # TODO: we need separate functions here for xmss later.
-    sk = sk_t.create(length, key_t.create(n, uint8(0)))
-    pk = pk_t.create(length, key_t.create(n, uint8(0)))
+    sk = sk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
+    pk = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     for i in range(0, uint32.to_int(length)):
         sk_i: bytes_t = bytes.create_random_bytes(n)
         adr = set_chain_address(adr, uint32(i))
@@ -143,7 +143,7 @@ def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
     out = 0
     total = 0
     bits = 0
-    basew = vlbytes([])
+    basew = vlbytes_t([])
     for consumed in range(0, uint32.to_int(l)):
         if bits == 0:
             total = uint8.to_int(msg[i])
@@ -171,7 +171,7 @@ def wots_msg(msg: digest_t) -> vlbytes_t:
 @typechecked
 def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
     m = wots_msg(msg)
-    sig = sig_t.create(length, key_t.create(n, uint8(0)))
+    sig = sig_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     for i in range(0, uint32.to_int(length)):
         adr = set_chain_address(adr, uint32(i))
         adr, sig_i = wots_chain(sk[i], 0, uint32.to_int(m[i]), seed, adr)
@@ -180,9 +180,9 @@ def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
 
 
 @typechecked
-def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> Tuple[pk_t, address_t]:
+def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> tuple2(pk_t, address_t):
     m = wots_msg(msg)
-    pk2 = pk_t.create(length, key_t.create(n, uint8(0)))
+    pk2 = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     for i in range(0, uint32.to_int(length)):
         adr = set_chain_address(adr, uint32(i))
         m_i = uint32.to_int(m[i])

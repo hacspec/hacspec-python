@@ -6,7 +6,7 @@ max_size_t = 2**64 - 1
 size_nat_t = refine(int, lambda x: x <= max_size_t and x >= 0)
 size_nat_200_t = refine(int, lambda x: x <= 200 and x >= 0)
 size_nat_1600_t = refine(int, lambda x: x <= 1600 and x %
-                          8 == 0 and x // 8 > 0 and x >= 0)
+                         8 == 0 and x // 8 > 0 and x >= 0)
 
 
 @typechecked
@@ -26,7 +26,7 @@ def readLane(s: state_t, x: index_t, y: index_t) -> uint64_t:
 
 
 @typechecked
-def writeLane(s: state_t, x: index_t, y: index_t, v: uint64) -> state_t:
+def writeLane(s: state_t, x: index_t, y: index_t, v: uint64_t) -> state_t:
     s[x + 5 * y] = v
     return s
 
@@ -108,7 +108,7 @@ def storeState(rateInBytes: size_nat_200_t,
 
 
 @typechecked
-def absorb(s:state_t,
+def absorb(s: state_t,
            rateInBytes: refine_t(nat_t, lambda x: 0 < x and x <= 200),
            inputByteLen: size_nat_t,
            input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen),
@@ -153,15 +153,13 @@ def squeeze(s: state_t,
     return output
 
 
+@contract3(lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen:
+           capacity + rate == 1600 and array.length(input_b) == inputByteLen,
+           lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen, res:
+           array.length(res) == outputByteLen)
 @typechecked
 def keccak(rate: size_nat_1600_t, capacity: size_nat_t, inputByteLen: size_nat_t,
-           input_b: vlbytes_t, delimitedSuffix: uint8_t, outputByteLen: size_nat_t) \
-    -> contract(vlbytes_t,
-                lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen:
-                capacity +
-                    rate == 1600 and array.length(input_b) == inputByteLen,
-                lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen, res:
-                array.length(res) == outputByteLen):
+           input_b: vlbytes_t, delimitedSuffix: uint8_t, outputByteLen: size_nat_t) -> vlbytes_t:
     rateInBytes = nat(rate // 8)
     s = array.create(25, uint64(0))
     s = absorb(s, rateInBytes, inputByteLen, input_b, delimitedSuffix)

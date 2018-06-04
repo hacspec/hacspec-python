@@ -11,7 +11,7 @@ size_nat_t,size_nat = refine(nat_t, lambda x: x <= max_size_t)
 output_size_t,output_size = refine(nat_t, lambda x: x <= 64)
 
 
-j_range = range_t(0, 8)
+j_range_t = range_t(0, 8)
 lanes_t = range_t(1, 2**24)
 segment_t = range_t(0, 4)
 t_len_t = range_t(1, max_size_t - 65)
@@ -119,7 +119,7 @@ def xor_blocks(X: bytes_t(block_size), Y: bytes_t(block_size)) -> bytes_t(block_
 
 
 @typechecked
-def extract_block_column(j: j_range, block: bytes_t(block_size)) -> bytes_t(line_size):
+def extract_block_column(j: j_range_t, block: bytes_t(block_size)) -> bytes_t(line_size):
     col = bytes(array.create(line_size, uint8(0)))
     for i in range(8):
         offset = i * line_size + j * 16
@@ -128,7 +128,7 @@ def extract_block_column(j: j_range, block: bytes_t(block_size)) -> bytes_t(line
 
 
 @typechecked
-def update_block_column(j: j_range, col: bytes_t(line_size), block: bytes_t(block_size)) -> bytes_t(block_size):
+def update_block_column(j: j_range_t, col: bytes_t(line_size), block: bytes_t(block_size)) -> bytes_t(block_size):
     output = bytes(array.copy(block))
     for i in range(8):
         offset = i * line_size + j * 16

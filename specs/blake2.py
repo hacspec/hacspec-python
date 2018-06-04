@@ -135,11 +135,11 @@ def blake2(v:variant_t) -> FunctionType:
         return h
 
 
+    @contract3(lambda data, input_bytes, kk, nn: True,
+                        lambda data, input_bytes, kk, nn, res: array.length(res) == nn)
     @typechecked
     def blake2_internal(data: data_internal_t, input_bytes: double_word_t, kk: key_size_t, nn: out_size_t) \
-            -> contract(vlbytes_t,
-                        lambda data, input_bytes, kk, nn: True,
-                        lambda data, input_bytes, kk, nn, res: array.length(res) == nn):
+            -> vlbytes_t:
         h = array.copy(_IV)
         h[0] = h[0] ^ to_word(0x01010000) ^ (to_word(kk) << 8) ^ to_word(nn)
         data_blocks = array.length(data) // block_bytes
@@ -156,10 +156,9 @@ def blake2(v:variant_t) -> FunctionType:
         return from_words_le(h)[:nn]
 
 
+    @contract3(lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn)
     @typechecked
-    def blake2(data: data_t, key: key_t, nn: out_size_t) \
-            -> contract(vlbytes_t,
-                        lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn):
+    def blake2(data: data_t, key: key_t, nn: out_size_t) -> vlbytes_t:
         ll = array.length(data)
         kk = array.length(key)
         data_blocks = (ll - 1) // block_bytes + 1

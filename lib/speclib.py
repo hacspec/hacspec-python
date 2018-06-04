@@ -50,6 +50,10 @@ def tuple5(T: type, U: type, V: type, W: type, X: type) -> type:
     return Tuple[T, U, V, W, X]
 
 @typechecked
+def option_t(T: type) -> Union[T, None]:
+    return Union[T, None]
+
+@typechecked
 def refine(t: type, f: Callable[[T], bool]) -> tuple2(type,Callable[[T],T]):
     def refine_check(x):
         if not isinstance(x,t) or not f(x):
@@ -518,7 +522,7 @@ class _array(Generic[T]):
 
     @staticmethod
     @typechecked
-    def split(x: '_array[T]', len:int) -> '_array[T],_array[T]':
+    def split(x: '_array[T]', len:int) -> Tuple['_array[T]','_array[T]']:
         res1 = copy(x)
         res2 = copy(x)
         res1.len = len
@@ -570,8 +574,7 @@ class _array(Generic[T]):
         if not isinstance(l, nat_t):
             fail("array.create_random's first argument has to be of type nat_t.")
         r = rand()
-        x = t(0)
-        return _array(list([t(r.randint(0, x.max)) for _ in range(0, l)]))
+        return _array(list([t(r.randint(0, 2 << _uintn.num_bits(t(0)))) for _ in range(0, l)]))
 
 
 def vlarray_t(t:type):
@@ -864,6 +867,8 @@ class _vector(_array[T]):
                 isinstance(zero,_vector)):
             fail("vector must have values of numeric type")
         if not (all(v.__class__ == zero.__class__ for v in self.l)):
+            for v in self.l:
+                print(str(v.__class__) + " - " + str(zero.__class__))
             fail("vector must have all values of same type as zero")
 
     @staticmethod
@@ -924,9 +929,13 @@ class _vector(_array[T]):
 
     @staticmethod
     @typechecked
-    def map(f: Callable[[T], U], a: '_vector[T]') -> '_vector[U]':
-        return _array.map(f,a)
+    def map(f: Callable[[T], U], a: '_array[T]') -> '_vector[U]':
+        return _vector(_array.map(f,a), a[0])
 
+@typechecked
+def vlvector_t(t:type):
+    return vlarray_t(t)
+@typechecked
 def vector_t(t:type,len:nat):
     return array_t(t,len)
 vector = _vector
@@ -993,3 +1002,13 @@ def matrix_t(t:type,rows:nat,columns:nat):
     return vector_t(vector_t(t,columns),rows)
 
 matrix = _matrix
+
+# Typed versions of all python functions that can be used in specs.
+class speclib:
+    @typechecked
+    def ceil(x: int) -> nat_t:
+        return nat(ceil(x))
+
+    @typechecked
+    def log(x: int, b: int) -> float:
+        return log(x, b)
