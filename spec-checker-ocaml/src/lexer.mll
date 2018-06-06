@@ -9,74 +9,113 @@
   module L = Location
 
   (* ------------------------------------------------------------------ *)
-  exception LexicalError of L.t option * string
-
-  let pp_lex_error fmt msg =
-    Format.fprintf fmt "parse error: %s" msg
-
-  let () =
-    let pp fmt exn =
-      match exn with
-      | LexicalError (_, msg) -> pp_lex_error fmt msg
-      | _ -> raise exn
-    in
-      Pexception.register pp
-
-  (* ------------------------------------------------------------------ *)
   let lex_error lexbuf msg =
-    raise (LexicalError (Some (L.oflexbuf lexbuf), msg))
+    raise (Syntax.ParseError (L.oflexbuf lexbuf, Some msg))
 
   module State : sig
     type state
 
     exception InvalidDeindent
+    exception InvalidState
 
-    val create : unit -> state
-    val offset : state -> int
-    val set    : state -> int -> [`Up | `Down of int] option
+    val create      : unit  -> state
+    val offset      : state -> int
+    val incontn     : state -> bool
+    val contn       : state -> int
+    val enter_contn : state -> unit
+    val leave_contn : state -> unit
+    val set         : state -> int -> [`Up | `Down of int] option
   end = struct
-    type rstate = {
+    type stindent = {
       offset  : int;
       history : int list;
     }
 
+    type rstate =
+      Contn of int * stindent | Indent of stindent
+
     type state = rstate ref
 
     exception InvalidDeindent
+    exception InvalidState
 
     let empty : rstate =
-      { offset = 0; history = []; }
+      Indent { offset = 0; history = []; }
 
-    let roffset { offset } =
-      offset
+    let roffset = function 
+      | Indent { offset } -> offset
+      | _ -> raise InvalidState
 
-    let rpush (s : rstate) (i : int) =
+    let on_stindent f = function
+      | Indent s -> Indent (f s)
+      | Contn  _ -> raise InvalidState
+
+    let rcontn = function Indent _ -> 0 | Contn (c, _) -> c
+
+    let renter_contn = function
+      | Indent st -> Contn (1, st)
+      | Contn (n, st) -> Contn (n + 1, st)
+
+    let rleave_contn = function
+      | Indent st -> raise InvalidState
+      | Contn (n, st) ->
+          if n <= 1 then Indent st else Contn (n-1, st)
+
+    let rincont = function Indent _ -> false | Contn _ -> true
+
+    let stpush (s : stindent) (i : int) =
       { offset = i; history = s.offset :: s.history; }
 
-    let rpop (s : rstate) =
+    let stpop (s : stindent) =
       match s.history with
       | []     -> s
       | i :: s -> { offset = i; history = s; }
 
-    let rset (s : rstate) (i : int) =
+    let stset (s : stindent) (i : int) =
       assert (0 <= i);
 
       if i >= s.offset then
-        if i = s.offset then (s, None) else (rpush s i, Some `Up)
+        if i = s.offset then (s, None) else (stpush s i, Some `Up)
       else
         let lvl, s =
-          let rec doit acc (s : rstate) =
-            if i < s.offset then doit (1+acc) (rpop s) else (acc, s)
+          let rec doit acc (s : stindent) =
+            if i < s.offset then doit (1+acc) (stpop s) else (acc, s)
           in doit 0 s in
             
         if i <> s.offset then raise InvalidDeindent;
         (s, Some (`Down lvl))
+
+    let rpush (s : rstate) (i : int) =
+      on_stindent (fun s -> stpush s i) s
+
+    let rpop (s : rstate) =
+      on_stindent stpop s
+
+    let rset (s : rstate) (i : int) =
+      match s with
+      | Indent s ->
+          let (s, aout) = stset s i in (Indent s, aout)
+
+      | Contn _ ->
+          raise InvalidState
 
     let create () : state =
       ref empty
 
     let offset (s : state) =
       roffset !s
+
+    let contn (s : state) =
+      rcontn !s
+
+    let incontn (s : state) =
+      rincont !s
+
+    let enter_contn (s : state) =
+      s := renter_contn !s
+
+    let leave_contn (s : state) =
+      s := rleave_contn !s
 
     let set (s : state) (i : int) =
       let (news, aout) = rset !s i in s := news; aout
@@ -87,28 +126,21 @@
     ("True"  , TRUE );
     ("False" , FALSE);
 
-    ("int"      , INT      );
-    ("bool"     , BOOL     );
-    ("string"   , STRING   );
-    ("bit_t"    , BIT_T    );
-    ("uint8_t"  , UINT8_T  );
-    ("uint16_t" , UINT16_T );
-    ("uint32_t" , UINT32_T );
-    ("uint64_t" , UINT64_T );
-    ("uint128_t", UINT128_T);
-
-    ("and"   , AND  );
-    ("def"   , DEF  );
-    ("else"  , ELSE );
-    ("elif"  , ELIF );
-    ("fail"  , FAIL );
-    ("for"   , FOR  );
-    ("if"    , IF   );
-    ("in"    , IN   );
-    ("not"   , NOT  );
-    ("or"    , OR   );
-    ("pass"  , PASS );
-    ("range" , RANGE);
+    ("lambda", LAMBDA);
+    ("and"   , AND   );
+    ("def"   , DEF   );
+    ("else"  , ELSE  );
+    ("elif"  , ELIF  );
+    ("fail"  , FAIL  );
+    ("for"   , FOR   );
+    ("from"  , FROM  );
+    ("if"    , IF    );
+    ("import", IMPORT);
+    ("in"    , IN    );
+    ("not"   , NOT   );
+    ("or"    , OR    );
+    ("pass"  , PASS  );
+    ("range" , RANGE );
     ("return", RETURN);
   ]
 
@@ -148,6 +180,8 @@ rule main stt = parse
   | blank* comment? (newline as s | eof) {
       Lexing.new_line lexbuf;
 
+      if State.incontn stt then main stt lexbuf else
+
       let pos = lexbuf.lex_start_p in
       let off = pos.pos_cnum - pos.pos_bol in
 
@@ -161,17 +195,19 @@ rule main stt = parse
         match offset stt lexbuf with
         | Some (`Down i) -> List.make i DEINDENT
         | Some `Up       -> [INDENT]
-        | None           -> token lexbuf
-      else token lexbuf
+        | None           -> token stt lexbuf
+      else token stt lexbuf
     }
 
 and offset stt = parse
   | blank* as s
-      { State.set stt (String.length s) }
+      { if not (State.incontn stt) then
+          State.set stt (String.length s)
+        else None }
 
-and token = parse
+and token stt = parse
   | blank+
-      { token lexbuf }
+      { token stt lexbuf }
 
   | ident as id {
       [Hashtbl.find_default keywords id (IDENT id)]
@@ -181,29 +217,44 @@ and token = parse
       [UINT (Big_int.big_int_of_string i)]
     }
 
-  | '(' { [LPAREN   ] }
-  | ')' { [RPAREN   ] }
-  | '[' { [LBRACKET ] }
-  | ']' { [RBRACKET ] }
+  | '(' { State.enter_contn stt; [LPAREN   ] }
+  | '[' { State.enter_contn stt; [LBRACKET ] }
+
+  | ')' { if State.incontn stt then State.leave_contn stt; [RPAREN   ] }
+  | ']' { if State.incontn stt then State.leave_contn stt; [RBRACKET ] }
+
   | ':' { [COLON    ] }
   | ';' { [SEMICOLON] }
   | ',' { [COMMA    ] }
+  | '.' { [DOT      ] }
+  | '@' { [AT       ] }
+  | '|' { [PIPE     ] }
+  | '&' { [AMP      ] }
+  | '%' { [PCENT    ] }
+  | '^' { [HAT      ] }
 
-  | "+"  { [PLUS   ] }
-  | "-"  { [MINUS  ] }
-  | "*"  { [STAR   ] }
-  | "/"  { [SLASH  ] }
-  | "="  { [EQ     ] }
-  | "+=" { [PLUSEQ ] }
-  | "-=" { [MINUSEQ] }
-  | "*=" { [STAREQ ] }
-  | "/=" { [SLASHEQ] }
-  | "==" { [EQEQ   ] }
-  | "!=" { [BANGEQ ] }
-  | "<"  { [LT     ] }
-  | ">"  { [GT     ] }
-  | "<=" { [LTEQ   ] }
-  | ">=" { [GTEQ   ] }
-  | "->" { [DASHGT ] }
+  | "+"   { [PLUS        ] }
+  | "-"   { [MINUS       ] }
+  | "*"   { [STAR        ] }
+  | "**"  { [STARSTAR    ] }
+  | "/"   { [SLASH       ] }
+  | "//"  { [SLASHSLASH  ] }
+  | "="   { [EQ          ] }
+  | "+="  { [PLUSEQ      ] }
+  | "-="  { [MINUSEQ     ] }
+  | "**=" { [STARSTAREQ  ] }
+  | "*="  { [STAREQ      ] }
+  | "/="  { [SLASHEQ     ] }
+  | "//=" { [SLASHSLASHEQ] }
+  | "|="  { [HATEQ       ] }
+  | "&="  { [HATEQ       ] }
+  | "^="  { [HATEQ       ] }
+  | "=="  { [EQEQ        ] }
+  | "!="  { [BANGEQ      ] }
+  | "<"   { [LT          ] }
+  | ">"   { [GT          ] }
+  | "<="  { [LTEQ        ] }
+  | ">="  { [GTEQ        ] }
+  | "->"  { [DASHGT      ] }
 
   |  _ as c { lex_error lexbuf (Printf.sprintf "illegal character: %c" c) }
