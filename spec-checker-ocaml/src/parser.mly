@@ -32,6 +32,7 @@
 
 %token <string> IDENT
 %token <Big_int.big_int> UINT
+%token <bytes> STRING
 
 %token AT
 %token BANGEQ
@@ -177,6 +178,9 @@ sexpr_r:
 
 | i=UINT
     { PEUInt i }
+
+| s=STRING
+    { PEString s }
 
 | RANGE e=parens(sexpr)
     { PERange e }

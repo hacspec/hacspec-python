@@ -40,19 +40,20 @@ type passop =
 
 (* -------------------------------------------------------------------- *)
 type pexpr_r =
-  | PEVar   of pqident
-  | PEBool  of bool
-  | PEUInt  of Big_int.big_int
-  | PETuple of pexpr list * bool
-  | PEList  of pexpr list
-  | PEArray of pexpr list
-  | PERange of pexpr
-  | PEEq    of bool * (pexpr * pexpr)
-  | PEUniOp of puniop * pexpr
-  | PEBinOp of pbinop * (pexpr * pexpr)
-  | PECall  of pqident * pexpr list
-  | PEGet   of pexpr * pslice
-  | PEFun   of pident list * pexpr
+  | PEVar    of pqident
+  | PEBool   of bool
+  | PEUInt   of Big_int.big_int
+  | PEString of bytes
+  | PETuple  of pexpr list * bool
+  | PEList   of pexpr list
+  | PEArray  of pexpr list
+  | PERange  of pexpr
+  | PEEq     of bool * (pexpr * pexpr)
+  | PEUniOp  of puniop * pexpr
+  | PEBinOp  of pbinop * (pexpr * pexpr)
+  | PECall   of pqident * pexpr list
+  | PEGet    of pexpr * pslice
+  | PEFun    of pident list * pexpr
 
 and pexpr  = pexpr_r located
 and ptype  = pexpr
