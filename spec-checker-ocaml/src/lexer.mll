@@ -246,8 +246,8 @@ and token stt = parse
   | "*="  { [STAREQ      ] }
   | "/="  { [SLASHEQ     ] }
   | "//=" { [SLASHSLASHEQ] }
-  | "|="  { [HATEQ       ] }
-  | "&="  { [HATEQ       ] }
+  | "|="  { [PIPEEQ       ] }
+  | "&="  { [AMPEQ       ] }
   | "^="  { [HATEQ       ] }
   | "=="  { [EQEQ        ] }
   | "!="  { [BANGEQ      ] }
@@ -256,5 +256,7 @@ and token stt = parse
   | "<="  { [LTEQ        ] }
   | ">="  { [GTEQ        ] }
   | "->"  { [DASHGT      ] }
+  | "<<"   { [LTLT          ] }
+  | ">>"   { [GTGT          ] }
 
   |  _ as c { lex_error lexbuf (Printf.sprintf "illegal character: %c" c) }

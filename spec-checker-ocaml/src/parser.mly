@@ -45,6 +45,8 @@
 %token DOT
 %token LT
 %token LTEQ
+%token LTLT
+%token GTGT
 %token MINUS
 %token MINUSEQ
 %token PLUS
@@ -83,6 +85,8 @@
 %nonassoc PIPE
 %nonassoc HAT
 %nonassoc AMP
+%nonassoc LTLT
+%nonassoc GTGT
 %left     PLUS MINUS
 %left     STAR SLASH SLASHSLASH PCENT
 %right    STARSTAR
@@ -139,6 +143,8 @@ otyident:
 | AND        { (`And  :> pbinop) }
 | LT         { (`Lt   :> pbinop) }
 | GT         { (`Gt   :> pbinop) }
+| LTLT       { (`Lshift   :> pbinop) }
+| GTGT       { (`Rshift   :> pbinop) }
 | LTEQ       { (`Le   :> pbinop) }
 | GTEQ       { (`Ge   :> pbinop) }
 
@@ -176,6 +182,9 @@ sexpr_r:
     { PEBool false }
 
 | i=UINT
+    { PEUInt i }
+
+| s=
     { PEUInt i }
 
 | RANGE e=parens(sexpr)
@@ -233,8 +242,8 @@ sexpr_r:
 
 (* -------------------------------------------------------------------- *)
 sinstr_r:
-| FAIL
-    { PSFail }
+| FAIL s=sinstr
+    { PSFail (s) }
 
 | PASS
     { PSPass }

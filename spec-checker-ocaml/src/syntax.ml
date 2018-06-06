@@ -32,6 +32,7 @@ type pbinop = [
   | `Add | `Sub  | `Mul | `Div  | `IDiv | `Mod
   | `Pow | `BAnd | `BOr | `BXor
   | `And | `Or   | `Lt  | `Le   | `Gt   | `Ge
+  | `Lshift | `Rshift
 ]
 
 type passop =
@@ -63,7 +64,7 @@ and potyident = pident * ptype option
 
 (* -------------------------------------------------------------------- *)
 type pinstr_r =
-  | PSFail
+  | PSFail of pinstr_r Location.located
   | PSPass
   | PSReturn of pexpr option
   | PSDecl   of ptyident * pexpr
