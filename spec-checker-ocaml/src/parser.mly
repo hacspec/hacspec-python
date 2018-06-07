@@ -281,9 +281,20 @@ instr_r:
 
     { PSIf ((e, b), bie, bse) }
 
+| x=procdef
+    { PSDef x }
+
 (* -------------------------------------------------------------------- *)
 %inline instr:
 | i=loc(instr_r) { i }
+
+(* -------------------------------------------------------------------- *)
+procdef:
+| iboption(postfix(annotation, NEWLINE)) DEF f=ident
+    args=parens(plist0(tyident, COMMA)) DASHGT ty=type_
+  COLON b=block
+
+    { ((f, ty), args, b) }
 
 (* -------------------------------------------------------------------- *)
 block:
@@ -317,11 +328,8 @@ topdecl_r:
 | x=otyident EQ e=expr NEWLINE
     { [PTVar (x, e)] }
 
-| iboption(postfix(annotation, NEWLINE)) DEF f=ident
-    args=parens(plist0(tyident, COMMA)) DASHGT ty=type_
-  COLON b=block
-
-    { [PTDef ((f, ty), args, b)] }
+| x=procdef
+    { [PTDef x] }
 
 (* -------------------------------------------------------------------- *)
 topdecl:
