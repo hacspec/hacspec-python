@@ -153,10 +153,6 @@ def squeeze(s: state_t,
     return output
 
 
-@contract3(lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen:
-           capacity + rate == 1600 and array.length(input_b) == inputByteLen,
-           lambda rate, capacity, inputByteLen, input_b, delimitedSuffix, outputByteLen, res:
-           array.length(res) == outputByteLen)
 @typechecked
 def keccak(rate: size_nat_1600_t, capacity: size_nat_t, inputByteLen: size_nat_t,
            input_b: vlbytes_t, delimitedSuffix: uint8_t, outputByteLen: size_nat_t) -> vlbytes_t:

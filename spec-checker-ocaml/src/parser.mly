@@ -81,7 +81,7 @@
 %nonassoc LAMBDA_prec
 %left     OR
 %left     AND
-%nonassoc NOT TILDE
+%nonassoc NOT 
 %nonassoc EQEQ BANGEQ
 %left     LT GT LTEQ GTEQ
 %nonassoc LTLT
@@ -217,7 +217,7 @@ sexpr_r:
 | e=sexpr i=brackets(slice)
     { PEGet (e, i) }
 
-| LAMBDA xs=ident* COLON e=sexpr %prec LAMBDA_prec
+| LAMBDA xs=rlist1(ident, COMMA) COLON e=sexpr %prec LAMBDA_prec
     { PEFun (xs, e) }
 
 (* -------------------------------------------------------------------- *)
@@ -305,7 +305,7 @@ block:
 
 (* -------------------------------------------------------------------- *)
 annotation:
-| AT ident { () }
+| AT sexpr { () }
 
 (* -------------------------------------------------------------------- *)
 ipident:
