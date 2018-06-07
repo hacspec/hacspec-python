@@ -2,8 +2,8 @@
 #!/usr/bin/python3
 
 from hacspec.speclib import *
-from curve25519 import felem_t, to_felem, fadd, fsub, fmul, fsqr, finv, serialized_scalar_t, serialized_point_t, scalar_t, p25519
-from sha2 import sha512
+from curve25519 import *
+from sha2 import *
 
 # Define prime field
 d25519: felem_t = felem_t(nat(
@@ -135,7 +135,7 @@ def point_decompress(s:serialized_point_t) ->Union[extended_point_t, None] :
     sign = (y // (1 << 255)) % 2 == 1
     y = to_felem(nat(y % (1 << 255)))
     x = recover_x_coordinate(y, sign)
-    if x is None:
+    if x == None:
         return None
     else:
         return extended_point(x, y, felem_t(nat(1)), fmul(x, y))

@@ -32,6 +32,7 @@
 
 %token <string> IDENT
 %token <Big_int.big_int> UINT
+%token <bytes> STRING
 
 %token AT
 %token BANGEQ
@@ -184,8 +185,8 @@ sexpr_r:
 | i=UINT
     { PEUInt i }
 
-| s=
-    { PEUInt i }
+| s=STRING
+    { PEString s }
 
 | RANGE e=parens(sexpr)
     { PERange e }
@@ -242,7 +243,7 @@ sexpr_r:
 
 (* -------------------------------------------------------------------- *)
 sinstr_r:
-| FAIL s=sinstr
+| FAIL s=expr
     { PSFail (s) }
 
 | PASS
