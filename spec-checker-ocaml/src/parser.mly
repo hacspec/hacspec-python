@@ -217,7 +217,7 @@ sexpr_r:
 | e=sexpr i=brackets(slice)
     { PEGet (e, i) }
 
-| LAMBDA xs=rlist1(ident, COMMA) COLON e=sexpr %prec LAMBDA_prec
+| LAMBDA xs=plist1(ident, COMMA) COLON e=sexpr %prec LAMBDA_prec
     { PEFun (xs, e) }
 
 (* -------------------------------------------------------------------- *)

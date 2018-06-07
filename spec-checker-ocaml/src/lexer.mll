@@ -165,6 +165,9 @@ let comment  = '#' [^'\n']*
 
 (* -------------------------------------------------------------------- *)
 rule main stt = parse
+  | empty { main_ false stt lexbuf }
+
+and main_ contn stt = parse
   | eof {
       let pos = lexbuf.lex_start_p in
       let off = pos.pos_cnum - pos.pos_bol in
@@ -177,10 +180,15 @@ rule main stt = parse
       List.rev (EOF :: !all)
     }
 
-  | blank* comment? (newline as s | eof) {
+  | blank* comment (newline | eof)
+  | blank* (("\\"? as esc) newline | eof) {
       Lexing.new_line lexbuf;
 
-      if State.incontn stt then main stt lexbuf else
+      if State.incontn stt then
+        main stt lexbuf
+      else if esc = Some "\\" then
+        main_ true  stt lexbuf
+      else
 
       let pos = lexbuf.lex_start_p in
       let off = pos.pos_cnum - pos.pos_bol in
@@ -189,6 +197,8 @@ rule main stt = parse
     }
 
   | empty {
+      if contn || State.incontn stt then token stt lexbuf else
+
       let pos = lexbuf.lex_curr_p in
       let off = pos.pos_cnum - pos.pos_bol in
       if off = 0 then
