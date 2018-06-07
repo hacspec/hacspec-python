@@ -306,7 +306,7 @@ import:
 | IMPORT xs=plist1(qident, COMMA)
     { List.map (fun x -> PTImport (x, None)) xs }
 
-| FROM x=qident IMPORT ips=ipident+
+| FROM x=qident IMPORT ips=plist1(ipident, COMMA)
     { [PTImport (x, Some ips)] }
 
 (* -------------------------------------------------------------------- *)
