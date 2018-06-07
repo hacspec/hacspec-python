@@ -2,7 +2,7 @@ from lib.speclib import *
 
 # Four variants of SHA-2
 
-variant_t,variant = refine(nat_t, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
+variant_t = refine_t(nat_t, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 i_range_t = range_t(0, 4)
 op_range_t = range_t(0, 1)
 
@@ -211,7 +211,7 @@ def sha2(v:variant_t) -> FunctionType:
 
 # Specific instances of SHA-2 
 
-sha224 = sha2(variant(nat(224)))
-sha256 = sha2(variant(nat(256)))
-sha384 = sha2(variant(nat(384)))
-sha512 = sha2(variant(nat(512)))
+sha224 = sha2(224)
+sha256 = sha2(256)
+sha384 = sha2(384)
+sha512 = sha2(512)

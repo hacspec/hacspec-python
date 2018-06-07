@@ -18,7 +18,7 @@ def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple2(int,vlbytes_t):
     pad_msg = 16 * (lmsg // 16 + 1)
     if lmsg % 16 == 0:
         pad_msg = lmsg
-    to_mac = array.create(pad_aad + pad_msg + 16,uint8(0));
+    to_mac = array.create(pad_aad + pad_msg + 16,uint8(0))
     to_mac[0:laad] = aad
     to_mac[pad_aad:pad_aad+lmsg] = msg
     to_mac[pad_aad+pad_msg:pad_aad+pad_msg+8] = bytes.from_uintn_le(uint64(laad))
