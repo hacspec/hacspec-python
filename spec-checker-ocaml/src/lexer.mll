@@ -232,6 +232,7 @@ and token stt = parse
   | '&' { [AMP      ] }
   | '%' { [PCENT    ] }
   | '^' { [HAT      ] }
+  | '~' { [TILDE    ] }
 
   | "+"   { [PLUS        ] }
   | "-"   { [MINUS       ] }

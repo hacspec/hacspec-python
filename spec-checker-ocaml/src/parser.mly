@@ -62,6 +62,7 @@
 %token STARSTAR
 %token STARSTAREQ
 %token HAT
+%token TILDE
 %token HATEQ
 %token AMP
 %token AMPEQ
@@ -80,15 +81,12 @@
 %nonassoc LAMBDA_prec
 %left     OR
 %left     AND
-%nonassoc NOT
+%nonassoc NOT TILDE
 %nonassoc EQEQ BANGEQ
 %left     LT GT LTEQ GTEQ
-%nonassoc PIPE
-%nonassoc HAT
-%nonassoc AMP
 %nonassoc LTLT
 %nonassoc GTGT
-%left     PLUS MINUS
+%left     PLUS MINUS HAT AMP PIPE
 %left     STAR SLASH SLASHSLASH PCENT
 %right    STARSTAR
 %right    LBRACKET
@@ -126,6 +124,7 @@ otyident:
 (* -------------------------------------------------------------------- *)
 %inline uniop:
 | NOT   { (`Not :> puniop) }
+| TILDE  { (`BNot :> puniop) }
 | MINUS { (`Neg :> puniop) }
 
 (* -------------------------------------------------------------------- *)
@@ -188,8 +187,8 @@ sexpr_r:
 | s=STRING
     { PEString s }
 
-| RANGE e=parens(sexpr)
-    { PERange e }
+| RANGE es=parens(rlist1(sexpr,COMMA))
+    { PERange es }
 
 | o=uniop e=sexpr %prec NOT
     { PEUniOp (o, e) }

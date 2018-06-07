@@ -26,7 +26,7 @@ type pident  = string located
 type pqident = pident list * pident
 
 (* -------------------------------------------------------------------- *)
-type puniop = [ `Not | `Neg ]
+type puniop = [ `Not | `Neg | `BNot ]
 
 type pbinop = [
   | `Add | `Sub  | `Mul | `Div  | `IDiv | `Mod
@@ -48,7 +48,7 @@ type pexpr_r =
   | PETuple  of pexpr list * bool
   | PEList   of pexpr list
   | PEArray  of pexpr list
-  | PERange  of pexpr
+  | PERange  of pexpr list
   | PEEq     of bool * (pexpr * pexpr)
   | PEUniOp  of puniop * pexpr
   | PEBinOp  of pbinop * (pexpr * pexpr)
