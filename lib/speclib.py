@@ -929,8 +929,9 @@ class _vector(_array[T]):
 
     @staticmethod
     @typechecked
-    def map(f: Callable[[T], U], a: '_array[T]') -> '_vector[U]':
-        return _vector(_array.map(f,a), a[0])
+    def mapz(f: Callable[[T], U], a: '_vector[T]', z:U) -> '_vector[U]':
+        return _vector(array.map(f,a),z)
+
 
 @typechecked
 def vlvector_t(t:type):
@@ -993,11 +994,6 @@ class _matrix(_vector[_vector[T]]):
     def copy(x: '_matrix[T]') -> '_matrix[T]':
         return _matrix.createi(x.rows,x.cols,lambda ij: x[ij[0]][ij[1]])
 
-    @staticmethod
-    @typechecked
-    def map(f: Callable[[T], U], a: '_matrix[T]') -> '_matrix[U]':
-        return _matrix.createi(a.rows,a.cols,lambda ij: f(res[ij[0]][ij[1]]))
-    
 def matrix_t(t:type,rows:nat,columns:nat):
     return vector_t(vector_t(t,columns),rows)
 

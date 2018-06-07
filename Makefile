@@ -14,9 +14,13 @@ all: run check test
 run: $(SPECS) $(SLOW_SPECS) $(FAILING_SPECS)
 test: $(addsuffix -test, $(SPECS))
 check: $(addsuffix -check, $(SPECS)) 
+parse: $(addsuffix -parse, $(SPECS))
 
 $(SPECS) $(SLOW_SPECS) $(FAILING_SPECS):
 	PYTHONPATH=. $(PYTHON) -O tests/$@_test.py
+
+%-parse: specs/%.py
+	cat $< | spec-checker-ocaml/main.native
 
 %-check: specs/%.py
 	PYTHONPATH=. $(PYTHON) lib/check.py $<

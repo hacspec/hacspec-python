@@ -6,7 +6,7 @@ blocksize = 16
 block_t = bytes_t(16)
 key_t = bytes_t(32)
 tag_t = bytes_t(16)
-subblock_t,subblock = refine(vlbytes_t, lambda x: bytes.length(x) <= 16)
+subblock_t = refine_t(vlbytes_t, lambda x: bytes.length(x) <= 16)
 
 
 # Define prime field
@@ -39,9 +39,9 @@ def poly(text: vlbytes_t, r: felem_t) -> felem_t:
     blocks, last = array.split_blocks(text, blocksize)
     acc = felem(nat(0))
     for i in range(array.length(blocks)):
-        acc = (acc + encode(subblock(blocks[i]))) * r
+        acc = (acc + encode((blocks[i]))) * r
     if (array.length(last) > 0):
-        acc = (acc + encode(subblock(last))) * r
+        acc = (acc + encode((last))) * r
     return acc
 
 

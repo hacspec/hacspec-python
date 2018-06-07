@@ -46,6 +46,9 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     zqpolyvec_t = vector_t(zqpoly_t,kyber_k)
     zqpolymatrix_t = vector_t(zqpolyvec_t,kyber_k)
 
+    def zqpoly(a:array_t(zqelem_t,kyber_n)) -> zqpoly_t:
+        return vector(a,zqelem(0))
+    
     zqpoly0   = vector.create(kyber_n,zqelem(0))
     omega     = zqelem(3844)
     psi       = zqelem(62)
@@ -120,14 +123,14 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     def decode_decompress(d:int) -> FunctionType:
         @typechecked
         def _decode_decompress(b:bytes_t) -> vector_t:
-            return vector.map(decompress(d), decode(d)(b))
+            return array.map(decompress(d), decode(d)(b))
         return _decode_decompress
 
     @typechecked
     def compress_encode(d:int) -> FunctionType:
         @typechecked
         def _compress_encode(b:zqpoly_t) -> bytes_t:
-            return encode(d)(vector.map(compress(d), b))
+            return encode(d)(array.map(compress(d), b))
         return _compress_encode
 
     @typechecked
@@ -141,37 +144,37 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     @typechecked
     def pack_sk(sk:zqpolyvec_t) -> bytes_t(kyber_indcpa_secretkeybytes(kyber_k)):
         #encode_13(sk mod+ q)
-        return bytes.concat_blocks(vector.map(lambda x:encode(13)(x), sk), vector.empty())
+        return bytes.concat_blocks(array.map(encode(13), sk), bytes.empty())
 
     @typechecked
     def unpack_sk(packedsk:bytes_t(kyber_indcpa_secretkeybytes(kyber_k))) -> zqpolyvec_t:
         #decode_13(sk)
         res, last = bytes.split_blocks(packedsk, kyber_polybytes)
-        res = vector.map(lambda x: decode(13)(x), res)
+        res = array.map(decode(13), res)
         return res
 
     @typechecked
     def pack_pk(pk:zqpolyvec_t, seed:symbytes_t) -> bytes_t(kyber_indcpa_publickeybytes(kyber_k)):
         #(encode_dt(compress_q(t, dt)) || seed)
-        return bytes.concat_blocks(vector.map(compress_encode(kyber_dt), pk), seed)
+        return bytes.concat_blocks(array.map(compress_encode(kyber_dt), pk), seed)
 
     @typechecked
     def unpack_pk(packedpk:bytes_t(kyber_indcpa_publickeybytes(kyber_k))) -> tuple2 (zqpolyvec_t, symbytes_t):
         #decompress_q(decode_dt(pk), dt)
         res, seed = bytes.split_blocks(packedpk, 352)
-        pk = vector.map(decode_decompress(kyber_dt), res)
+        pk = array.map(decode_decompress(kyber_dt), res)
         return (pk, seed)
 
     @typechecked
     def pack_ciphertext(b:zqpolyvec_t, v:zqpoly_t) -> bytes_t(kyber_indcpa_bytes(kyber_k)):
         #(encode_du(compress_q(b, du)) || encode_dv(compress_q(v, dv)))
-        return bytes.concat_blocks(vector.map(compress_encode(kyber_du), b), compress_encode(kyber_dv)(v))
+        return bytes.concat_blocks(array.map(compress_encode(kyber_du), b), compress_encode(kyber_dv)(v))
 
     @typechecked
     def unpack_ciphertext(c:bytes_t(kyber_indcpa_bytes(kyber_k))) -> tuple2 (zqpolyvec_t, zqpoly_t):
         #(decompress_q(decode_du(c), du), decompress_q(decode_dv(c_v), dv))
         u1, v1 = bytes.split_blocks(c, 352)
-        u = vector.map(decode_decompress(kyber_du), u1)
+        u = array.map(decode_decompress(kyber_du), u1)
         v = decode_decompress(kyber_dv)(v1)
         return (u, v)
 
