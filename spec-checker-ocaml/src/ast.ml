@@ -43,7 +43,7 @@ type type_ =
   | TBit
   | TWord    of wsize
   | TTuple   of type_ list
-  | TArray   of type_
+  | TArray   of type_ * Big_int.big_int option
   | TRange   of Big_int.big_int * Big_int.big_int
   | TRefined of type_ * expr
 
@@ -100,9 +100,9 @@ end = struct
   let is_refined = function TRefined _ -> true | _ -> false
   let is_range   = function TRange   _ -> true | _ -> false
 
-  let as_word  = function TWord  ws  -> ws  | _ -> assert false
-  let as_tuple = function TTuple tys -> tys | _ -> assert false
-  let as_array = function TArray ty  -> ty  | _ -> assert false
+  let as_word  = function TWord  ws      -> ws  | _ -> assert false
+  let as_tuple = function TTuple tys     -> tys | _ -> assert false
+  let as_array = function TArray (ty, _) -> ty  | _ -> assert false
 
   let rec strip (ty : type_) : type_ =
     match ty with
@@ -113,7 +113,7 @@ end = struct
     | TBit            -> TBit
     | TWord    ws     -> TWord ws
     | TTuple   t      -> TTuple (List.map strip t)
-    | TArray   t      -> TArray (strip t)
+    | TArray   (t, _) -> TArray (strip t, None)
     | TRefined (t, _) -> strip t  
     | TRange   _      -> TInt
 

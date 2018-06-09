@@ -62,9 +62,15 @@ end = struct
   }
 
   let dtypes = [
-    ("bool"  , TBool  );
-    ("int"   , TInt   );
-    ("string", TString);
+    ("bool"     , TBool      );
+    ("int"      , TInt       );
+    ("string"   , TString    );
+    ("uint8_t"  , TWord `U8  );
+    ("uint16_t" , TWord `U16 );
+    ("uint32_t" , TWord `U32 );
+    ("uint64_t" , TWord `U64 );
+    ("uint128_t", TWord `U128);
+    ("vlbytes"  , TArray (TWord `U8, None));
   ]
 
   module Types = struct
@@ -207,6 +213,23 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let j = tt_cint env j in
       TRange (i, j)
 
+  | "array_t", [ty] ->
+      TArray (tt_type env ty, None)
+
+  | "array_t", [ty; sz] ->
+      let sz = tt_cint env sz in
+      let ty = tt_type env ty in
+      TArray (ty, Some sz)
+
+  | "bytes_t", [sz] ->
+      let sz = tt_cint env sz in
+      TArray (TWord `U8, Some sz)
+
+    (* FIXME: why 3? *)
+  | "refine3", [ty; e] ->
+      let ty = tt_type env ty in
+      TRefined (ty, EUnit)      (* FIXME: refinment *)
+
   | _, [] -> begin
       match Env.Types.get env (unloc x) with
       | None -> error ~loc:(loc x) env (UnknownTypeName (unloc x))
@@ -277,7 +300,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let e, ety = tt_expr env e in
         let es =
           List.map (fun e -> fst (tt_expr ~cty:(`Exact ety) env e)) es in
-        (EArray (e :: es), TArray ety)
+        (EArray (e :: es), TArray (ety, None))
   
     | PEEq (b, (pe1, pe2)) ->
         let e1, ty1 = tt_expr env pe1 in
