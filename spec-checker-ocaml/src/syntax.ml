@@ -46,9 +46,7 @@ type pexpr_r =
   | PEUInt   of Big_int.big_int
   | PEString of bytes
   | PETuple  of pexpr list * bool
-  | PEList   of pexpr list
   | PEArray  of pexpr list
-  | PERange  of pexpr list
   | PEEq     of bool * (pexpr * pexpr)
   | PEUniOp  of puniop * pexpr
   | PEBinOp  of pbinop * (pexpr * pexpr)
@@ -65,7 +63,7 @@ and potyident = pident * ptype option
 
 (* -------------------------------------------------------------------- *)
 type pinstr_r =
-  | PSFail of pexpr
+  | PSFail   of pexpr
   | PSPass
   | PSReturn of pexpr option
   | PSDecl   of ptyident * pexpr
@@ -73,9 +71,10 @@ type pinstr_r =
   | PSAssign of (plvalue * passop * pexpr)
   | PSIf     of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
   | PSWhile  of (pexpr * pstmt) * pstmt option
-  | PSFor    of (pident * pexpr * pstmt) * pstmt option
+  | PSFor    of (pident * prange * pstmt) * pstmt option
   | PSDef    of procdef
 
+and prange  = pexpr option * pexpr
 and pstmt   = pinstr list
 and pinstr  = pinstr_r located
 and plvalue = pexpr
@@ -83,9 +82,11 @@ and procdef = ptyident * ptyident list * pstmt
 
 (* -------------------------------------------------------------------- *)
 type ptopdecl =
-  | PTImport of pqident * (pident option) list option
+  | PTImport of pimport
   | PTVar    of potyident * pexpr
   | PTDef    of procdef
+
+and pimport = pqident * (pident option) list option
 
 (* -------------------------------------------------------------------- *)
 type pspec = ptopdecl list

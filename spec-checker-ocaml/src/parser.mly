@@ -187,9 +187,6 @@ sexpr_r:
 | s=STRING
     { PEString s }
 
-| RANGE es=parens(rlist1(sexpr,COMMA))
-    { PERange es }
-
 | o=uniop e=sexpr %prec NOT
     { PEUniOp (o, e) }
 
@@ -212,7 +209,7 @@ sexpr_r:
     { let (es, b) = esb in PETuple (List.rev es, b) }
 
 | es=brackets(rlist0(sexpr, COMMA))
-    { PEList es }
+    { PEArray es }
 
 | e=sexpr i=brackets(slice)
     { PEGet (e, i) }
@@ -261,6 +258,14 @@ sinstr_r:
     { PSExpr e }
 
 (* -------------------------------------------------------------------- *)
+prange:
+| RANGE e=parens(sexpr)
+    { (None, e) }
+
+| RANGE e=parens(e1=sexpr COMMA e2=sexpr { (e1, e2) })
+    { (Some (fst e), snd e) }
+
+(* -------------------------------------------------------------------- *)
 %inline sinstr:
 | i=loc(sinstr_r) { i }
 
@@ -269,7 +274,7 @@ instr_r:
 | i=sinstr_r NEWLINE
     { i }
 
-| FOR x=ident IN e=expr COLON b=block
+| FOR x=ident IN e=prange COLON b=block
     be=option(ELSE COLON b=block { b })
 
     { PSFor ((x, e, b), be) }

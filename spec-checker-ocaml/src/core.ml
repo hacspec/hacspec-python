@@ -1,7 +1,11 @@
 (* -------------------------------------------------------------------- *)
+include BatPervasives
+
+(* -------------------------------------------------------------------- *)
 module Option  = BatOption
 module Hashtbl = BatHashtbl
 module Map     = BatMap
+module IO      = BatIO
 
 (* -------------------------------------------------------------------- *)
 module String : sig
@@ -15,6 +19,9 @@ end = struct
     let aout = ref 0 in
     String.iter (fun c -> if f c then incr aout) s; !aout
 end
+
+(* -------------------------------------------------------------------- *)
+module Mstr = Map.Make(String)
 
 (* -------------------------------------------------------------------- *)
 module List : sig

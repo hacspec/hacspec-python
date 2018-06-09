@@ -43,7 +43,7 @@ let from_file filename =
   let channel = open_in filename in
 
   try
-    let lexbuf = lexbuf_from_channel filename channel in
+    let lexbuf = lexbuf_from_channel filename (IO.to_input_channel channel) in
     Disposable.create ~cb:(fun _ -> close_in channel) (create lexbuf)
 
   with

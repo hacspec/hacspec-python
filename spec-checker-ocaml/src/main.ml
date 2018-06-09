@@ -1,12 +1,14 @@
 (* -------------------------------------------------------------------- *)
 module P = Reader
+module T = Typing
 
 (* -------------------------------------------------------------------- *)
 let main () =
   try
-    let (_ : Syntax.pspec) =
-      let stream = Reader.from_channel ~name:"stdin" stdin in
-      Reader.parse_spec stream
+    let (_ : Typing.Env.env) =
+      let stream = P.from_channel ~name:"stdin" stdin in
+      let past   = P.parse_spec stream in
+      T.tt_program past
     in ()
   with
   | e ->
