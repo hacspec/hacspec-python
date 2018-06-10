@@ -143,8 +143,8 @@ otyident:
 | AND        { (`And  :> pbinop) }
 | LT         { (`Lt   :> pbinop) }
 | GT         { (`Gt   :> pbinop) }
-| LTLT       { (`Lshift   :> pbinop) }
-| GTGT       { (`Rshift   :> pbinop) }
+| LTLT       { (`LSL  :> pbinop) }
+| GTGT       { (`LSR  :> pbinop) }
 | LTEQ       { (`Le   :> pbinop) }
 | GTEQ       { (`Ge   :> pbinop) }
 

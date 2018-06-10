@@ -32,7 +32,7 @@ type pbinop = [
   | `Add | `Sub  | `Mul | `Div  | `IDiv | `Mod
   | `Pow | `BAnd | `BOr | `BXor
   | `And | `Or   | `Lt  | `Le   | `Gt   | `Ge
-  | `Lshift | `Rshift
+  | `LSL | `LSR
 ]
 
 type passop =

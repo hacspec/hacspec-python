@@ -137,7 +137,7 @@ type tyerror =
   | InvalidTypeExpr
   | InvalidArgCount
   | InvalidTypeCtor    of symbol
-  | InvalidType        of type_ * etype
+  | InvalidType        of type_ * etype list
 
 (* -------------------------------------------------------------------- *)
 let pp_tyerror fmt (error : tyerror) =
@@ -243,30 +243,18 @@ and tt_cint (env : env) (e : pexpr) =
   match fst (tt_expr ~cty:(`Approx PInt) env e) with
   | EUInt i -> i | _ -> assert false
 
-(*
-(* -------------------------------------------------------------------- *)
-let tt_uniop (op : puniop) =
-  match op with
-  | `Not -> PBool, TBool
-  | `Neg -> PInt , TInt
-
-(* -------------------------------------------------------------------- *)
-let tt_binop (op : pbinop) =
-  match op with
-  | `Add -> (PInt , PInt ), TInt
-  | `Sub -> (PInt , PInt ), TInt
-  | `Mul -> (PInt , PInt ), TInt
-  | `Div -> (PInt , PInt ), TInt
-  | `And -> (PBool, PBool), TBool
-  | `Or  -> (PBool, PBool), TBool
-  | `Lt  -> (PInt , PInt ), TBool
-  | `Le  -> (PInt , PInt ), TBool
-  | `Gt  -> (PInt , PInt ), TBool
-  | `Ge  -> (PInt , PInt ), TBool
- *)
-
 (* -------------------------------------------------------------------- *)
 and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
+  let check_ty ~loc (etys : ctype list) (ty : type_) =
+    if not (List.exists ((=) (ctype_of_type ty)) etys) then
+      error ~loc env (InvalidType (ty, List.map (fun ty -> `Approx ty) etys))
+
+  and check_ty_eq ~loc ~src ~dst =
+    if not (Type.eq src dst) then
+      error ~loc env (InvalidType (src, [`Exact dst]))
+
+  in
+
   let e, ety =
     match unloc pe with
     | PEVar ([], x) -> begin
@@ -307,17 +295,68 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let e2, ty2 = tt_expr env pe2 in
   
         if not (Type.eq ty1 ty2) then
-          error ~loc:(loc pe) env (InvalidType (ty1, `Exact ty2));
+          error ~loc:(loc pe) env (InvalidType (ty1, [`Exact ty2]));
         (EEq (b, (e1, e2)), TBool)
 
     | PEFun _ ->
-        assert false
+        error ~loc:(loc pe) env CannotInferType
 
-    | PEUniOp (_op, _pe) ->
-        assert false
+    | PEUniOp (op, pe) -> begin
+        let e, ty = tt_expr env pe in
+
+        match op with
+        | `Not as op ->
+            check_ty ~loc:(loc pe) [PBool] ty;
+            EUniOp (op, e), TBool
+
+        | `Neg as op ->
+            check_ty ~loc:(loc pe) [PInt] ty;
+            EUniOp (op, e), TInt
+
+        | `BNot as op ->
+            check_ty ~loc:(loc pe) [PWord] ty;
+            EUniOp (op, e), ty
+      end
   
-    | PEBinOp (_op, (_pe1, _pe2)) ->
-        assert false
+    | PEBinOp (op, (pe1, pe2)) -> begin
+        let e1, ty1 = tt_expr env pe1 in
+        let e2, ty2 = tt_expr env pe2 in
+
+        match op with
+        | (`Add | `Sub | `Mul | `Div | `IDiv | `Mod) as op ->
+            check_ty ~loc:(loc pe1) [PWord; PInt] ty1;
+            check_ty ~loc:(loc pe2) [PWord; PInt] ty2;
+            check_ty_eq ~loc:(loc pe2) ~dst:ty1 ~src:ty2;
+            EBinOp (op, (e1, e2)), ty1
+
+        | `Pow as op ->
+            check_ty ~loc:(loc pe1) [PWord] ty1;
+            check_ty ~loc:(loc pe2) [PInt ] ty2;
+            EBinOp (op, (e1, e2)), ty1
+
+        | (`BAnd | `BOr | `BXor) as op ->
+            check_ty ~loc:(loc pe1) [PWord] ty1;
+            check_ty ~loc:(loc pe2) [PWord] ty2;
+            check_ty_eq ~loc:(loc pe2) ~dst:ty1 ~src:ty2;
+            EBinOp (op, (e1, e2)), ty1
+
+        | (`LSL | `LSR) as op ->
+            check_ty ~loc:(loc pe1) [PWord] ty1;
+            check_ty ~loc:(loc pe2) [PInt ] ty2;
+            EBinOp (op, (e1, e2)), ty1
+
+        | (`And | `Or) as op ->
+            check_ty ~loc:(loc pe1) [PBool] ty1;
+            check_ty ~loc:(loc pe2) [PBool] ty2;
+            EBinOp (op, (e1, e2)), TBool
+
+        | (`Lt | `Le | `Gt | `Ge) as op ->
+            check_ty ~loc:(loc pe1) [PInt; PString] ty1;
+            check_ty ~loc:(loc pe2) [PInt; PString] ty2;
+            check_ty_eq ~loc:(loc pe2) ~dst:ty1 ~src:ty2;
+            EBinOp (op, (e1, e2)), TBool
+      end
+
   
     | PECall (([], f), args) ->
         let f =
@@ -356,7 +395,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
       | `Exact  cty -> Type.eq ety cty
     in
       if not compat then
-        error ~loc:(loc pe) env (InvalidType (ety, cty)))
+        error ~loc:(loc pe) env (InvalidType (ety, [cty])))
     cty;
 
   (e, ety)
