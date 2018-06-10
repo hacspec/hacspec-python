@@ -5,6 +5,10 @@ open Syntax
 open Ast
 
 (* -------------------------------------------------------------------- *)
+let qunloc ((nm, x) : pqident) : qsymbol =
+  (List.map unloc nm, unloc x)
+
+(* -------------------------------------------------------------------- *)
 type ctype =
   | PUnit | PBool | PInt   | PString
   | PBit  | PWord | PTuple | PArray
@@ -50,6 +54,11 @@ module Env : sig
     val get : env -> symbol -> pdecl option
     val bind : env -> symbol -> type_ list * type_ -> env * ident
   end
+
+  module Mod : sig
+    val get : env -> symbol -> env option
+    val bind : env -> symbol -> env -> env
+  end
 end = struct
   type tdecl = { tname : ident; tdef  : type_; }
   type vdecl = { vname : ident; vtype : type_; vrawty : type_; }
@@ -59,6 +68,7 @@ end = struct
     e_types : tdecl Mstr.t;
     e_vars  : vdecl Mstr.t;
     e_procs : pdecl Mstr.t;
+    e_mods  : env   Mstr.t;
   }
 
   let dtypes = [
@@ -110,11 +120,20 @@ end = struct
 
   end
 
+  module Mod = struct
+    let get (env : env) (x : symbol) =
+      Mstr.Exceptionless.find x env.e_mods
+
+    let bind (env : env) (x : symbol) (mod_ : env) =
+      { env with e_mods = Mstr.add x mod_ env.e_mods }
+  end
+
   let empty =
     let empty = {
       e_types = Mstr.empty;
       e_vars  = Mstr.empty;
       e_procs = Mstr.empty;
+      e_mods  = Mstr.empty;
     } in
 
     List.fold_left (fun env xty -> fst (Types.bind env xty)) empty dtypes
@@ -126,9 +145,10 @@ type env = Env.env
 (* -------------------------------------------------------------------- *)
 type tyerror =
   | CannotInferType
-  | UnknownVar         of symbol
-  | UnknownProc        of symbol
-  | UnknownTypeName    of symbol
+  | UnknownVar         of qsymbol
+  | UnknownProc        of qsymbol
+  | UnknownTypeName    of qsymbol
+  | UnknownModule      of qsymbol
   | DuplicatedVarName  of symbol
   | DuplicatedTypeName of symbol
   | DuplicatedArgName  of symbol
@@ -141,18 +161,24 @@ type tyerror =
 
 (* -------------------------------------------------------------------- *)
 let pp_tyerror fmt (error : tyerror) =
+  let pp_qsymbol fmt (nm, x) =
+    Format.fprintf fmt "%s" (String.concat "." (nm @ [x])) in
+
   match error with
   | CannotInferType ->
       Format.fprintf fmt "cannot infer type of this expression"
 
   | UnknownVar x ->
-      Format.fprintf fmt "unknown variable: `%s'" x
+      Format.fprintf fmt "unknown variable: `%a'" pp_qsymbol x
 
   | UnknownProc x ->
-      Format.fprintf fmt "unknown procedure: `%s'" x
+      Format.fprintf fmt "unknown procedure: `%a'" pp_qsymbol x
 
   | UnknownTypeName x ->
-      Format.fprintf fmt "unknown type name: `%s'" x
+      Format.fprintf fmt "unknown type name: `%a'" pp_qsymbol x
+
+  | UnknownModule x ->
+      Format.fprintf fmt "unknown module name: `%a'" pp_qsymbol x
 
   | DuplicatedVarName x ->
       Format.fprintf fmt "duplicated var declaration for: `%s'" x
@@ -232,7 +258,7 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
 
   | _, [] -> begin
       match Env.Types.get env (unloc x) with
-      | None -> error ~loc:(loc x) env (UnknownTypeName (unloc x))
+      | None -> error ~loc:(loc x) env (UnknownTypeName ([], unloc x))
       | Some decl -> decl.Env.tdef
     end
 
@@ -257,9 +283,11 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
 
   let e, ety =
     match unloc pe with
-    | PEVar ([], x) -> begin
-        match Env.Vars.get env (unloc x) with
-        | None -> error ~loc:(loc pe) env (UnknownVar (unloc x))
+    | PEVar ((nm, x) as nmx) -> begin
+        let senv = tt_module env nm in
+
+        match Env.Vars.get senv (unloc x) with
+        | None -> error ~loc:(loc pe) env (UnknownVar (qunloc nmx))
         | Some x -> (EVar x.Env.vname, x.Env.vrawty)
       end
 
@@ -358,10 +386,12 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
       end
 
   
-    | PECall (([], f), args) ->
+    | PECall ((nm, f) as nmf, args) ->
+        let senv = tt_module env nm in
+
         let f =
-          match Env.Procs.get env (unloc f) with
-          | None   -> error ~loc:(loc pe) env (UnknownProc (unloc f))
+          match Env.Procs.get senv (unloc f) with
+          | None   -> error ~loc:(loc pe) env (UnknownProc (qunloc nmf))
           | Some f -> f in
 
         if List.length args <> List.length f.Env.psig then
@@ -372,9 +402,6 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
           args f.Env.psig in
 
         (ECall (f.Env.pname, args), Type.strip f.Env.pret)
-
-    | PECall _ ->
-        assert false
 
     | PEGet (pe, ps) ->
         let e, ety = tt_expr ~cty:(`Approx PArray) env pe in
@@ -412,7 +439,7 @@ and tt_slice (env : env) (s : pslice) : slice =
       `Slice (e1, e2)
 
 (* -------------------------------------------------------------------- *)
-let rec tt_instr ?(rty : type_ option) (env : env) (i : pinstr) =
+and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) =
   match unloc i with
   | PSFail e ->
       let _ = tt_expr ~cty:(`Exact TString) env e in ()
@@ -425,8 +452,8 @@ let rec tt_instr ?(rty : type_ option) (env : env) (i : pinstr) =
       let _  = tt_expr ~cty:(`Exact ty) env e in
       ()
 
-  | PSAssign _ ->
-      assert false
+  | PSAssign (_, _, e) ->
+      let _ = tt_expr env e in () (* FIXME *)
 
   | PSReturn None ->
       if Option.is_some rty then
@@ -479,6 +506,25 @@ let rec tt_instr ?(rty : type_ option) (env : env) (i : pinstr) =
 (* -------------------------------------------------------------------- *)
 and tt_stmt ?(rty : type_ option) (env : env) (s : pstmt) =
   List.iter (tt_instr ?rty env) s
+
+(* -------------------------------------------------------------------- *)
+and tt_module (env : env) (nm : pident list) =
+  let rec resolve (env, pre) nm =
+    match nm with
+    | [] ->
+        env
+
+    | x :: nm -> begin
+        match Env.Mod.get env (unloc x) with
+        | None ->
+            error ~loc:(loc x) env (UnknownModule (List.rev pre, unloc x))
+
+        | Some env ->
+            resolve (env, unloc x :: pre) nm
+
+      end
+
+  in resolve (env, []) nm
 
 (* -------------------------------------------------------------------- *)
 let tt_import (env : env) (_ : pimport) =
