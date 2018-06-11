@@ -179,8 +179,7 @@ def shake256(inputByteLen: size_nat_t,
 
 @typechecked
 def sha3_224(inputByteLen: size_nat_t,
-             input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> \
-        refine_t(vlbytes_t, lambda x: array.length(x) == 28):
+             input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> refine_t(vlbytes_t, lambda x: array.length(x) == 28):
     return keccak(1152, 448, inputByteLen, input_b, uint8(0x06), 28)
 
 
