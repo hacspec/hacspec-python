@@ -54,7 +54,7 @@ def option_t(T: type) -> Union[T, None]:
     return Union[T, None]
 
 @typechecked
-def refine(t: type, f: Callable[[T], bool]) -> tuple2(type,Callable[[T],T]):
+def refine(t: type, f: Callable[[T], bool]) -> Tuple[type,Callable[[T],T]]:
     def refine_check(x):
         if not isinstance(x,t) or not f(x):
             print("got :"+str(x))
@@ -312,7 +312,7 @@ class _uintn(_natmod):
 
     @staticmethod
     @typechecked
-    def bit_count(x:'_uintn'):
+    def bit_count(x:'_uintn') -> int:
         if isinstance(x,_uintn):
             cnt = 0
             for i in range(x.bits):
@@ -323,7 +323,7 @@ class _uintn(_natmod):
 
     @staticmethod
     @typechecked
-    def get_bit(x:'_uintn', index:int):
+    def get_bit(x:'_uintn', index:int) -> '_uintn':
         if isinstance(x,_uintn) and isinstance(index,int) \
            and index >= 0 and index < x.bits:
             return x[index]
@@ -333,7 +333,7 @@ class _uintn(_natmod):
     
     @staticmethod
     @typechecked
-    def set_bit(x:'_uintn', index:int, value:int):
+    def set_bit(x:'_uintn', index:int, value:int) -> '_uintn':
         if isinstance(x,_uintn) and isinstance(index,int) \
            and index >= 0 and index < x.bits \
            and value >= 0 and value < 2:
@@ -345,7 +345,7 @@ class _uintn(_natmod):
 
     @staticmethod
     @typechecked
-    def set_bits(x:'_uintn', start:int, end:int, value:'_uintn'):
+    def set_bits(x:'_uintn', start:int, end:int, value:'_uintn') -> '_uintn':
         if isinstance(x,_uintn) and isinstance(start,int) \
            and isinstance(end,int) and isinstance(value,_uintn) \
            and start >= 0 and start <= end \
@@ -362,7 +362,7 @@ def uintn_t(bits:int):
     return refine_t(_uintn,lambda x: x.bits == bits)
 uintn = _uintn
 
-def natmod_t(modulus:int):
+def natmod_t(modulus:int) -> type:
     return refine_t(_natmod,lambda x: x.modulus == modulus)
 natmod = _natmod
 
@@ -533,12 +533,12 @@ class _array(Generic[T]):
 
     @staticmethod
     @typechecked
-    def zip(x: '_array[T]', y: '_array[U]') -> '_array[tuple2(T,U)]':
+    def zip(x: '_array[T]', y: '_array[U]') -> '_array[Tuple[T,U]]':
         return _array(list(zip(x.l, y.l)))
 
     @staticmethod
     @typechecked
-    def enumerate(x: '_array[T]') -> '_array[tuple2(int,T)]':
+    def enumerate(x: '_array[T]') -> '_array[Tuple[int,T]]':
         return _array(list(enumerate(x.l)))
 
     @staticmethod
@@ -577,16 +577,16 @@ class _array(Generic[T]):
         return _array(list([t(r.randint(0, 2 << _uintn.num_bits(t(0)))) for _ in range(0, l)]))
 
 
-def vlarray_t(t:type):
+def vlarray_t(t:type) -> type:
     return refine_t(_array,lambda x: all(isinstance(z,t) for z in x))
 vlarray = _array
 
-def array_t(t: type, l:int):
+def array_t(t: type, l:int) -> type:
    return refine_t(vlarray_t(t),lambda x: x.len == l)
 array = _array
 
 vlbytes_t = vlarray_t(uint8_t)
-def bytes_t(l:int):
+def bytes_t(l:int) -> type:
     return array_t(uint8_t,l)
 
 
@@ -934,10 +934,10 @@ class _vector(_array[T]):
 
 
 @typechecked
-def vlvector_t(t:type):
+def vlvector_t(t:type) -> type:
     return vlarray_t(t)
 @typechecked
-def vector_t(t:type,len:nat):
+def vector_t(t:type,len:nat) -> type:
     return array_t(t,len)
 vector = _vector
 
@@ -994,7 +994,7 @@ class _matrix(_vector[_vector[T]]):
     def copy(x: '_matrix[T]') -> '_matrix[T]':
         return _matrix.createi(x.rows,x.cols,lambda ij: x[ij[0]][ij[1]])
 
-def matrix_t(t:type,rows:nat,columns:nat):
+def matrix_t(t:type,rows:nat,columns:nat) -> type:
     return vector_t(vector_t(t,columns),rows)
 
 matrix = _matrix

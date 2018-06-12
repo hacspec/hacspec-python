@@ -3,8 +3,10 @@ from specs.kyber import Kyber #crypto_kem_keypair, crypto_kem_enc, crypto_kem_de
 from test_vectors.kyber_test_vectors import kyber_test_vectors
 from sys import exit
 import json
+from tests.testlib import print_dot
 
 def main (x: int) -> None :
+    print_dot()
     for i in range(len(kyber_test_vectors)):
         kyber_k = kyber_test_vectors[i]['kyber_k']
         kyber_eta = kyber_test_vectors[i]['kyber_eta']

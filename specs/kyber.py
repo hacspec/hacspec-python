@@ -46,6 +46,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     zqpolyvec_t = vector_t(zqpoly_t,kyber_k)
     zqpolymatrix_t = vector_t(zqpolyvec_t,kyber_k)
 
+    @typechecked
     def zqpoly(a:array_t(zqelem_t,kyber_n)) -> zqpoly_t:
         return vector(a,zqelem(0))
     
