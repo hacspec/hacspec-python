@@ -2,8 +2,8 @@
 PYTHON?=python3.6
 
 SPECS=poly1305 chacha20 aead_chacha20poly1305 sha2 keccak \
-curve25519 ed25519 p256 curve448 rsapss aes gf128 aead_aes128gcm blake2 kyber
-SLOW_SPECS=wots
+curve25519 ed25519 p256 curve448 rsapss aes gf128 aead_aes128gcm blake2
+SLOW_SPECS=wots kyber
 FAILING_SPECS=argon2i
 BROKEN_SPECS=vrf
 
