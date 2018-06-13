@@ -85,11 +85,12 @@ def state_permute(s: state_t) -> state_t:
         s, lfsr = state_permute1(s, lfsr)
     return s
 
-
+@contract3(lambda rateInBytes, input_b, s:
+            array.length(input_b) == rateInBytes,
+           lambda rateInBytes, input_b, s, res:
+            True)
 @typechecked
-def loadState(rateInBytes: size_nat_200_t,
-              input_b: refine_t(vlbytes_t, lambda x: array.length(x) == rateInBytes),
-              s: state_t) -> state_t:
+def loadState(rateInBytes: size_nat_200_t, input_b: vlbytes_t, s: state_t) -> state_t:
     block = array.create(200, uint8(0))
     block[0:rateInBytes] = input_b
     for j in range(25):
@@ -97,21 +98,26 @@ def loadState(rateInBytes: size_nat_200_t,
         s[j] = s[j] ^ nj
     return s
 
-
+@contract3(lambda rateInBytes, s:
+            True,
+           lambda rateInBytes, s, res:
+            array.length(res) == rateInBytes)
 @typechecked
-def storeState(rateInBytes: size_nat_200_t,
-               s: state_t) -> refine_t(vlbytes_t, lambda x: array.length(x) == rateInBytes):
+def storeState(rateInBytes: size_nat_200_t, s: state_t) -> vlbytes_t:
     block = bytes(array.create(200, uint8(0)))
     for j in range(25):
         block[(j * 8):(j * 8 + 8)] = bytes.from_uint64_le(s[j])
     return block[0:rateInBytes]
 
-
+@contract3(lambda s, rateInBytes, inputByteLen, input_b, delimitedSuffix:
+            0 < rateInBytes and rateInBytes <= 200 and array.length(input_b) == inputByteLen,
+           lambda s, rateInBytes, inputByteLen, input_b, delimitedSuffix, res:
+            True)
 @typechecked
 def absorb(s: state_t,
-           rateInBytes: refine_t(nat_t, lambda x: 0 < x and x <= 200),
+           rateInBytes: nat_t,
            inputByteLen: size_nat_t,
-           input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen),
+           input_b: vlbytes_t,
            delimitedSuffix: uint8_t) -> state_t:
     n = inputByteLen // rateInBytes
     for i in range(n):
@@ -136,10 +142,14 @@ def absorb(s: state_t,
     return s
 
 
+@contract3(lambda s, rateInBytes, outputByteLen:
+            0 < rateInBytes and rateInBytes <= 200,
+           lambda s, rateInBytes, outputByteLen, res:
+            array.length(res) == outputByteLen)
 @typechecked
 def squeeze(s: state_t,
-            rateInBytes: refine_t(nat_t, lambda x: 0 < x and x <= 200),
-            outputByteLen: size_nat_t) -> refine_t(vlbytes_t, lambda x: array.length(x) == outputByteLen):
+            rateInBytes: nat_t,
+            outputByteLen: size_nat_t) -> vlbytes_t:
     output = bytes(array.create(outputByteLen, uint8(0)))
     outBlocks = outputByteLen // rateInBytes
     for i in range(outBlocks):
@@ -163,42 +173,63 @@ def keccak(rate: size_nat_1600_t, capacity: size_nat_t, inputByteLen: size_nat_t
     return output
 
 
+@contract3(lambda inputByteLen, input_b, outputByteLen:
+            array.length(input_b) == inputByteLen,
+           lambda inputByteLen, input_b, outputByteLen, res:
+            array.length(res) == outputByteLen)
 @typechecked
 def shake128(inputByteLen: size_nat_t,
-             input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen),
-             outputByteLen: size_nat_t) -> refine_t(vlbytes_t, lambda x: array.length(x) == outputByteLen):
+             input_b: vlbytes_t,
+             outputByteLen: size_nat_t) -> vlbytes_t:
     return keccak(1344, 256, inputByteLen, input_b, uint8(0x1F), outputByteLen)
 
 
+@contract3(lambda inputByteLen, input_b, outputByteLen:
+            array.length(input_b) == inputByteLen,
+           lambda inputByteLen, input_b, outputByteLen, res:
+            array.length(res) == outputByteLen)
 @typechecked
 def shake256(inputByteLen: size_nat_t,
-             input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen),
-             outputByteLen: size_nat_t) -> refine_t(vlbytes_t, lambda x: array.length(x) == outputByteLen):
+             input_b: vlbytes_t,
+             outputByteLen: size_nat_t) -> vlbytes_t:
     return keccak(1088, 512, inputByteLen, input_b, uint8(0x1F), outputByteLen)
 
 
+@contract3(lambda inputByteLen, input_b:
+            array.length(input_b) == inputByteLen,
+           lambda inputByteLen, input_b, res:
+            array.length(res) == 28)
 @typechecked
 def sha3_224(inputByteLen: size_nat_t,
-             input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> refine_t(vlbytes_t, lambda x: array.length(x) == 28):
+             input_b: vlbytes_t) -> vlbytes_t:
     return keccak(1152, 448, inputByteLen, input_b, uint8(0x06), 28)
 
 
+@contract3(lambda inputByteLen, input_b:
+            array.length(input_b) == inputByteLen,
+           lambda inputByteLen, input_b, res:
+            array.length(res) == 32)
 @typechecked
 def sha3_256(inputByteLen: size_nat_t,
-             input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> \
-        refine_t(vlbytes_t, lambda x: array.length(x) == 32):
+             input_b: vlbytes_t) -> vlbytes_t:
     return keccak(1088, 512, inputByteLen, input_b, uint8(0x06), 32)
 
 
+@contract3(lambda inputByteLen, input_b:
+            array.length(input_b) == inputByteLen,
+           lambda inputByteLen, input_b, res:
+            array.length(res) == 48)
 @typechecked
 def sha3_384(inputByteLen: size_nat_t,
-             input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> \
-        refine_t(vlbytes_t, lambda x: array.length(x) == 48):
+             input_b: vlbytes_t) -> vlbytes_t:
     return keccak(832, 768, inputByteLen, input_b, uint8(0x06), 48)
 
 
+@contract3(lambda inputByteLen, input_b:
+            array.length(input_b) == inputByteLen,
+           lambda inputByteLen, input_b, res:
+            array.length(res) == 64)
 @typechecked
 def sha3_512(inputByteLen: size_nat_t,
-             input_b: refine_t(vlbytes_t, lambda x: array.length(x) == inputByteLen)) -> \
-        refine_t(vlbytes_t, lambda x: array.length(x) == 64):
+             input_b: vlbytes_t) -> vlbytes_t:
     return keccak(576, 1024, inputByteLen, input_b, uint8(0x06), 64)
