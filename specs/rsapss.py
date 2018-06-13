@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
-from sha2 import sha256
+from lib.speclib import *
+from specs.sha2 import sha256
 
 max_size_t = 2 ** 32 - 1
-size_nat_t = refine(nat, lambda x: x <= max_size_t)
+size_nat_t,size_nat = refine(nat_t, lambda x: x <= max_size_t)
 max_input_len_sha256 = nat(2 ** 61)
 hLen = nat(32)
 
@@ -13,12 +13,12 @@ hLen = nat(32)
            lambda x, m, res: res > 0 and x <= m * res)
 @typechecked
 def blocks(x: size_nat_t, m: size_nat_t) -> size_nat_t:
-    return size_nat_t(nat((x - 1) // m + 1))
+    return size_nat(nat((x - 1) // m + 1))
 
 
 @typechecked
 def xor_bytes(b1: vlbytes_t, b2: vlbytes_t) -> vlbytes_t:
-    res = vlbytes_t.copy(b1)
+    res = bytes.copy(b1)
     for i in range(array.length(b1)):
         res[i] ^= b2[i]
     return res
@@ -51,7 +51,7 @@ def mgf_sha256(mgfseed: vlbytes_t, maskLen: size_nat_t) -> vlbytes_t:
     mgfseed_counter[0:mgfseedLen] = mgfseed
 
     for i in range(counter_max):
-        c = vlbytes_t.from_uint32_be(uint32(i))
+        c = bytes.from_uint32_be(uint32(i))
         mgfseed_counter[mgfseedLen:(mgfseedLen + 4)] = c
         mHash = hash_sha256(mgfseed_counter)
         acc[(hLen * i):(hLen * i + hLen)] = mHash
@@ -62,19 +62,19 @@ def mgf_sha256(mgfseed: vlbytes_t, maskLen: size_nat_t) -> vlbytes_t:
 
 
 @typechecked
-def os2ip(b: vlbytes_t) -> nat:
+def os2ip(b: vlbytes_t) -> nat_t:
     return bytes.to_nat_be(b)
 
 
 @typechecked
-def i2osp(n: nat) -> vlbytes_t:
+def i2osp(n: nat_t) -> vlbytes_t:
     return bytes.from_nat_be(nat(n))
 
 # RSA-PSS
 
 
-rsa_pubkey = tuple2(nat, nat)  # (n, e)
-rsa_privkey = tuple2(rsa_pubkey, nat)  # ((n, e), d)
+rsa_pubkey_t = tuple2(nat_t, nat_t)  # (n, e)
+rsa_privkey_t = tuple2(rsa_pubkey_t, nat_t)  # ((n, e), d)
 
 
 @contract3(lambda salt, msg, emBits: array.length(msg) < max_input_len_sha256 and
@@ -84,7 +84,7 @@ rsa_privkey = tuple2(rsa_pubkey, nat)  # ((n, e), d)
 @typechecked
 def pss_encode(salt: vlbytes_t, msg: vlbytes_t, emBits: size_nat_t) -> vlbytes_t:
     sLen = array.length(salt)
-    emLen = blocks(emBits, size_nat_t(nat(8)))
+    emLen = blocks(emBits, size_nat(nat(8)))
     msBits = emBits % 8
 
     mHash = hash_sha256(msg)
@@ -95,7 +95,7 @@ def pss_encode(salt: vlbytes_t, msg: vlbytes_t, emBits: size_nat_t) -> vlbytes_t
     m1[(8 + hLen):m1Len] = salt
     m1Hash = hash_sha256(m1)
 
-    dbLen = size_nat_t(nat(emLen - hLen - 1))
+    dbLen = size_nat(nat(emLen - hLen - 1))
     # db = [0x00; ..; 0x00; 0x01; salt]
     db = array.create(dbLen, uint8(0))
     last_before_salt = dbLen - sLen - 1
@@ -136,7 +136,7 @@ def pss_verify(sLen: size_nat_t, msg: vlbytes_t, em: vlbytes_t, emBits: size_nat
         if not (em[emLen - 1] == uint8(0xbc) and em_0 == uint8(0)):
             res = False
         else:
-            dbLen = size_nat_t(nat(emLen - hLen - 1))
+            dbLen = size_nat(nat(emLen - hLen - 1))
             maskedDB = em[0:dbLen]
             m1Hash = em[dbLen:(dbLen + hLen)]
 
@@ -170,7 +170,7 @@ def pss_verify(sLen: size_nat_t, msg: vlbytes_t, em: vlbytes_t, emBits: size_nat
                 hLen + nat(2) <= blocks(nat(modBits - nat(1)), nat(8)),
            lambda modBits, skey, salt, msg, res: array.length(res) == blocks(modBits, nat(8)))
 @typechecked
-def rsapss_sign(modBits: size_nat_t, skey: rsa_privkey, salt: vlbytes_t, msg: vlbytes_t) -> vlbytes_t:
+def rsapss_sign(modBits: size_nat_t, skey: rsa_privkey_t, salt: vlbytes_t, msg: vlbytes_t) -> vlbytes_t:
     (pkey, d) = skey
     (n, e) = pkey
     em = pss_encode(salt, msg, nat(modBits - 1))
@@ -186,13 +186,13 @@ def rsapss_sign(modBits: size_nat_t, skey: rsa_privkey, salt: vlbytes_t, msg: vl
                 sLen + hLen + nat(8) < max_size_t,
            lambda modBits, pkey, sLen, msg, sgnt, res: True)
 @typechecked
-def rsapss_verify(modBits: size_nat_t, pkey: rsa_pubkey, sLen: size_nat_t, msg: vlbytes_t, sgnt: vlbytes_t) -> bool:
+def rsapss_verify(modBits: size_nat_t, pkey: rsa_pubkey_t, sLen: size_nat_t, msg: vlbytes_t, sgnt: vlbytes_t) -> bool:
     (n, e) = pkey
     s = os2ip(sgnt)
     if s < n:
         m = pow(s, e, n)
         em = i2osp(m)
-        res = pss_verify(sLen, msg, em, size_nat_t(nat(modBits - 1)))
+        res = pss_verify(sLen, msg, em, size_nat(nat(modBits - 1)))
     else:
         res = False
     return res

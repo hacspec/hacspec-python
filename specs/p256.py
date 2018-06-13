@@ -1,11 +1,10 @@
-from hacspec.speclib import *
+from lib.speclib import *
 
 prime = 2**256 - 2**224 + 2**192 + 2**96 - 1
 
 
 
-felem_t = refine(nat, lambda x: x < prime)
-felem = felem_t
+felem_t,felem = refine(nat_t, lambda x: x < prime)
 
 
 @typechecked
@@ -54,6 +53,11 @@ def jacobian(a: int, b: int, c: int) -> jacobian_t:
 
 
 scalar_t = bitvector_t(256)
+
+@typechecked
+def to_scalar(n:int) -> scalar_t:
+    return bitvector(n, 256)
+    
 serialized_point_t = bytes_t(33)
 serialized_scalar_t = bytes_t(32)
 

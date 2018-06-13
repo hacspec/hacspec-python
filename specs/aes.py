@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
+from lib.speclib import *
 
 blocksize = 16
 block_t  = bytes_t(16)
@@ -42,7 +42,7 @@ sbox = sbox_t([
 def subBytes(state:block_t) -> block_t:
     st = bytes(array.copy(state))
     for i in range(16):
-        st[i] = sbox[uint8.to_int(state[i])]
+        st[i] = sbox[uintn.to_int(state[i])]
     return st
 
 @typechecked
@@ -144,10 +144,10 @@ def rotate_word(w:word_t) -> word_t:
 @typechecked
 def sub_word(w:word_t) -> word_t:
     out = bytes(array.copy(w))
-    out[0] = sbox[uint8.to_int(w[0])]
-    out[1] = sbox[uint8.to_int(w[1])]
-    out[2] = sbox[uint8.to_int(w[2])]
-    out[3] = sbox[uint8.to_int(w[3])]
+    out[0] = sbox[uintn.to_int(w[0])]
+    out[1] = sbox[uintn.to_int(w[1])]
+    out[2] = sbox[uintn.to_int(w[2])]
+    out[3] = sbox[uintn.to_int(w[3])]
     return out
 
 rcon_t = bytes_t(11)
@@ -179,17 +179,21 @@ def key_expansion(key:block_t) -> bytes_t(11*16):
     return key_ex
 
 @typechecked
-def aes128_block(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
-    input = bytes(array.create(16,uint8(0)))
-    input[0:12] = n
-    input[12:16] = bytes.from_uint32_be(c)
+def aes128_encrypt_block(k:key_t,input:bytes_t(16)) -> block_t:
     key_ex = key_expansion(k)
     out = block_cipher(input,key_ex)
     return out
 
 @typechecked
+def aes128_ctr_keyblock(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
+    input = bytes(array.create(16,uint8(0)))
+    input[0:12] = n
+    input[12:16] = bytes.from_uint32_be(c)
+    return aes128_encrypt_block(k,input)
+
+@typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out = bytes(vlbytes_t.copy(block))
+    out = bytes.copy(block)
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
     return out
@@ -200,10 +204,10 @@ def aes128_counter_mode(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbyt
     keyblock = bytes(array.create(blocksize,uint8(0)))
     ctr = counter
     for i in range(array.length(blocks)):
-        keyblock = aes128_block(key,nonce,ctr)
+        keyblock = aes128_ctr_keyblock(key,nonce,ctr)
         blocks[i] = xor_block(bytes(blocks[i]),keyblock)
         ctr += uint32(1)
-    keyblock = aes128_block(key,nonce,ctr)
+    keyblock = aes128_ctr_keyblock(key,nonce,ctr)
     last = xor_block(bytes(last),keyblock)
     return array.concat_blocks(blocks,last)
 

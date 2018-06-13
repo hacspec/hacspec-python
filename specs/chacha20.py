@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
+from lib.speclib import *
 
 blocksize = 64
 index_t  = range_t(0,16)
@@ -10,14 +10,14 @@ key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 block_t  = bytes_t(64)
 subblock_t  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
-constants_t = array_t(uint32,4)
+constants_t = array_t(uint32_t,4)
 
 @typechecked
 def line(a: index_t, b: index_t, d: index_t, s: rotval_t, m: state_t) -> state_t:
     m    = array.copy(m)
     m[a] = m[a] + m[b]
     m[d] = m[d] ^ m[a]
-    m[d] = uint32.rotate_left(m[d],s)
+    m[d] = uintn.rotate_left(m[d],s)
     return m
 
 @typechecked
@@ -80,7 +80,7 @@ def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
 
 @typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out = vlbytes_t.copy(block)
+    out = bytes.copy(block)
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
     return out
@@ -96,7 +96,7 @@ def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlb
         ctr += uint32(1)
     keyblock = chacha20_block(key, ctr, nonce)
     last = xor_block(last, keyblock)
-    return vlbytes(array.concat_blocks(blocks, last))
+    return array.concat_blocks(blocks, last)
 
 @typechecked
 def chacha20_encrypt(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:

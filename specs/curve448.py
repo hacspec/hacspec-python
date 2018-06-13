@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
+from lib.speclib import *
 
 p448 = 2 ** 448 - 2 ** 224 - 1
 
-felem_t = refine(nat, lambda x: x < p448)
-felem = felem_t
+felem_t,felem = refine(nat_t, lambda x: x < p448)
 
 
 @typechecked
@@ -53,16 +52,20 @@ def point(a: int, b: int) -> point_t:
 
 scalar_t = bitvector_t(448)
 
+@typechecked
+def scalar(n:nat_t) -> scalar_t:
+    return bitvector(n, 448)
+
 serialized_point_t = bytes_t(56)
 serialized_scalar_t = bytes_t(56)
 
 
 @typechecked
 def decodeScalar(s: serialized_scalar_t) -> scalar_t:
-    k = vlbytes.copy(s)
+    k = bytes.copy(s)
     k[0] &= uint8(252)
     k[55] |= uint8(128)
-    return scalar_t(bytes.to_nat_le(k))
+    return scalar(bytes.to_nat_le(k))
 
 
 @typechecked

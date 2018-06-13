@@ -1,52 +1,29 @@
 #!/usr/bin/python3
 
-from hacspec.speclib import *
+from lib.speclib import *
 
 # Define prime field
 p25519 = (2 ** 255) - 19
 
-felem_t = refine(nat, lambda x: x < p25519)
+felem_t = natmod_t(p25519)
+@typechecked
+def to_felem(x: nat_t) -> felem_t:
+    return natmod(x,p25519)
+zero = to_felem(0)
+one = to_felem(1)
+@typechecked
+def finv(x: felem_t) -> felem_t:
+    return x ** (p25519 - 2)
+
 point_t = tuple2(felem_t, felem_t)  # projective coordinates
-scalar_t = bitvector_t(256)
+scalar_t = uintn_t(256)
+@typechecked
+def to_scalar(i:nat_t) -> uintn_t:
+    return uintn(i,256)
 serialized_point_t = bytes_t(32)
 serialized_scalar_t = bytes_t(32)
 
 g25519: point_t = (9, 1)
-
-
-@typechecked
-def to_felem(x: nat_t) -> felem_t:
-    return felem_t(nat(x % p25519))
-
-
-@typechecked
-def fadd(x: felem_t, y: felem_t) -> felem_t:
-    return to_felem(x + y)
-
-
-@typechecked
-def fsub(x: felem_t, y: felem_t) -> felem_t:
-    return to_felem(x - y)
-
-
-@typechecked
-def fmul(x: felem_t, y: felem_t) -> felem_t:
-    return to_felem(x * y)
-
-
-@typechecked
-def fsqr(x: felem_t) -> felem_t:
-    return to_felem(x * x)
-
-
-@typechecked
-def fexp(x: felem_t, n: nat_t) -> felem_t:
-    return to_felem(pow(x, n, p25519))
-
-
-@typechecked
-def finv(x: felem_t) -> felem_t:
-    return to_felem(pow(x, p25519-2, p25519))
 
 
 @typechecked
@@ -56,11 +33,11 @@ def point(a: int, b: int) -> point_t:
 
 @typechecked
 def decodeScalar(s: serialized_scalar_t) -> scalar_t:
-    k = vlbytes.copy(s)
+    k = bytes.copy(s)
     k[0] &= uint8(248)
     k[31] &= uint8(127)
     k[31] |= uint8(64)
-    return scalar_t(bytes.to_int_le(k))
+    return to_scalar(bytes.to_nat_le(k))
 
 
 @typechecked
@@ -71,8 +48,8 @@ def decodePoint(u: serialized_point_t) -> point_t:
 
 @typechecked
 def encodePoint(p: point_t) -> serialized_point_t:
-    b = fmul(p[0], finv(p[1]))
-    return serialized_point_t(bytes.from_nat_le(b, 32))
+    b = natmod.to_int(p[0] * finv(p[1]))
+    return bytes.from_nat_le(b, 32)
 
 
 @typechecked
@@ -80,19 +57,19 @@ def point_add_and_double(q: point_t, nq: point_t, nqp1: point_t) -> tuple2(point
     (x_1, _) = q
     (x_2, z_2) = nq
     (x_3, z_3) = nqp1
-    a = fadd(x_2, z_2)
-    aa = fsqr(a)
-    b = fsub(x_2, z_2)
-    bb = fsqr(b)
-    e = fsub(aa, bb)
-    c = fadd(x_3, z_3)
-    d = fsub(x_3, z_3)
-    da = fmul(d, a)
-    cb = fmul(c, b)
-    x_3 = fsqr(fadd(da, cb))
-    z_3 = fmul(x_1, (fsqr(fsub(da, cb))))
-    x_2 = fmul(aa, bb)
-    z_2 = fmul(e, fadd(aa, fmul(felem_t(nat(121665)), e)))
+    a = x_2 + z_2
+    aa = a ** 2
+    b = x_2 - z_2
+    bb = b * b
+    e = aa - bb
+    c = x_3 + z_3
+    d = x_3 - z_3
+    da = d * a
+    cb = c * b
+    x_3 = (da + cb) ** 2
+    z_3 = x_1 * ((da - cb) ** 2)
+    x_2 = aa * bb
+    z_2 = e * (aa + (to_felem(121665) * e))
     return ((x_2, z_2), (x_3, z_3))
 
 
@@ -117,10 +94,11 @@ def scalarmult(s: serialized_scalar_t, p: serialized_point_t) -> serialized_poin
 
 # ECDH API: we assume a key generation function that generates 32 random bytes for serialized_scalar_t
 
-
 @typechecked
 def is_on_curve(s: serialized_point_t) -> bool:
-    return true  # TODO FIX
+    n = bytes.to_nat_le(s)
+    disallowed = array([0, 1, 325606250916557431795983626356110631294008115727848805560023387167927233504, 39382357235489614581723060781553021112529911719440698176882885853963445705823, 2**255 - 19 - 1, 2**255 - 19, 2**255 - 19 + 1, 2**255 - 19 + 325606250916557431795983626356110631294008115727848805560023387167927233504, 2**255 - 19 + 39382357235489614581723060781553021112529911719440698176882885853963445705823, 2*(2**255 - 19) - 1, 2*(2**255 - 19), 2*(2**255 - 19) + 1])
+    return (not (n in disallowed))
 
 
 @typechecked

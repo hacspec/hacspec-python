@@ -1,8 +1,8 @@
-from hacspec.speclib import *
+from lib.speclib import *
 
 # Four variants of SHA-2
 
-variant_t = refine(nat, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
+variant_t = refine_t(nat_t, lambda x: x == 224 or x == 256 or x == 384 or x == 512)
 i_range_t = range_t(0, 4)
 op_range_t = range_t(0, 1)
 
@@ -16,6 +16,7 @@ def sha2(v:variant_t) -> FunctionType:
         block_t = bytes_t(blockSize)
         lenSize = 8
         len_t = uint64_t
+        to_len = uint64
         len_to_bytes = bytes.from_uint64_be
         word_t = uint32_t  
         to_word = uint32
@@ -51,6 +52,7 @@ def sha2(v:variant_t) -> FunctionType:
         block_t = bytes_t(blockSize)
         lenSize = 16
         len_t = uint128_t
+        to_len = uint128
         len_to_bytes = bytes.from_uint128_be
         word_t = uint64_t
         to_word = uint64
@@ -89,7 +91,7 @@ def sha2(v:variant_t) -> FunctionType:
     hashSize = v // 8
     hash_t = array_t(word_t,8)
     digest_t = bytes_t(hashSize)
-    h0 = hash_t.create(8,to_word(0))
+    h0 = array.create(8,to_word(0))
     if v == 224:
         h0 = hash_t([
             uint32(0xc1059ed8), uint32(0x367cd507), uint32(0x3070dd17), uint32(0xf70e5939),
@@ -122,9 +124,9 @@ def sha2(v:variant_t) -> FunctionType:
         if op == 0:
             tmp = x >> opTable[3*i+2]
         else:
-            tmp = word_t.rotate_right(x,opTable[3*i+2])
-        return (word_t.rotate_right(x,opTable[3*i]) ^
-                word_t.rotate_right(x,opTable[3*i+1]) ^
+            tmp = uintn.rotate_right(x,opTable[3*i+2])
+        return (uintn.rotate_right(x,opTable[3*i]) ^
+                uintn.rotate_right(x,opTable[3*i+1]) ^
                 tmp)
 
     @typechecked
@@ -182,7 +184,7 @@ def sha2(v:variant_t) -> FunctionType:
         result = array.create(hashSize, uint8(0))
         for i in range(0, hashSize):
             result[i] = b[i]
-        return digest_t(bytes(result))
+        return digest_t((result))
 
     @typechecked
     def hash(msg:vlbytes_t) -> digest_t:
@@ -193,14 +195,14 @@ def sha2(v:variant_t) -> FunctionType:
             h = compress(blocks[i],h)
         last_len = array.length(last)
         len_bits = array.length(msg) * 8
-        pad = bytes(array.create(2*blockSize,uint8(0)))
+        pad = array.create(2*blockSize,uint8(0))
         pad[0:last_len] = last
         pad[last_len] = uint8(0x80)
         if last_len < blockSize - lenSize:
-            pad[blockSize-lenSize:blockSize] = len_to_bytes(len_t(len_bits))
+            pad[blockSize-lenSize:blockSize] = len_to_bytes(to_len(len_bits))
             h = compress(pad[0:blockSize],h)
         else:
-            pad[(2*blockSize)-lenSize:2*blockSize] = len_to_bytes(len_t(len_bits))
+            pad[(2*blockSize)-lenSize:2*blockSize] = len_to_bytes(to_len(len_bits))
             h = compress(pad[0:blockSize],h)
             h = compress(pad[blockSize:2*blockSize],h)
         result = words_to_bytes(h)
@@ -209,7 +211,7 @@ def sha2(v:variant_t) -> FunctionType:
 
 # Specific instances of SHA-2 
 
-sha224 = sha2(variant_t(nat(224)))
-sha256 = sha2(variant_t(nat(256)))
-sha384 = sha2(variant_t(nat(384)))
-sha512 = sha2(variant_t(nat(512)))
+sha224 = sha2(224)
+sha256 = sha2(256)
+sha384 = sha2(384)
+sha512 = sha2(512)
