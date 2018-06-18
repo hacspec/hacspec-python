@@ -291,9 +291,6 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         | Some x -> (EVar x.Env.vname, x.Env.vrawty)
       end
 
-    | PEVar _ ->
-        assert false
-  
     | PEBool   b -> (EBool   b, TBool  )
     | PEUInt   i -> (EUInt   i, TInt   )
     | PEString s -> (EString s, TString)
@@ -439,73 +436,74 @@ and tt_slice (env : env) (s : pslice) : slice =
       `Slice (e1, e2)
 
 (* -------------------------------------------------------------------- *)
-and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) =
+and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : block =
   match unloc i with
   | PSFail e ->
-      let _ = tt_expr ~cty:(`Exact TString) env e in ()
+      let ety = tt_expr ~cty:(`Exact TString) env e in [IFail ety]
 
   | PSPass ->
-      ()
+      []
 
   | PSDecl ((x, ty), e) ->
       let ty = tt_type env ty in
       let _  = tt_expr ~cty:(`Exact ty) env e in
-      ()
+      []                        (* FIXME *)
 
   | PSAssign (_, _, e) ->
-      let _ = tt_expr env e in () (* FIXME *)
+      let e = tt_expr env e in [IAssign (None, e)] (* FIXME *)
 
   | PSReturn None ->
       if Option.is_some rty then
-        error ~loc:(loc i) env MustReturnAValue
+        error ~loc:(loc i) env MustReturnAValue;
+      [IReturn None]
 
   | PSReturn (Some e) -> begin
-      let _ =
+      let ety =
         match rty with
         | None    -> error ~loc:(loc i) env ExpectVoidReturn
         | Some ty -> tt_expr ~cty:(`Exact ty) env e
-      in ()
+      in [IReturn (Some ety)]
     end
 
   | PSExpr e ->
-      let _ = tt_expr env e in ()
+      let ety = tt_expr env e in [IAssign (None, ety)]
 
   | PSIf ((c, bc), elifs, el) ->
       let ttif1 (c, bc) =
-        let _ = tt_expr ~cty:(`Exact TBool) env c in
-        let _ = tt_stmt ?rty env bc in
-        () in
+        let c  = fst (tt_expr ~cty:(`Exact TBool) env c) in
+        let bc = tt_stmt ?rty env bc in
+        (c, bc) in
 
-      let _ = ttif1 (c, bc) in
-      let _ = List.iter ttif1 elifs in
-      let _ = Option.may (tt_stmt ?rty env) el in
+      let cbc   = ttif1 (c, bc) in
+      let elifs = List.map ttif1 elifs in
+      let el    = Option.map (tt_stmt ?rty env) el in
 
-      ()
+      [IIf (cbc, elifs, el)]
 
   | PSFor ((x, (i, j), bc), el) ->
-      let _ = Option.map (tt_expr ~cty:(`Exact TInt) env) i in
-      let _ = tt_expr ~cty:(`Exact TInt) env j in
+      let i = Option.map (tt_expr ~cty:(`Exact TInt) env %> fst) i in
+      let j = fst (tt_expr ~cty:(`Exact TInt) env j) in
 
       let env, x = Env.Vars.bind env (unloc x, TInt) in
 
-      let _ = tt_stmt ?rty env bc in
-      let _ = Option.may (tt_stmt ?rty env) el in
+      let bc = tt_stmt ?rty env bc in
+      let el = Option.map (tt_stmt ?rty env) el in
 
-      ()
+      [IFor ((x, (i, j), bc), el)]
 
   | PSWhile ((c, bc), el) ->
-      let _ = tt_expr ~cty:(`Exact TBool) env c in
-      let _ = tt_stmt ?rty env bc in
-      let _ = Option.may (tt_stmt ?rty env) el in
+      let c  = fst (tt_expr ~cty:(`Exact TBool) env c) in
+      let bc = tt_stmt ?rty env bc in
+      let el = Option.map (tt_stmt ?rty env) el in
 
-      ()
+      [IWhile ((c, bc), el)]
 
-  | PSDef pf ->
-      assert false
+  | PSDef _pf ->
+      assert false              (* FIXME *)
 
 (* -------------------------------------------------------------------- *)
-and tt_stmt ?(rty : type_ option) (env : env) (s : pstmt) =
-  List.iter (tt_instr ?rty env) s
+and tt_stmt ?(rty : type_ option) (env : env) (s : pstmt) : block =
+  List.flatten (List.map (tt_instr ?rty env) s)
 
 (* -------------------------------------------------------------------- *)
 and tt_module (env : env) (nm : pident list) =
@@ -531,42 +529,71 @@ let tt_import (env : env) (_ : pimport) =
   env
 
 (* -------------------------------------------------------------------- *)
-let tt_tydecl (env : env) ((x, ty) : pident * pexpr) =
+let tt_tydecl (env : env) ((x, ty) : pident * pexpr) : env * tydecl =
   let ty = tt_type env ty in
 
   if Env.Types.exists env (unloc x) then
     error ~loc:(loc x) env (DuplicatedTypeName (unloc x));
 
-  fst (Env.Types.bind env (unloc x, ty))
+  let env, name = Env.Types.bind env (unloc x, ty) in
+  let aout = { tyd_name = name; tyd_body = ty } in
+
+  (env, aout)
 
 (* -------------------------------------------------------------------- *)
-let tt_vardecl (env : env) ((x, ty), e : (pident * pexpr) * pexpr) =
+let tt_vardecl
+  (env : env) ((x, ty), e : (pident * pexpr) * pexpr) : env * vardecl
+ =
   let ty = tt_type env ty in
-  let _e = fst (tt_expr ~cty:(`Exact ty) env e) in
+  let it = fst (tt_expr ~cty:(`Exact ty) env e) in
 
   if Env.Vars.exists env (unloc x) then
     error ~loc:(loc x) env (DuplicatedVarName (unloc x));
 
-  fst (Env.Vars.bind env (unloc x, ty))
+  let env, name = Env.Vars.bind env (unloc x, ty) in
+  let aout = { vrd_name = name; vrd_type = ty; vrd_init = it; } in
+
+  (env, aout)
 
 (* -------------------------------------------------------------------- *)
 (* FIXME: check for duplicate argument name *)
-let tt_procdef (env : env) (((f, fty), args, body) : procdef) =
+let tt_procdef
+(env : env) (((f, fty), args, body) : pprocdef) : env * env procdef
+=
   let fty  = tt_type env fty in
   let args = List.map (fun (x, xty) -> (unloc x, tt_type env xty)) args in
-  let env1 = List.fold_left (fun env xty -> fst (Env.Vars.bind env xty)) env args in
-  let _    = tt_stmt ~rty:fty env1 body in
+  let env1, args =
+    List.fold_left_map (fun env (x, ty) ->
+        let env, x = Env.Vars.bind env (x, ty) in (env, (x, ty)))
+      env args in
+  let body = tt_stmt ~rty:fty env1 body in
 
-  fst (Env.Procs.bind env (unloc f) (List.map snd args, fty))
+  let env, name = Env.Procs.bind env (unloc f) (List.map snd args, fty) in
+
+  let aout = {
+    prd_name = name;
+    prd_args = args;
+    prd_ret  = fty;
+    prd_body = (env1, body);
+  }
+
+  in (env, aout)
 
 (* -------------------------------------------------------------------- *)
 let tt_topdecl1 (env : env) = function
-  | PTImport info -> tt_import  env info
-  | PTDef    info -> tt_procdef env info
+  | PTImport info ->
+      (tt_import  env info, [])
 
-  | PTVar ((x, None), ty)   -> tt_tydecl  env (x, ty)
-  | PTVar ((x, Some ty), e) -> tt_vardecl env ((x, ty), e)
+  | PTDef info ->
+      let env, x = tt_procdef env info in (env, [TD_ProcDef x])
+
+  | PTVar ((x, None), ty) ->
+      let env, x = tt_tydecl  env (x, ty) in (env, [TD_TyDecl x])
+
+  | PTVar ((x, Some ty), e) ->
+      let env, x = tt_vardecl env ((x, ty), e) in (env, [TD_VarDecl x])
 
 (* -------------------------------------------------------------------- *)
-let tt_program (p : pspec) =
-  List.fold_left tt_topdecl1 Env.empty p
+let tt_program (p : pspec) : env program =
+  let env, prgm = List.fold_left_map tt_topdecl1 Env.empty p in
+  (env, List.flatten prgm)

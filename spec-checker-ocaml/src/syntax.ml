@@ -72,19 +72,19 @@ type pinstr_r =
   | PSIf     of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
   | PSWhile  of (pexpr * pstmt) * pstmt option
   | PSFor    of (pident * prange * pstmt) * pstmt option
-  | PSDef    of procdef
+  | PSDef    of pprocdef
 
-and prange  = pexpr option * pexpr
-and pstmt   = pinstr list
-and pinstr  = pinstr_r located
-and plvalue = pexpr
-and procdef = ptyident * ptyident list * pstmt
+and prange   = pexpr option * pexpr
+and pstmt    = pinstr list
+and pinstr   = pinstr_r located
+and plvalue  = pexpr
+and pprocdef = ptyident * ptyident list * pstmt
 
 (* -------------------------------------------------------------------- *)
 type ptopdecl =
   | PTImport of pimport
   | PTVar    of potyident * pexpr
-  | PTDef    of procdef
+  | PTDef    of pprocdef
 
 and pimport = pqident * (pident option) list option
 

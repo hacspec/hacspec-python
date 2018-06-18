@@ -5,7 +5,7 @@ module T = Typing
 (* -------------------------------------------------------------------- *)
 let main () =
   try
-    let (_ : Typing.Env.env) =
+    let (_ : T.Env.env Ast.program) =
       let stream = P.from_channel ~name:"stdin" stdin in
       let past   = P.parse_spec stream in
       T.tt_program past

@@ -66,6 +66,9 @@ and expr =
 and slice = [ `One of expr | `Slice of expr * expr ]
 
 (* -------------------------------------------------------------------- *)
+type tyexpr = expr * type_
+
+(* -------------------------------------------------------------------- *)
 module Type : sig
   val eq : type_ -> type_ -> bool
   val compat : type_ -> type_ -> bool
@@ -120,3 +123,36 @@ end = struct
   let compat (ty1 : type_) (ty2 : type_) =
     eq (strip ty1) (strip ty2)
 end
+
+(* -------------------------------------------------------------------- *)
+type instr =
+  | IFail   of tyexpr
+  | IReturn of tyexpr option
+  | IAssign of (lvalue * assop option) option * tyexpr
+  | IIf     of (expr * block) * (expr * block) list * block option
+  | IWhile  of (expr * block) * block option
+  | IFor    of (ident * range * block) * block option
+
+and block  = instr list
+and lvalue = unit
+and range  = expr option * expr
+
+(* -------------------------------------------------------------------- *)
+type tydecl  = { tyd_name : ident; tyd_body : type_; }
+type vardecl = { vrd_name : ident; vrd_type : type_; vrd_init : expr; }
+
+type 'env procdef = {
+  prd_name : ident;
+  prd_args : (ident * type_) list;
+  prd_ret  : type_;
+  prd_body : 'env * block;
+}
+
+(* -------------------------------------------------------------------- *)
+type 'env topdecl1 =
+  | TD_TyDecl  of tydecl
+  | TD_VarDecl of vardecl
+  | TD_ProcDef of 'env procdef
+
+(* -------------------------------------------------------------------- *)
+type 'env program = 'env * (('env topdecl1) list)
