@@ -249,7 +249,7 @@ def read(node) -> None:
                 fun_name = node.value.func.id
                 # Check speclib functions that make types.
                 if fun_name is "range_t" or fun_name is "array_t" or \
-                   fun_name is "bytes_t" or fun_name is "refine":
+                   fun_name is "bytes_t" or fun_name is "refine_t":
                     if len(node.targets) > 1:
                         fail("Custom type assignment must have single assignment target " + str(fun_name))
                     type_name = node.targets[0]
@@ -372,6 +372,10 @@ def read(node) -> None:
         return
     if isinstance(node, UnaryOp):
         return
+    if isinstance(node, Or):
+        return
+    if isinstance(node, And):
+        return
     if isinstance(node, Compare):
         read(node.left)
         for c in node.comparators:
@@ -381,7 +385,7 @@ def read(node) -> None:
         return
 
     if isinstance(node, BoolOp):
-        # node.op
+        read(node.op)
         for ex in node.values:
             read(ex)
         return
