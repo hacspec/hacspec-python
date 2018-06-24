@@ -187,6 +187,8 @@ def is_statement(node):
         return True
     if isinstance(node, For):
         return True
+    if isinstance(node, Break):
+        return True
     return False
 
 # Check annotation. Must be a type with _t at the end. Can we do better?
@@ -346,6 +348,8 @@ def read(node) -> None:
         if node.iter:
             read(node.iter)
         return
+    if isinstance(node, Break):
+        return
 
     # Operators
     if isinstance(node, Pow):
@@ -438,19 +442,18 @@ def read(node) -> None:
         return
 
     if isinstance(node, While):
-        # TODO: decide if this is legal.
-        # fail("While statements are not allowed in hacspec.")
-        read(node.test)
-        if not is_expression(node.test):
-            fail("Invalid expression in while test " + str(node.test))
-        read(node.body)
-        if not is_statement(node.body):
-            fail("Invalid statement in while body " + str(node.body))
-        if node.orelse:
-            read(node.orelse)
-            if not is_statement(node.orelse):
-                fail("Invalid statement in while orelse " + str(node.orelse))
-        return
+        fail("While statements are not allowed in hacspec.")
+        # read(node.test)
+        # if not is_expression(node.test):
+        #     fail("Invalid expression in while test " + str(node.test))
+        # read(node.body)
+        # if not is_statement(node.body):
+        #     fail("Invalid statement in while body " + str(node.body))
+        # if node.orelse:
+        #     read(node.orelse)
+        #     if not is_statement(node.orelse):
+        #         fail("Invalid statement in while orelse " + str(node.orelse))
+        # return
 
     if isinstance(node, Str):
         # node.s

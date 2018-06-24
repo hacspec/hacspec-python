@@ -6,6 +6,8 @@ from math import floor
 variant_k_t   = refine(nat_t, lambda x: x == 2 or x == 3 or x == 4)
 variant_eta_t = refine(nat_t, lambda x: x == 5 or x == 4 or x == 3)
 
+kyber_max_iter = 1 << 32
+
 kyber_q   = 7681
 kyber_n   =  256
 kyber_dt  =   11
@@ -223,7 +225,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
 
         i = 0
         j = 0
-        while (j < kyber_n):
+        for ctr in range(0, kyber_max_iter):
             d = uintn.to_int(buf[i]) + 256 * uintn.to_int(buf[i + 1])
             d = d % (2**13)
             if (d < kyber_q):
@@ -234,6 +236,8 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
                 nblocks = 1
                 buf = shake128_squeeze(state, shake128_rate * nblocks)
                 i = 0
+            if j == kyber_n:
+                break
         return res
 
     @typechecked
