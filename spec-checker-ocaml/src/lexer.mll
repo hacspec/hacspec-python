@@ -160,6 +160,8 @@ let digit    = ['0'-'9']
 let xdigit   = ['0'-'9' 'a'-'f' 'A'-'F']
 let ident    = (letter | '_') (letter | digit | '_')*
 let uint     = digit+
+let ubinint  = ['0'-'1']+
+let uoctint  = ['0'-'7']+
 let uhexint  = xdigit+
 let comment  = '#' [^'\n']*
 
@@ -223,7 +225,7 @@ and token stt = parse
       [Hashtbl.find_default keywords id (IDENT id)]
     }
 
-  | (uint | ("0x" uhexint)) as i {
+  | (uint | "0b" ubinint | "0o" uoctint | "0x" uhexint) as i {
       [UINT (Big_int.big_int_of_string i)]
     }
 

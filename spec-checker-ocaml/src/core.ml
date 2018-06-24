@@ -2,6 +2,7 @@
 include BatPervasives
 
 (* -------------------------------------------------------------------- *)
+module Big_int = BatBig_int
 module Option  = BatOption
 module Hashtbl = BatHashtbl
 module Map     = BatMap

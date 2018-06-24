@@ -71,7 +71,7 @@ type pinstr_r =
   | PSAssign of (plvalue * passop * pexpr)
   | PSIf     of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
   | PSWhile  of (pexpr * pstmt) * pstmt option
-  | PSFor    of (pident * prange * pstmt) * pstmt option
+  | PSFor    of (potyident * prange * pstmt) * pstmt option
   | PSDef    of pprocdef
 
 and prange   = pexpr option * pexpr

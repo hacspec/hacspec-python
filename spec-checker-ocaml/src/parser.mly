@@ -274,10 +274,10 @@ instr_r:
 | i=sinstr_r NEWLINE
     { i }
 
-| FOR x=ident IN e=prange COLON b=block
+| FOR x=ident ty=prefix(COLON, type_)? IN e=prange COLON b=block
     be=option(ELSE COLON b=block { b })
 
-    { PSFor ((x, e, b), be) }
+    { PSFor (((x, ty), e, b), be) }
 
 | IF e=expr COLON b=block
     bie=list  (ELIF e=expr COLON b=block { (e, b) })

@@ -224,6 +224,11 @@ let error ~(loc : Location.t) (env : env) (exn : tyerror) =
   raise (TyError (loc, env, exn))
 
 (* -------------------------------------------------------------------- *)
+let check_ty ~loc env (etys : ctype list) (ty : type_) =
+  if not (List.exists ((=) (ctype_of_type ty)) etys) then
+    error ~loc env (InvalidType (ty, List.map (fun ty -> `Approx ty) etys))
+
+(* -------------------------------------------------------------------- *)
 let rec tt_type (env : env) (pty : ptype) =
   match unloc pty with
   | PEVar  ([], x)         ->  tt_type_app env (x, [])
@@ -271,14 +276,11 @@ and tt_cint (env : env) (e : pexpr) =
 
 (* -------------------------------------------------------------------- *)
 and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
-  let check_ty ~loc (etys : ctype list) (ty : type_) =
-    if not (List.exists ((=) (ctype_of_type ty)) etys) then
-      error ~loc env (InvalidType (ty, List.map (fun ty -> `Approx ty) etys))
+  let check_ty = check_ty env in
 
-  and check_ty_eq ~loc ~src ~dst =
+  let check_ty_eq ~loc ~src ~dst =
     if not (Type.eq src dst) then
       error ~loc env (InvalidType (src, [`Exact dst]))
-
   in
 
   let e, ety =
@@ -480,9 +482,14 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : block =
 
       [IIf (cbc, elifs, el)]
 
-  | PSFor ((x, (i, j), bc), el) ->
+  | PSFor (((x, xty), (i, j), bc), el) ->
       let i = Option.map (tt_expr ~cty:(`Exact TInt) env %> fst) i in
       let j = fst (tt_expr ~cty:(`Exact TInt) env j) in
+
+      Option.may (fun xty ->
+        let ty = tt_type env xty in
+        check_ty ~loc:(loc x) env [PInt] ty)
+      xty;
 
       let env, x = Env.Vars.bind env (unloc x, TInt) in
 
