@@ -7,7 +7,7 @@ state_t  = array_t(uint32_t,16)
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 block_t  = bytes_t(64)
-subblock_t  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
+subblock_t, subblock = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
 constants_t = array_t(uint32_t,4)
 
 @typechecked
