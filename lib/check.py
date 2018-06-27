@@ -187,6 +187,8 @@ def is_statement(node):
         return True
     if isinstance(node, For):
         return True
+    if isinstance(node, Break):
+        return True
     return False
 
 # Check annotation. Must be a type with _t at the end. Can we do better?
@@ -249,7 +251,7 @@ def read(node) -> None:
                 fun_name = node.value.func.id
                 # Check speclib functions that make types.
                 if fun_name is "range_t" or fun_name is "array_t" or \
-                   fun_name is "bytes_t" or fun_name is "refine":
+                   fun_name is "bytes_t" or fun_name is "refine_t":
                     if len(node.targets) > 1:
                         fail("Custom type assignment must have single assignment target " + str(fun_name))
                     type_name = node.targets[0]
@@ -343,8 +345,16 @@ def read(node) -> None:
                 fail("For loop body is not a statement "+str(node.body))
         if node.orelse:
             read(node.orelse)
-        if node.iter:
+        if node.iter and isinstance(node.iter, Call):
+            if not (isinstance(node.iter.func, Name) and node.iter.func.id is "range"):
+                fail("For loops must use range(max) as iterator "+str(node.iter))
+            if len(node.iter.args) != 1:
+                fail("For loops must use range(max) as iterator "+str(node.iter))
             read(node.iter)
+        else:
+            fail("For loops must use range(max) as iterator "+str(node.iter))
+        return
+    if isinstance(node, Break):
         return
 
     # Operators
@@ -372,6 +382,10 @@ def read(node) -> None:
         return
     if isinstance(node, UnaryOp):
         return
+    if isinstance(node, Or):
+        return
+    if isinstance(node, And):
+        return
     if isinstance(node, Compare):
         read(node.left)
         for c in node.comparators:
@@ -381,7 +395,7 @@ def read(node) -> None:
         return
 
     if isinstance(node, BoolOp):
-        # node.op
+        read(node.op)
         for ex in node.values:
             read(ex)
         return
@@ -434,19 +448,18 @@ def read(node) -> None:
         return
 
     if isinstance(node, While):
-        # TODO: decide if this is legal.
-        # fail("While statements are not allowed in hacspec.")
-        read(node.test)
-        if not is_expression(node.test):
-            fail("Invalid expression in while test " + str(node.test))
-        read(node.body)
-        if not is_statement(node.body):
-            fail("Invalid statement in while body " + str(node.body))
-        if node.orelse:
-            read(node.orelse)
-            if not is_statement(node.orelse):
-                fail("Invalid statement in while orelse " + str(node.orelse))
-        return
+        fail("While statements are not allowed in hacspec.")
+        # read(node.test)
+        # if not is_expression(node.test):
+        #     fail("Invalid expression in while test " + str(node.test))
+        # read(node.body)
+        # if not is_statement(node.body):
+        #     fail("Invalid statement in while body " + str(node.body))
+        # if node.orelse:
+        #     read(node.orelse)
+        #     if not is_statement(node.orelse):
+        #         fail("Invalid statement in while orelse " + str(node.orelse))
+        # return
 
     if isinstance(node, Str):
         # node.s

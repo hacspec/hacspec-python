@@ -133,16 +133,17 @@ def sha2(v:variant_t) -> FunctionType:
     def schedule(block:block_t) -> k_t:
         b = bytes_to_words(block)
         s = array.create(kSize,to_word(0))
-        for i in range(16):
-            s[i] = b[i]
-        for i in range(16,kSize):
-            t16 = s[i-16]
-            t15 = s[i-15]
-            t7  = s[i-7]
-            t2  = s[i-2]
-            s1  = sigma(t2,3,0)
-            s0  = sigma(t15,2,0)
-            s[i] = s1 + t7 + s0 + t16
+        for i in range(kSize):
+            if i < 16:
+                s[i] = b[i]
+            else:
+                t16 = s[i-16]
+                t15 = s[i-15]
+                t7  = s[i-7]
+                t2  = s[i-2]
+                s1  = sigma(t2,3,0)
+                s0  = sigma(t15,2,0)
+                s[i] = s1 + t7 + s0 + t16
         return s
 
     @typechecked
@@ -182,7 +183,7 @@ def sha2(v:variant_t) -> FunctionType:
     @typechecked
     def truncate(b:bytes_t(v)) -> digest_t:
         result = array.create(hashSize, uint8(0))
-        for i in range(0, hashSize):
+        for i in range(hashSize):
             result[i] = b[i]
         return digest_t((result))
 
