@@ -375,7 +375,7 @@ class _uintn(_natmod):
             fail("set_bits has to be an interval between 0 and bits - 1")
 
 
-def uintn_t(bits:int):
+def uintn_t(bits:int) -> type:
     return refine_t(_uintn,lambda x: x.bits == bits)
 uintn = _uintn
 

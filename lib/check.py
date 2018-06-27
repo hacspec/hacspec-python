@@ -345,8 +345,14 @@ def read(node) -> None:
                 fail("For loop body is not a statement "+str(node.body))
         if node.orelse:
             read(node.orelse)
-        if node.iter:
+        if node.iter and isinstance(node.iter, Call):
+            if not (isinstance(node.iter.func, Name) and node.iter.func.id is "range"):
+                fail("For loops must use range(max) as iterator "+str(node.iter))
+            if len(node.iter.args) != 1:
+                fail("For loops must use range(max) as iterator "+str(node.iter))
             read(node.iter)
+        else:
+            fail("For loops must use range(max) as iterator "+str(node.iter))
         return
     if isinstance(node, Break):
         return

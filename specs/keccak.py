@@ -3,10 +3,10 @@ from lib.speclib import *
 state_t = array_t(uint64_t, 25)
 index_t = range_t(0, 5)
 max_size_t = 2**64 - 1
-size_nat_t = refine(int, lambda x: x <= max_size_t and x >= 0)
-size_nat_200_t = refine(int, lambda x: x <= 200 and x >= 0)
-size_nat_1600_t = refine(int, lambda x: x <= 1600 and x %
-                         8 == 0 and x // 8 > 0 and x >= 0)
+size_nat_t, size_nat = refine(int, lambda x: x <= max_size_t and x >= 0)
+size_nat_200_t, size_nat_200 = refine(int, lambda x: x <= 200 and x >= 0)
+size_nat_1600_t, size_nat_1600 = refine(int, lambda x: x <= 1600 and x %
+                                        8 == 0 and x // 8 > 0 and x >= 0)
 
 
 @typechecked
