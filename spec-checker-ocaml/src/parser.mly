@@ -32,7 +32,7 @@
 
 %token <string> IDENT
 %token <Big_int.big_int> UINT
-%token <bytes> STRING
+%token <string> STRING
 
 %token AT
 %token BANGEQ

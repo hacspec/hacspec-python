@@ -44,7 +44,7 @@ type pexpr_r =
   | PEVar    of pqident
   | PEBool   of bool
   | PEUInt   of Big_int.big_int
-  | PEString of bytes
+  | PEString of string
   | PETuple  of pexpr list * bool
   | PEArray  of pexpr list
   | PEEq     of bool * (pexpr * pexpr)
