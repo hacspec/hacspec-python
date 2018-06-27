@@ -174,7 +174,7 @@ def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
     sig = sig_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     for i in range(uint32.to_int(length)):
         adr = set_chain_address(adr, uint32(i))
-        adr, sig_i =    (sk[i], 0, uint32.to_int(m[i]), seed, adr)
+        adr, sig_i = wots_chain(sk[i], 0, uint32.to_int(m[i]), seed, adr)
         sig[i] = sig_i
     return sig
 
