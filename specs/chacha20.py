@@ -2,14 +2,14 @@
 
 from lib.speclib import *
 
-blocksize = 64
+blocksize:int = 64
 index_t  = range_t(0,16)
 rotval_t = range_t(1,32)
 state_t  = array_t(uint32_t,16)
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 block_t  = bytes_t(64)
-subblock_t, subblock  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
+subblock_t = refine_t(vlbytes_t, lambda x: array.length(x) <= blocksize)
 constants_t = array_t(uint32_t,4)
 
 @typechecked
