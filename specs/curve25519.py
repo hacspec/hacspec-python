@@ -15,7 +15,7 @@ one = to_felem(1)
 def finv(x: felem_t) -> felem_t:
     return x ** (p25519 - 2)
 
-point_t = tuple2(felem_t, felem_t)  # projective coordinates
+point_t = tuple_t(felem_t, felem_t)  # projective coordinates
 scalar_t = uintn_t(256)
 @typechecked
 def to_scalar(i:nat_t) -> uintn_t:
