@@ -128,7 +128,7 @@ def key_gen(adr: address_t, seed: seed_t) -> key_pair_t:
     # TODO: we need separate functions here for xmss later.
     sk = sk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     pk = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
-    for i in range(0, uint32.to_int(length)):
+    for i in range(uint32.to_int(length)):
         sk_i: bytes_t = bytes.create_random_bytes(n)
         adr = set_chain_address(adr, uint32(i))
         adr, pk_i = wots_chain(sk_i, 0, uint32.to_int(w)-1, seed, adr)
@@ -144,7 +144,7 @@ def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
     total = 0
     bits = 0
     basew = vlbytes_t([])
-    for consumed in range(0, uint32.to_int(l)):
+    for consumed in range(uint32.to_int(l)):
         if bits == 0:
             total = uint8.to_int(msg[i])
             i = i + 1
@@ -159,7 +159,7 @@ def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
 def wots_msg(msg: digest_t) -> vlbytes_t:
     csum = 0
     m = base_w(msg, length1)
-    for i in range(0, uint32.to_int(length1)):
+    for i in range(uint32.to_int(length1)):
         csum = csum + uint32.to_int(w) - 1 - uint32.to_int(m[i])
     csum = nat(csum << int(8 - ((uint32.to_int(length2) * log_w) % 8)))
     length2_bytes = speclib.ceil((uint32.to_int(length2) * log_w) // 8)
@@ -172,9 +172,9 @@ def wots_msg(msg: digest_t) -> vlbytes_t:
 def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
     m = wots_msg(msg)
     sig = sig_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
-    for i in range(0, uint32.to_int(length)):
+    for i in range(uint32.to_int(length)):
         adr = set_chain_address(adr, uint32(i))
-        adr, sig_i = wots_chain(sk[i], 0, uint32.to_int(m[i]), seed, adr)
+        adr, sig_i =    (sk[i], 0, uint32.to_int(m[i]), seed, adr)
         sig[i] = sig_i
     return sig
 
@@ -183,7 +183,7 @@ def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
 def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> tuple2(pk_t, address_t):
     m = wots_msg(msg)
     pk2 = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
-    for i in range(0, uint32.to_int(length)):
+    for i in range(uint32.to_int(length)):
         adr = set_chain_address(adr, uint32(i))
         m_i = uint32.to_int(m[i])
         adr, pk_i = wots_chain(sig[i], m_i, uint32.to_int(w) - 1 - m_i, seed, adr)
