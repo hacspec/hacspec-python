@@ -3,10 +3,27 @@ include BatPervasives
 
 (* -------------------------------------------------------------------- *)
 module Big_int = BatBig_int
-module Option  = BatOption
 module Hashtbl = BatHashtbl
 module Map     = BatMap
 module IO      = BatIO
+
+(* -------------------------------------------------------------------- *)
+let fst_map f = function (x, y) -> (f x, y)
+let snd_map f = function (x, y) -> (x, f y)
+
+(* -------------------------------------------------------------------- *)
+module Option : sig
+  include module type of BatOption
+
+  val split : ('a * 'b) option -> 'a option * 'b option
+end = struct
+  include BatOption
+
+  let split (xy : ('a * 'b) option) =
+    match xy with
+    | None -> None, None
+    | Some (x, y) -> Some x, Some y
+end
 
 (* -------------------------------------------------------------------- *)
 module String : sig

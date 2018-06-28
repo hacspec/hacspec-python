@@ -69,6 +69,35 @@ and slice = [ `One of expr | `Slice of expr * expr ]
 type tyexpr = expr * type_
 
 (* -------------------------------------------------------------------- *)
+let rec string_of_type (ty : type_) =
+  match ty with
+  | TUnit    -> "unit"
+  | TBool    -> "bool"
+  | TInt     -> "int"
+  | TString  -> "string"
+  | TBit     -> "bit"
+  | TWord _  -> "word[.]"
+
+  | TTuple tys ->
+      Format.sprintf "tuple[%s]"
+        (String.concat ", " (List.map string_of_type tys))
+
+  | TArray (ty, None) ->
+      Format.sprintf "array[%s]" (string_of_type ty)
+      
+  | TArray (ty, Some i) ->
+      Format.sprintf "array[%s, %s]"
+        (string_of_type ty) (Big_int.string_of_big_int i)
+
+  | TRange (i, j) ->
+      Format.sprintf "range[%s, %s]"
+        (Big_int.string_of_big_int i)
+        (Big_int.string_of_big_int j)
+
+  | TRefined (ty, _) ->
+      Format.sprintf "refine[%s]" (string_of_type ty)
+
+(* -------------------------------------------------------------------- *)
 module Type : sig
   val eq : type_ -> type_ -> bool
   val compat : type_ -> type_ -> bool
@@ -116,7 +145,7 @@ end = struct
     | TBit            -> TBit
     | TWord    ws     -> TWord ws
     | TTuple   t      -> TTuple (List.map strip t)
-    | TArray   (t, _) -> TArray (strip t, None)
+    | TArray   (t, i) -> TArray (strip t, i)
     | TRefined (t, _) -> strip t  
     | TRange   _      -> TInt
 

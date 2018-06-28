@@ -329,8 +329,8 @@ topdecl_r:
 | mods=import NEWLINE
     { mods }
 
-| x=otyident EQ e=expr NEWLINE
-    { [PTVar (x, e)] }
+| xs=plist1(otyident, COMMA) EQ e=expr NEWLINE
+    { List.map (fun x -> PTVar (x, e)) xs }
 
 | x=procdef
     { [PTDef x] }
