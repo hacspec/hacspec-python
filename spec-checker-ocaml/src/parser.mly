@@ -118,6 +118,10 @@ tyident:
 | x=ident COLON ty=type_ { (x, ty) }
 
 (* -------------------------------------------------------------------- *)
+tyidents:
+| xs=rlist1(ident, COMMA) COLON ty=type_ { (List.rev xs, ty) }
+
+(* -------------------------------------------------------------------- *)
 otyident:
 | x=ident ty=prefix(COLON, type_)? { (x, ty) }
 
@@ -245,8 +249,8 @@ sinstr_r:
 | PASS
     { PSPass }
 
-| x=tyident EQ e=expr
-    { PSDecl (x, e) }
+| xs=tyidents EQ e=expr
+    { PSDecl (xs, e) }
 
 | RETURN e=expr?
     { PSReturn e }

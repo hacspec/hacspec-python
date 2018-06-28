@@ -59,6 +59,7 @@ and ptype  = pexpr
 and pslice = [ `One of pexpr | `Slice of (pexpr * pexpr) ]
 
 and ptyident  = pident * ptype
+and ptyidents = pident list * ptype
 and potyident = pident * ptype option
 
 (* -------------------------------------------------------------------- *)
@@ -66,7 +67,7 @@ type pinstr_r =
   | PSFail   of pexpr
   | PSPass
   | PSReturn of pexpr option
-  | PSDecl   of ptyident * pexpr
+  | PSDecl   of ptyidents * pexpr
   | PSExpr   of pexpr
   | PSAssign of (plvalue * passop * pexpr)
   | PSIf     of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option

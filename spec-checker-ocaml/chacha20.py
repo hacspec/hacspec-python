@@ -68,21 +68,22 @@ def chacha20(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
 
 @typechecked
 def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
-    st = chacha20(k,counter,nonce)
-    block = bytes.from_uint32s_le(st)
+    st : state_t = chacha20(k,counter,nonce)
+    block : vlbytes_t = bytes.from_uint32s_le(st)
     # If block is not cast to block_t, the type isn't checked!
     return block_t(block)
 
 @typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out = bytes.copy(block)
+    out : subblock_t = bytes.copy(block)
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
     return out
 
 @typechecked
 def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
-    blocks, last = array.split_blocks(msg, blocksize)
+    blocks, last : tuple2_t(vlarray(vlbytes_t), vlbytes_t) = \
+      array.split_blocks(msg, blocksize)
     keyblock = array.create(blocksize, uint8(0))
     ctr = counter
     for i in range(array.length(blocks)):

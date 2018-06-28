@@ -27,6 +27,17 @@ type ident   = Ident.ident
 type wsize   = [`U8 | `U16 | `U32 | `U64 | `U128]
 
 (* -------------------------------------------------------------------- *)
+module QSymbol : sig
+  val to_string : qsymbol -> string
+  val equal     : qsymbol -> qsymbol -> bool
+end = struct
+  let to_string ((nm, x) : qsymbol) =
+    String.concat "." (nm @ [x])
+
+  let equal = ((=) : qsymbol -> qsymbol -> bool)
+end
+
+(* -------------------------------------------------------------------- *)
 type uniop = Syntax.puniop
 type binop = Syntax.pbinop
 type assop = Syntax.passop
@@ -46,6 +57,7 @@ type type_ =
   | TArray   of type_ * Big_int.big_int option
   | TRange   of Big_int.big_int * Big_int.big_int
   | TRefined of type_ * expr
+  | TNamed   of qsymbol
 
 (* -------------------------------------------------------------------- *)
 and expr =
@@ -97,6 +109,9 @@ let rec string_of_type (ty : type_) =
   | TRefined (ty, _) ->
       Format.sprintf "refine[%s]" (string_of_type ty)
 
+  | TNamed name ->
+      Format.sprintf "named[%s]" (QSymbol.to_string name)
+
 (* -------------------------------------------------------------------- *)
 module Type : sig
   val eq : type_ -> type_ -> bool
@@ -145,9 +160,10 @@ end = struct
     | TBit            -> TBit
     | TWord    ws     -> TWord ws
     | TTuple   t      -> TTuple (List.map strip t)
-    | TArray   (t, i) -> TArray (strip t, i)
+    | TArray   (t, _) -> TArray (strip t, None)
     | TRefined (t, _) -> strip t  
     | TRange   _      -> TInt
+    | TNamed   _      -> ty
 
   let compat (ty1 : type_) (ty2 : type_) =
     eq (strip ty1) (strip ty2)
