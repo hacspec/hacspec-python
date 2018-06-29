@@ -118,14 +118,6 @@ tyident:
 | x=ident COLON ty=type_ { (x, ty) }
 
 (* -------------------------------------------------------------------- *)
-tyidents:
-| xs=rlist1(ident, COMMA) COLON ty=type_ { (List.rev xs, ty) }
-
-(* -------------------------------------------------------------------- *)
-otyident:
-| x=ident ty=prefix(COLON, type_)? { (x, ty) }
-
-(* -------------------------------------------------------------------- *)
 %inline uniop:
 | NOT   { (`Not :> puniop) }
 | TILDE  { (`BNot :> puniop) }
@@ -243,17 +235,17 @@ sexpr_r:
 
 (* -------------------------------------------------------------------- *)
 sinstr_r:
-| FAIL s=expr
-    { PSFail (s) }
-
 | PASS
     { PSPass }
 
-| xs=tyidents EQ e=expr
-    { PSDecl (xs, e) }
+| FAIL s=expr
+    { PSFail (s) }
 
 | RETURN e=expr?
     { PSReturn e }
+
+| x=ident COLON ty=expr
+    { PSVarDecl (x, ty) }
 
 | lv=expr o=assop e=expr
     { PSAssign (lv, o, e) }
@@ -333,8 +325,11 @@ topdecl_r:
 | mods=import NEWLINE
     { mods }
 
-| xs=plist1(otyident, COMMA) EQ e=expr NEWLINE
-    { List.map (fun x -> PTVar (x, e)) xs }
+| xs=plist1(ident, COMMA) EQ ty=expr NEWLINE
+    { List.map (fun x -> PTTypeAlias (x, ty)) xs }
+
+| x=ident COLON ty=expr EQ e=expr NEWLINE
+    { [PTVarDecl ((x, ty), e)] }
 
 | x=procdef
     { [PTDef x] }

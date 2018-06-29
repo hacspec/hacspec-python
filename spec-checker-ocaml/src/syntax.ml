@@ -64,16 +64,16 @@ and potyident = pident * ptype option
 
 (* -------------------------------------------------------------------- *)
 type pinstr_r =
-  | PSFail   of pexpr
+  | PSFail    of pexpr
   | PSPass
-  | PSReturn of pexpr option
-  | PSDecl   of ptyidents * pexpr
-  | PSExpr   of pexpr
-  | PSAssign of (plvalue * passop * pexpr)
-  | PSIf     of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
-  | PSWhile  of (pexpr * pstmt) * pstmt option
-  | PSFor    of (potyident * prange * pstmt) * pstmt option
-  | PSDef    of pprocdef
+  | PSVarDecl of ptyident
+  | PSReturn  of pexpr option
+  | PSExpr    of pexpr
+  | PSAssign  of (plvalue * passop * pexpr)
+  | PSIf      of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
+  | PSWhile   of (pexpr * pstmt) * pstmt option
+  | PSFor     of (potyident * prange * pstmt) * pstmt option
+  | PSDef     of pprocdef
 
 and prange   = pexpr option * pexpr
 and pstmt    = pinstr list
@@ -83,9 +83,10 @@ and pprocdef = ptyident * ptyident list * pstmt
 
 (* -------------------------------------------------------------------- *)
 type ptopdecl =
-  | PTImport of pimport
-  | PTVar    of potyident * pexpr
-  | PTDef    of pprocdef
+  | PTImport    of pimport
+  | PTTypeAlias of pident * pexpr
+  | PTVarDecl   of ptyident * pexpr
+  | PTDef       of pprocdef
 
 and pimport = pqident * (pident option) list option
 

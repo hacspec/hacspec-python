@@ -285,6 +285,7 @@ type tyerror =
   | DuplicatedTypeName of symbol
   | DuplicatedArgName  of symbol
   | CannotUnpack
+  | MisplacedVarDecl
   | MustReturnAValue
   | UIntConstantExpected
   | ExpectVoidReturn
@@ -304,6 +305,10 @@ let pp_tyerror fmt (error : tyerror) =
 
   | CannotUnpack ->
       Format.fprintf fmt "cannot unpack"
+
+  | MisplacedVarDecl ->
+      Format.fprintf fmt
+        "variable declarations can only occur at beginning of procs"
 
   | UnknownVar x ->
       Format.fprintf fmt "unknown variable: `%a'" pp_qsymbol x
@@ -384,7 +389,7 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let j = tt_cint env j in
       TRange (i, j)
 
-  | "array_t", [ty] ->
+  | ("array_t" | "vlarray"), [ty] ->
       TArray (tt_type env ty, None)
 
   | "array_t", [ty; sz] ->
@@ -564,7 +569,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let b = TArray (TWord `U8, None) in
         let a1, _ = tt_expr ~cty:(`Exact (TArray (b, None))) env a1 in
         let a2, _ = tt_expr ~cty:(`Exact b) env a2 in
-        (ECall (StdLib.Array.concat_blocks, [a1; a2]), (TArray (b, None)))
+        (ECall (StdLib.Array.concat_blocks, [a1; a2]), b)
 
     | PECall (nmf, [a; i]) when qunloc nmf = (["uintn"], "rotate_left") ->
         let a, aty = tt_expr ~cty:(`Approx PWord) env a in
@@ -641,8 +646,6 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
       | `Approx cty ->
           Env.Types.approx env ety cty
       | `Exact  cty ->
-          Format.eprintf "%s\n%!" (string_of_type cty);
-          Format.eprintf "%s\n%!" (string_of_type ety);
           Env.Types.compat env ety cty
     in
       if not compat then
@@ -672,22 +675,8 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
   | PSPass ->
       (env, [])
 
-  | PSDecl ((xs, ty), pe) ->
-      let ty = tt_type env ty in
-      let e = fst (tt_expr ~cty:(`Exact ty) env pe) in
-
-      let env =
-        match xs, Env.Types.hred env ty with
-        | [] , _ -> assert false
-        | [x], _ -> fst (Env.Vars.bind env (unloc x, ty))
-        | _  , TTuple tys when List.length tys <> List.length xs ->
-            List.fold_left (fun env (x, ty) ->
-              fst (Env.Vars.bind env (unloc x, ty)))
-            env (List.combine xs tys)
-        | _, _ ->
-            error ~loc:(loc pe) env CannotUnpack;
-
-      in (env, [])
+  | PSVarDecl _ ->
+      error ~loc:(loc i) env MisplacedVarDecl
 
   | PSAssign (_, _, e) ->
       let e = tt_expr env e in (env, [IAssign (None, e)]) (* FIXME *)
@@ -823,12 +812,24 @@ let tt_vardecl
 let tt_procdef
 (env : env) (((f, fty), args, body) : pprocdef) : env * env procdef
 =
+  let lv, body =
+    let rec aux lv body =
+      match body with
+      | { pl_data = PSVarDecl xty } :: body -> aux (xty :: lv) body
+      | _ -> (List.rev lv, body)
+    in aux [] body in
+
   let fty  = tt_type env fty in
   let args = List.map (fun (x, xty) -> (unloc x, tt_type env xty)) args in
   let env1, args =
     List.fold_left_map (fun env (x, ty) ->
         let env, x = Env.Vars.bind env (x, ty) in (env, (x, ty)))
       env args in
+
+  let env1 = List.fold_left (fun env (x, ty) ->
+    let ty = tt_type env ty in
+    fst (Env.Vars.bind env (unloc x, ty))) env1 lv in
+
   let body = snd (tt_stmt ~rty:fty env1 body) in
 
   let env, name = Env.Procs.bind env (unloc f) (List.map snd args, fty) in
@@ -850,10 +851,10 @@ let tt_topdecl1 (env : env) = function
   | PTDef info ->
       let env, x = tt_procdef env info in (env, [TD_ProcDef x])
 
-  | PTVar ((x, None), ty) ->
+  | PTTypeAlias (x, ty) ->
       let env, x = tt_tydecl  env (x, ty) in (env, [TD_TyDecl x])
 
-  | PTVar ((x, Some ty), e) ->
+  | PTVarDecl ((x, ty), e) ->
       let env, x = tt_vardecl env ((x, ty), e) in (env, [TD_VarDecl x])
 
 (* -------------------------------------------------------------------- *)
