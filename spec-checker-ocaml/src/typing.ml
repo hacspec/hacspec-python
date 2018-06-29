@@ -741,8 +741,9 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
 
       (env, [IWhile ((c, bc), el)])
 
-  | PSDef _pf ->
-      assert false              (* FIXME *)
+  | PSDef pf ->
+      (* FIXME *)
+      let env, _ = tt_procdef env pf in (env, [])
 
 (* -------------------------------------------------------------------- *)
 and tt_stmt ?(rty : type_ option) (env : env) (s : pstmt) : env * block =
@@ -769,11 +770,11 @@ and tt_module (env : env) (nm : pident list) =
   in resolve (env, []) nm
 
 (* -------------------------------------------------------------------- *)
-let tt_import (env : env) (_ : pimport) =
+and tt_import (env : env) (_ : pimport) =
   env
 
 (* -------------------------------------------------------------------- *)
-let tt_tydecl (env : env) ((x, ty) : pident * pexpr) : env * tydecl =
+and tt_tydecl (env : env) ((x, ty) : pident * pexpr) : env * tydecl =
   let ty = tt_type env ty in
 
   if Env.Types.exists env (unloc x) then
@@ -793,7 +794,7 @@ let tt_tydecl (env : env) ((x, ty) : pident * pexpr) : env * tydecl =
   in (env, aout)
 
 (* -------------------------------------------------------------------- *)
-let tt_vardecl
+and tt_vardecl
   (env : env) ((x, ty), e : (pident * pexpr) * pexpr) : env * vardecl
  =
   let ty = tt_type env ty in
@@ -809,8 +810,8 @@ let tt_vardecl
 
 (* -------------------------------------------------------------------- *)
 (* FIXME: check for duplicate argument name *)
-let tt_procdef
-(env : env) (((f, fty), args, body) : pprocdef) : env * env procdef
+and tt_procdef
+  (env : env) (((f, fty), args, body) : pprocdef) : env * env procdef
 =
   let lv, body =
     let rec aux lv body =
