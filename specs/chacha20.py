@@ -42,7 +42,7 @@ def double_round(m: state_t) -> state_t :
     return m
 
 
-constants = constants_t(
+constants : constants_t = array(
     [uint32(0x61707865), uint32(0x3320646e),
      uint32(0x79622d32), uint32(0x6b206574)])
 

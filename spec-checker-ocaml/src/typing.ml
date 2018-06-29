@@ -405,6 +405,10 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let ty = tt_type env ty in
       TRefined (ty, EUnit)      (* FIXME: refinment *)
 
+  | "refine_t", [ty; e] ->
+      let ty = tt_type env ty in
+      TRefined (ty, EUnit)      (* FIXME: refinment *)
+
   | "tuple2_t", [ty1; ty2] ->
       let ty1 = tt_type env ty1 in
       let ty2 = tt_type env ty2 in
@@ -541,6 +545,10 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
       end
 
     | PECall (nmf, [a]) when qunloc nmf = (["array"], "copy") ->
+        let a, aty = tt_expr ~cty:(`Approx PArray) env a in
+        (ECall (StdLib.Array.copy, [a]), aty)
+
+    | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
         let a, aty = tt_expr ~cty:(`Approx PArray) env a in
         (ECall (StdLib.Array.copy, [a]), aty)
   
