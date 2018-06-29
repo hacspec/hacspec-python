@@ -1,6 +1,7 @@
 from hacspec.speclib import *
 
 blocksize : int = 64
+foo : array_t(int) = array([0])
 index_t  = range_t(0,16)
 rotval_t = range_t(1,32)
 state_t  = array_t(uint32_t,16)
