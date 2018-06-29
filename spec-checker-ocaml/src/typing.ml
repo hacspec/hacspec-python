@@ -544,6 +544,9 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
             EBinOp (op, (e1, e2)), TBool
       end
 
+    | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
+        tt_expr ~cty:(`Approx PArray) env a
+
     | PECall (nmf, [a]) when qunloc nmf = (["array"], "copy") ->
         let a, aty = tt_expr ~cty:(`Approx PArray) env a in
         (ECall (StdLib.Array.copy, [a]), aty)
@@ -793,7 +796,7 @@ and tt_tydecl (env : env) ((x, ty) : pident * pexpr) : env * tydecl =
 
   let env = begin
     match Type.strip ty with
-    | TArray (aty, sz) ->
+    | TArray (aty, _) ->
         fst (Env.Procs.bind env (unloc x) ([TArray (aty, None)], ty))
 
     | _ -> env
