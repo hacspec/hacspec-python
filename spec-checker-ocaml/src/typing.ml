@@ -107,6 +107,7 @@ end = struct
   let dtypes = [
     ("bool"     , TBool      );
     ("int"      , TInt       );
+    ("nat"      , TInt       );
     ("string"   , TString    );
     ("uint8_t"  , TWord `U8  );
     ("uint16_t" , TWord `U16 );
@@ -392,6 +393,9 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
   | ("array_t" | "vlarray"), [ty] ->
       TArray (tt_type env ty, None)
 
+  | "natmod_t", [ty] ->
+      TInt
+
   | "array_t", [ty; sz] ->
       let sz = tt_cint env sz in
       let ty = tt_type env ty in
@@ -517,7 +521,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
             EBinOp (op, (e1, e2)), ty1
 
         | `Pow as op ->
-            check_ty ~loc:(loc pe1) [PWord] ty1;
+            check_ty ~loc:(loc pe1) [PWord; PInt] ty1;
             check_ty ~loc:(loc pe2) [PInt ] ty2;
             EBinOp (op, (e1, e2)), ty1
 
@@ -546,6 +550,9 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
 
     | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
         tt_expr ~cty:(`Approx PArray) env a
+
+    | PECall (nmf, [a;b]) when qunloc nmf = ([], "natmod") ->
+        tt_expr ~cty:(`Approx PInt) env a
 
     | PECall (nmf, [a]) when qunloc nmf = (["array"], "copy") ->
         let a, aty = tt_expr ~cty:(`Approx PArray) env a in

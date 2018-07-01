@@ -11,10 +11,10 @@ subblock_t = refine_t(vlbytes_t, lambda x: bytes.length(x) <= 16)
 
 # Define prime field
 
-p130m5 = nat((2 ** 130) - 5)
+p130m5 : nat = (2 ** 130) - 5
 felem_t = natmod_t(p130m5)
 @typechecked
-def felem(n:nat_t) -> felem_t:
+def felem(n:nat) -> felem_t:
     return natmod(n,p130m5)
 
 @typechecked
