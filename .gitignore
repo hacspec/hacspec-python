@@ -1,0 +1,7 @@
+.mypy_cache/
+build/
+lib/
+rfc/
+spec-checker-ocaml/
+specs/
+tests/
