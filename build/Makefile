@@ -47,4 +47,3 @@ clean:
 	rm -rf hacspec.egg-info
 	rm -rf MANIFEST
 	rm -rf hacspec/__pycache__
-	$(MAKE) -C docs clean
