@@ -1,0 +1,612 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>hacspec package &#8212; hacspec  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="hacspec-package">
+<h1>hacspec package<a class="headerlink" href="#hacspec-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-hacspec.speclib">
+<span id="hacspec-speclib-module"></span><h2>hacspec.speclib module<a class="headerlink" href="#module-hacspec.speclib" title="Permalink to this headline">¶</a></h2>
+<dl class="exception">
+<dt id="hacspec.speclib.Error">
+<em class="property">exception </em><code class="descclassname">hacspec.speclib.</code><code class="descname">Error</code><a class="headerlink" href="#hacspec.speclib.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.array">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">array</code><a class="headerlink" href="#hacspec.speclib.array" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._array</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.array_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">array_t</code><span class="sig-paren">(</span><em>t: type</em>, <em>l: int</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.array_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="hacspec.speclib.bit">
+<em class="property">class </em><code class="descclassname">hacspec.speclib.</code><code class="descname">bit</code><span class="sig-paren">(</span><em>x: Union[int, _ForwardRef('_uintn')]</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.bit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.bit_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">bit_t</code><a class="headerlink" href="#hacspec.speclib.bit_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.bitvector">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">bitvector</code><a class="headerlink" href="#hacspec.speclib.bitvector" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.bitvector_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">bitvector_t</code><span class="sig-paren">(</span><em>bits: int</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.bitvector_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="hacspec.speclib.bytes">
+<em class="property">class </em><code class="descclassname">hacspec.speclib.</code><code class="descname">bytes</code><span class="sig-paren">(</span><em>x: Union[typing.Sequence[~T], typing.List[~T], _ForwardRef('_array[T]')]</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._array</span></code></p>
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.concat_bytes">
+<em class="property">static </em><code class="descname">concat_bytes</code><span class="sig-paren">(</span><em>blocks: _array[vlbytes_t]</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.concat_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.create_random_bytes">
+<em class="property">static </em><code class="descname">create_random_bytes</code><span class="sig-paren">(</span><em>len: &lt;function refine.&lt;locals&gt;.refine_check at 0x00000147DBBA9AE8&gt;</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.create_random_bytes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_hex">
+<em class="property">static </em><code class="descname">from_hex</code><span class="sig-paren">(</span><em>x: str</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.from_hex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_ints">
+<em class="property">static </em><code class="descname">from_ints</code><span class="sig-paren">(</span><em>x: List[int]</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.from_ints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_nat_be">
+<em class="property">static </em><code class="descname">from_nat_be</code><span class="sig-paren">(</span><em>x: int</em>, <em>l: int = 0</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.from_nat_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_nat_le">
+<em class="property">static </em><code class="descname">from_nat_le</code><span class="sig-paren">(</span><em>x: int</em>, <em>l: int = 0</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.from_nat_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint128_be">
+<em class="property">static </em><code class="descname">from_uint128_be</code><span class="sig-paren">(</span><em>x: uint128_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint128_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint128_le">
+<em class="property">static </em><code class="descname">from_uint128_le</code><span class="sig-paren">(</span><em>x: uint128_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint128_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint128s_be">
+<em class="property">static </em><code class="descname">from_uint128s_be</code><span class="sig-paren">(</span><em>x: _array[uint128_t]</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint128s_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint128s_le">
+<em class="property">static </em><code class="descname">from_uint128s_le</code><span class="sig-paren">(</span><em>x: _array[uint128_t]</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint128s_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint16_be">
+<em class="property">static </em><code class="descname">from_uint16_be</code><span class="sig-paren">(</span><em>x: uint16_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint16_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint16_le">
+<em class="property">static </em><code class="descname">from_uint16_le</code><span class="sig-paren">(</span><em>x: uint16_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint16_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint16s_be">
+<em class="property">static </em><code class="descname">from_uint16s_be</code><span class="sig-paren">(</span><em>x: _array[uint16_t]</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint16s_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint16s_le">
+<em class="property">static </em><code class="descname">from_uint16s_le</code><span class="sig-paren">(</span><em>x: _array[uint16_t]</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint16s_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint32_be">
+<em class="property">static </em><code class="descname">from_uint32_be</code><span class="sig-paren">(</span><em>x: uint32_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint32_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint32_le">
+<em class="property">static </em><code class="descname">from_uint32_le</code><span class="sig-paren">(</span><em>x: uint32_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint32_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint32s_be">
+<em class="property">static </em><code class="descname">from_uint32s_be</code><span class="sig-paren">(</span><em>x: _array[uint32_t]</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint32s_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint32s_le">
+<em class="property">static </em><code class="descname">from_uint32s_le</code><span class="sig-paren">(</span><em>x: _array[uint32_t]</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint32s_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint64_be">
+<em class="property">static </em><code class="descname">from_uint64_be</code><span class="sig-paren">(</span><em>x: uint64_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint64_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint64_le">
+<em class="property">static </em><code class="descname">from_uint64_le</code><span class="sig-paren">(</span><em>x: uint64_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint64_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint64s_be">
+<em class="property">static </em><code class="descname">from_uint64s_be</code><span class="sig-paren">(</span><em>x: _array[uint64_t]</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint64s_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uint64s_le">
+<em class="property">static </em><code class="descname">from_uint64s_le</code><span class="sig-paren">(</span><em>x: _array[uint64_t]</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.from_uint64s_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uintn_be">
+<em class="property">static </em><code class="descname">from_uintn_be</code><span class="sig-paren">(</span><em>x: &lt;function uintn_t at 0x00000147DBBA9F28&gt;</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.from_uintn_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uintn_le">
+<em class="property">static </em><code class="descname">from_uintn_le</code><span class="sig-paren">(</span><em>x: &lt;function uintn_t at 0x00000147DBBA9F28&gt;</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.from_uintn_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uintns_be">
+<em class="property">static </em><code class="descname">from_uintns_be</code><span class="sig-paren">(</span><em>x: vlarray_t(uintn_t)</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.from_uintns_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.from_uintns_le">
+<em class="property">static </em><code class="descname">from_uintns_le</code><span class="sig-paren">(</span><em>x: vlarray_t(uintn_t)</em><span class="sig-paren">)</span> &#x2192; vlbytes_t<a class="headerlink" href="#hacspec.speclib.bytes.from_uintns_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_hex">
+<em class="property">static </em><code class="descname">to_hex</code><span class="sig-paren">(</span><em>a: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#hacspec.speclib.bytes.to_hex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_nat_be">
+<em class="property">static </em><code class="descname">to_nat_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#hacspec.speclib.bytes.to_nat_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_nat_le">
+<em class="property">static </em><code class="descname">to_nat_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#hacspec.speclib.bytes.to_nat_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint128_be">
+<em class="property">static </em><code class="descname">to_uint128_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._uintn<a class="headerlink" href="#hacspec.speclib.bytes.to_uint128_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint128_le">
+<em class="property">static </em><code class="descname">to_uint128_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._uintn<a class="headerlink" href="#hacspec.speclib.bytes.to_uint128_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint128s_be">
+<em class="property">static </em><code class="descname">to_uint128s_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array[hacspec.speclib._uintn]<a class="headerlink" href="#hacspec.speclib.bytes.to_uint128s_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint128s_le">
+<em class="property">static </em><code class="descname">to_uint128s_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array[hacspec.speclib._uintn]<a class="headerlink" href="#hacspec.speclib.bytes.to_uint128s_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint16_be">
+<em class="property">static </em><code class="descname">to_uint16_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._uintn<a class="headerlink" href="#hacspec.speclib.bytes.to_uint16_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint16_le">
+<em class="property">static </em><code class="descname">to_uint16_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._uintn<a class="headerlink" href="#hacspec.speclib.bytes.to_uint16_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint16s_be">
+<em class="property">static </em><code class="descname">to_uint16s_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array[hacspec.speclib._uintn]<a class="headerlink" href="#hacspec.speclib.bytes.to_uint16s_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint16s_le">
+<em class="property">static </em><code class="descname">to_uint16s_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array[hacspec.speclib._uintn]<a class="headerlink" href="#hacspec.speclib.bytes.to_uint16s_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint32_be">
+<em class="property">static </em><code class="descname">to_uint32_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._uintn<a class="headerlink" href="#hacspec.speclib.bytes.to_uint32_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint32_le">
+<em class="property">static </em><code class="descname">to_uint32_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._uintn<a class="headerlink" href="#hacspec.speclib.bytes.to_uint32_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint32s_be">
+<em class="property">static </em><code class="descname">to_uint32s_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array[hacspec.speclib._uintn]<a class="headerlink" href="#hacspec.speclib.bytes.to_uint32s_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint32s_le">
+<em class="property">static </em><code class="descname">to_uint32s_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array[hacspec.speclib._uintn]<a class="headerlink" href="#hacspec.speclib.bytes.to_uint32s_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint64_be">
+<em class="property">static </em><code class="descname">to_uint64_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._uintn<a class="headerlink" href="#hacspec.speclib.bytes.to_uint64_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint64_le">
+<em class="property">static </em><code class="descname">to_uint64_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._uintn<a class="headerlink" href="#hacspec.speclib.bytes.to_uint64_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint64s_be">
+<em class="property">static </em><code class="descname">to_uint64s_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array[hacspec.speclib._uintn]<a class="headerlink" href="#hacspec.speclib.bytes.to_uint64s_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uint64s_le">
+<em class="property">static </em><code class="descname">to_uint64s_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array[hacspec.speclib._uintn]<a class="headerlink" href="#hacspec.speclib.bytes.to_uint64s_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uintn_be">
+<em class="property">static </em><code class="descname">to_uintn_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; &lt;function uintn_t at 0x00000147DBBA9F28&gt;<a class="headerlink" href="#hacspec.speclib.bytes.to_uintn_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uintn_le">
+<em class="property">static </em><code class="descname">to_uintn_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em><span class="sig-paren">)</span> &#x2192; &lt;function uintn_t at 0x00000147DBBA9F28&gt;<a class="headerlink" href="#hacspec.speclib.bytes.to_uintn_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uintns_be">
+<em class="property">static </em><code class="descname">to_uintns_be</code><span class="sig-paren">(</span><em>x: vlbytes_t</em>, <em>bits: int</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.to_uintns_be" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="hacspec.speclib.bytes.to_uintns_le">
+<em class="property">static </em><code class="descname">to_uintns_le</code><span class="sig-paren">(</span><em>x: vlbytes_t</em>, <em>bits: int</em><span class="sig-paren">)</span> &#x2192; hacspec.speclib._array<a class="headerlink" href="#hacspec.speclib.bytes.to_uintns_le" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.bytes_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">bytes_t</code><span class="sig-paren">(</span><em>l: int</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.bytes_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.contract">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">contract</code><span class="sig-paren">(</span><em>t: type, pre: Callable[..., bool], post: Callable[..., bool]</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.contract" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.contract3">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">contract3</code><span class="sig-paren">(</span><em>pre: Callable[..., bool], post: Callable[..., bool]</em><span class="sig-paren">)</span> &#x2192; function<a class="headerlink" href="#hacspec.speclib.contract3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.fail">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">fail</code><span class="sig-paren">(</span><em>s: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#hacspec.speclib.fail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.matrix">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">matrix</code><a class="headerlink" href="#hacspec.speclib.matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._matrix</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.matrix_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">matrix_t</code><span class="sig-paren">(</span><em>t: type</em>, <em>rows: &lt;function refine.&lt;locals&gt;.refine_check at 0x00000147DBBA9AE8&gt;</em>, <em>columns: &lt;function refine.&lt;locals&gt;.refine_check at 0x00000147DBBA9AE8&gt;</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.matrix_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.nat">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">nat</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.nat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.natmod">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">natmod</code><a class="headerlink" href="#hacspec.speclib.natmod" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._natmod</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.natmod_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">natmod_t</code><span class="sig-paren">(</span><em>modulus: int</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.natmod_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.option_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">option_t</code><span class="sig-paren">(</span><em>T: type</em><span class="sig-paren">)</span> &#x2192; Union[~T, NoneType]<a class="headerlink" href="#hacspec.speclib.option_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.pos">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">pos</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.pos" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.range_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">range_t</code><span class="sig-paren">(</span><em>min: int</em>, <em>max: int</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.range_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.refine">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">refine</code><span class="sig-paren">(</span><em>t: type, f: Callable[T, bool]</em><span class="sig-paren">)</span> &#x2192; Tuple[type, Callable[T, T]]<a class="headerlink" href="#hacspec.speclib.refine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.refine_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">refine_t</code><span class="sig-paren">(</span><em>t: type, f: Callable[T, bool]</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.refine_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="hacspec.speclib.speclib">
+<em class="property">class </em><code class="descclassname">hacspec.speclib.</code><code class="descname">speclib</code><a class="headerlink" href="#hacspec.speclib.speclib" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="hacspec.speclib.speclib.ceil">
+<code class="descname">ceil</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#hacspec.speclib.speclib.ceil" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="hacspec.speclib.speclib.log">
+<code class="descname">log</code><span class="sig-paren">(</span><em>b: int</em><span class="sig-paren">)</span> &#x2192; float<a class="headerlink" href="#hacspec.speclib.speclib.log" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.tuple2">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">tuple2</code><span class="sig-paren">(</span><em>T: type</em>, <em>U: type</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.tuple2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.tuple3">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">tuple3</code><span class="sig-paren">(</span><em>T: type</em>, <em>U: type</em>, <em>V: type</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.tuple3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.tuple4">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">tuple4</code><span class="sig-paren">(</span><em>T: type</em>, <em>U: type</em>, <em>V: type</em>, <em>W: type</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.tuple4" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.tuple5">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">tuple5</code><span class="sig-paren">(</span><em>T: type</em>, <em>U: type</em>, <em>V: type</em>, <em>W: type</em>, <em>X: type</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.tuple5" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="hacspec.speclib.uint128">
+<em class="property">class </em><code class="descclassname">hacspec.speclib.</code><code class="descname">uint128</code><span class="sig-paren">(</span><em>x: Union[int, _ForwardRef('_uintn')]</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.uint128" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.uint128_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">uint128_t</code><a class="headerlink" href="#hacspec.speclib.uint128_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hacspec.speclib.uint16">
+<em class="property">class </em><code class="descclassname">hacspec.speclib.</code><code class="descname">uint16</code><span class="sig-paren">(</span><em>x: Union[int, _ForwardRef('_uintn')]</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.uint16" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.uint16_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">uint16_t</code><a class="headerlink" href="#hacspec.speclib.uint16_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hacspec.speclib.uint32">
+<em class="property">class </em><code class="descclassname">hacspec.speclib.</code><code class="descname">uint32</code><span class="sig-paren">(</span><em>x: Union[int, _ForwardRef('_uintn')]</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.uint32" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.uint32_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">uint32_t</code><a class="headerlink" href="#hacspec.speclib.uint32_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hacspec.speclib.uint64">
+<em class="property">class </em><code class="descclassname">hacspec.speclib.</code><code class="descname">uint64</code><span class="sig-paren">(</span><em>x: Union[int, _ForwardRef('_uintn')]</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.uint64" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.uint64_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">uint64_t</code><a class="headerlink" href="#hacspec.speclib.uint64_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="hacspec.speclib.uint8">
+<em class="property">class </em><code class="descclassname">hacspec.speclib.</code><code class="descname">uint8</code><span class="sig-paren">(</span><em>x: Union[int, _ForwardRef('_uintn')]</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.uint8" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.uint8_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">uint8_t</code><a class="headerlink" href="#hacspec.speclib.uint8_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.uintn">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">uintn</code><a class="headerlink" href="#hacspec.speclib.uintn" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._uintn</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.uintn_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">uintn_t</code><span class="sig-paren">(</span><em>bits: int</em><span class="sig-paren">)</span><a class="headerlink" href="#hacspec.speclib.uintn_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.vector">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">vector</code><a class="headerlink" href="#hacspec.speclib.vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._vector</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.vector_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">vector_t</code><span class="sig-paren">(</span><em>t: type</em>, <em>len: &lt;function refine.&lt;locals&gt;.refine_check at 0x00000147DBBA9AE8&gt;</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.vector_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.vlarray">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">vlarray</code><a class="headerlink" href="#hacspec.speclib.vlarray" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._array</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.vlarray_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">vlarray_t</code><span class="sig-paren">(</span><em>t: type</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.vlarray_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="hacspec.speclib.vlbytes_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">vlbytes_t</code><a class="headerlink" href="#hacspec.speclib.vlbytes_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">hacspec.speclib._array</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="hacspec.speclib.vlvector_t">
+<code class="descclassname">hacspec.speclib.</code><code class="descname">vlvector_t</code><span class="sig-paren">(</span><em>t: type</em><span class="sig-paren">)</span> &#x2192; type<a class="headerlink" href="#hacspec.speclib.vlvector_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-hacspec">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-hacspec" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">hacspec package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-hacspec.speclib">hacspec.speclib module</a></li>
+<li><a class="reference internal" href="#module-hacspec">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/hacspec.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Franziskus Kiefer et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="_sources/hacspec.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
