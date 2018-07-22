@@ -37,6 +37,10 @@ install: build
 publish: build
 	twine upload dist\*
 
+docs: copy
+	sphinx-apidoc.exe -o docs hacspec hacspec/check.py -f
+	$(MAKE) -C docs html
+
 clean:
 	# pip uninstall hacspec
 	rm -rf dist hacspec/check.py hacspec/speclib.py

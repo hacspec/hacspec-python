@@ -12,7 +12,7 @@ def main (x: int) -> None :
     if not is_on_curve(u0):
         print("u0 is not on curve")
         
-    if (expected == computed):
+    if expected == computed:
         print("Curve25519 Test 0 passed.")
     else:
         print("Curve25519  0 failed:")
