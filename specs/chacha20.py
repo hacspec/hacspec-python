@@ -48,8 +48,8 @@ constants : constants_t = array(
 
 @typechecked
 def chacha20_init(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
-    st : state_t
-    st = array.create(16,uint32(0))
+    # st : state_t
+    st : state_t = array.create(16,uint32(0))
     st[0:4] = constants
     st[4:12] = bytes.to_uint32s_le(k)
     st[12] = counter
@@ -58,8 +58,8 @@ def chacha20_init(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
 
 @typechecked
 def chacha20_core(st:state_t) -> state_t:
-    working_state : state_t
-    working_state = array.copy(st)
+    # working_state : state_t
+    working_state : state_t = array.copy(st)
     for x in range(10):
         working_state = double_round(working_state)
     for i in range(16):
@@ -72,10 +72,10 @@ def chacha20(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
 
 @typechecked
 def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
-    st : state_t
-    block : block_t
-    st = chacha20(k,counter,nonce)
-    block = bytes.from_uint32s_le(st)
+    # st : state_t
+    # block : block_t
+    st : state_t = chacha20(k,counter,nonce)
+    block : block_t = bytes.from_uint32s_le(st)
     # If block is not cast to block_t, the type isn't checked!
     return block_t(block)
 
@@ -84,18 +84,18 @@ def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
 
 @typechecked
 def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out : subblock_t
-    out = bytes.copy(block)
+    # out : subblock_t
+    out : subblock_t = bytes.copy(block)
     for i in range(array.length(block)):
         out[i] ^= keyblock[i]
     return out
 
 @typechecked
 def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
-    blocks   : vlarray(block_t)
-    last     : subblock_t
-    ctr      : uint32_t
-    keyblock : block_t
+    # blocks   : vlarray(block_t)
+    # last     : subblock_t
+    # ctr      : uint32_t
+    # keyblock : block_t
 
     blocks, last = array.split_blocks(msg, blocksize)
     keyblock = array.create(blocksize, uint8(0))
