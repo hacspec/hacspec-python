@@ -113,6 +113,9 @@ def is_valid_binop(op):
 
 def is_valid_compop(op):
     # TODO: check
+    if isinstance(op, In):
+        # Don't allow in as comparator as it has many meanings in python.
+        return False
     return True
 
 def is_expression(node):
