@@ -70,6 +70,7 @@ type pinstr_r =
   | PSReturn  of pexpr option
   | PSExpr    of pexpr
   | PSAssign  of (plvalue * passop * pexpr)
+  | PSDeclAssign  of (pident * ptype * pexpr)
   | PSIf      of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
   | PSWhile   of (pexpr * pstmt) * pstmt option
   | PSFor     of (potyident * prange * pstmt) * pstmt option

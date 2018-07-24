@@ -250,6 +250,9 @@ sinstr_r:
 | lv=expr o=assop e=expr
     { PSAssign (lv, o, e) }
 
+| x=ident COLON ty=expr EQ e=expr
+    { PSDeclAssign (x, ty, e) }
+
 | e=expr
     { PSExpr e }
 

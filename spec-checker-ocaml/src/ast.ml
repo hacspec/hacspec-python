@@ -3,6 +3,7 @@ module Ident : sig
   type ident = private string
 
   val make : string -> ident
+  val to_string : ident -> string
 end = struct
   type ident = string
 
@@ -16,8 +17,8 @@ end = struct
 
   let table = H.create 0
 
-  let make (s : string) : ident =
-    H.merge table s
+  let make (s : string) : ident = H.merge table s
+  let to_string (i:ident) : string = i
 end
 
 (* -------------------------------------------------------------------- *)

@@ -10,13 +10,13 @@ let main () =
   end;
 
   let filename = Sys.argv.(1) in
-
+  let modulename = Filename.remove_extension (Filename.basename filename) in
   try
-    let (_ : T.Env.env Ast.program) =
+    let (p : T.Env.env Ast.program) =
       let stream = P.from_file filename in
       let past   = P.parse_spec stream in
       T.tt_program past
-    in ()
+    in Format.printf "done parsing and typechecking module %s\n%s" modulename (Fstar.fstar_of_program modulename p)
   with
   | e ->
       Format.eprintf "%s%!" (Pexception.tostring e);

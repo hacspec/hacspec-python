@@ -16,6 +16,12 @@ type ctype =
 type etype = [`Exact of type_ | `Approx of ctype]
 
 (* -------------------------------------------------------------------- *)
+let stdlib = [
+  ((["array"],"copy"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array.copy"));
+  ((["array"],"create"), ([Some (`Exact TInt); None], (fun [aty;bty] -> TArray(bty, None)), Ident.make "array.create"))
+]
+
+
 module StdLib : sig
   module Array : sig
     val copy          : ident
@@ -34,6 +40,8 @@ module StdLib : sig
     val copy            : ident
     val to_uint32s_le   : ident
     val from_uint32s_le : ident
+    val to_nat_le   : ident
+    val from_nat_le : ident
   end
 end = struct
   module Array = struct
@@ -53,6 +61,8 @@ end = struct
     let copy            = Ident.make "bytes.copy"
     let to_uint32s_le   = Ident.make "bytes.to_uint32s_le"
     let from_uint32s_le = Ident.make "bytes.from_uint32s_le"
+    let to_nat_le   = Ident.make "bytes.to_nat_le"
+    let from_nat_le = Ident.make "bytes.from_nat_le"
   end
 end
 
@@ -555,8 +565,25 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         tt_expr ~cty:(`Approx PInt) env a
 
     | PECall (nmf, [a]) when qunloc nmf = (["array"], "copy") ->
-        let a, aty = tt_expr ~cty:(`Approx PArray) env a in
-        (ECall (StdLib.Array.copy, [a]), aty)
+        let exp,res,target = List.assoc (["array"],"copy") stdlib in
+        let a,aty = 
+           (match exp with
+    	    | [Some t] -> tt_expr ~cty:t env a 
+            | _ -> tt_expr env a) in
+        (ECall (target, [a]), res [aty])
+
+    | PECall (nmf, args)  when qunloc nmf = (["array"], "create") ->
+        let exp,res,target = List.assoc (["array"],"create") stdlib in
+     
+        let argsty =
+          List.map2 (fun e ty -> 
+                      match ty with
+                      | Some t -> tt_expr ~cty:t env e
+		      | None -> tt_expr env e)
+          args exp in
+        let args,tys = List.split argsty in
+        (ECall (target, args), res tys)
+
 
     | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
         let a, aty = tt_expr ~cty:(`Approx PArray) env a in
@@ -566,15 +593,6 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let a, _ = tt_expr ~cty:(`Approx PArray) env a in
         (ECall (StdLib.Array.length, [a]), TInt)
   
-    | PECall (nmf, [sz; e]) when qunloc nmf = (["array"], "create") ->
-        let sz, _  = tt_expr env ~cty:(`Exact TInt) sz in
-        let e, ety = tt_expr env e in
-        (ECall (StdLib.Array.create, [sz; e]), TArray (ety, None))
-
-    | PECall (nmf, [sz; e]) when qunloc nmf = (["array"], "create") ->
-        let sz, _  = tt_expr env ~cty:(`Exact TInt) sz in
-        let e, ety = tt_expr env e in
-        (ECall (StdLib.Array.create, [sz; e]), TArray (ety, None))
 
     | PECall (nmf, [a; s]) when qunloc nmf = (["array"], "split_blocks") ->
         let b = TArray (TWord `U8, None) in
@@ -618,6 +636,25 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         (* FIXME *)
         (ECall (StdLib.Bytes.from_uint32s_le, [b]), TArray (TWord `U8, None))
 
+
+    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "to_nat_le") ->
+        let b, bty = tt_expr env pb in
+
+        begin match bty with
+        | TArray (TWord `U8, _) -> ()
+        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
+
+        (ECall (StdLib.Bytes.to_nat_le, [b]), TInt)
+
+    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "from_nat_le") ->
+        let b, bty = tt_expr env pb in
+
+        begin match bty with
+        | TInt -> ()
+        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
+
+        (* FIXME *)
+        (ECall (StdLib.Bytes.from_nat_le, [b]), TArray (TWord `U8, None))
 
     | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "copy") ->
         let b, bty = tt_expr env pb in
@@ -694,9 +731,14 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
       (env, [])
 
   | PSVarDecl _ ->
-      error ~loc:(loc i) env MisplacedVarDecl
+      (env, []) 
+      (* KB: Being a bit more liberal on var decl placement.
+	 was: error ~loc:(loc i) env MisplacedVarDecl *)
 
   | PSAssign (_, _, e) ->
+      let e = tt_expr env e in (env, [IAssign (None, e)]) (* FIXME *)
+
+  | PSDeclAssign (_, _, e) ->
       let e = tt_expr env e in (env, [IAssign (None, e)]) (* FIXME *)
 
   | PSReturn None ->
@@ -835,8 +877,10 @@ and tt_procdef
     let rec aux lv body =
       match body with
       | { pl_data = PSVarDecl xty } :: body -> aux (xty :: lv) body
-      | _ -> (List.rev lv, body)
-    in aux [] body in
+      | { pl_data = PSDeclAssign (x,t,_) } :: body -> aux ((x,t) :: lv) body
+      | h::t -> aux lv t
+      | [] -> List.rev lv
+    in aux [] body, body in
 
   let fty  = tt_type env fty in
   let args = List.map (fun (x, xty) -> (unloc x, tt_type env xty)) args in

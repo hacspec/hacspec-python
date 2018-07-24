@@ -19,14 +19,15 @@ def felem(n:nat) -> felem_t:
 
 @typechecked
 def encode(block: subblock_t) -> felem_t:
-    b = array.create(16, uint8(0))
+    b : block_t = array.create(16, uint8(0))
     b[0:bytes.length(block)] = block
-    welem = felem(uintn.to_nat(bytes.to_uintn_le(b)))
-    lelem = felem(nat(2 ** (8 * array.length(block))))
+    welem : felem_t = felem(bytes.to_nat_le(b))
+    lelem : felem_t = felem(2 ** (8 * array.length(block)))
     return lelem + welem
 
 @typechecked
 def encode_r(r: block_t) -> felem_t:
+    ruint : uint128_t
     ruint = bytes.to_uint128_le(r)
     ruint = ruint & uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
     r_nat = uintn.to_nat(ruint)
