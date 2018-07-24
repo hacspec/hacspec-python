@@ -27,18 +27,19 @@ def encode(block: subblock_t) -> felem_t:
 
 @typechecked
 def encode_r(r: block_t) -> felem_t:
-    ruint : uint128_t
-    ruint = bytes.to_uint128_le(r)
+    ruint : uint128_t = bytes.to_uint128_le(r)
     ruint = ruint & uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
-    r_nat = uintn.to_nat(ruint)
+    r_nat : nat = uintn.to_nat(ruint)
     return felem(r_nat)
 
 # There are many ways of writing the polynomial evaluation function
 # This version: use a loop to accumulate the result
 @typechecked
 def poly(text: vlbytes_t, r: felem_t) -> felem_t:
+    blocks : vlarray_t(block_t)
+    last : subblock_t
     blocks, last = array.split_blocks(text, blocksize)
-    acc = felem(nat(0))
+    acc : felem_t = felem(0)
     for i in range(array.length(blocks)):
         acc = (acc + encode(blocks[i])) * r
     if (array.length(last) > 0):
@@ -48,10 +49,10 @@ def poly(text: vlbytes_t, r: felem_t) -> felem_t:
 
 @typechecked
 def poly1305_mac(text: vlbytes_t, k: key_t) -> tag_t:
-    r = k[0:blocksize]
-    s = k[blocksize:2*blocksize]
-    relem = encode_r(r)
-    selem = bytes.to_uint128_le(s)
-    a = poly(text, relem)
-    n = uint128(natmod.to_nat(a)) + selem
-    return tag_t(bytes.from_uintn_le(n))
+    r : block_t = k[0:blocksize]
+    s : block_t = k[blocksize:2*blocksize]
+    relem : felem_t = encode_r(r)
+    selem : uint128_t = bytes.to_uint128_le(s)
+    a : felem_t   = poly(text, relem)
+    n : uint128_t = uint128(natmod.to_nat(a)) + selem
+    return tag_t(bytes.from_uint128_le(n))

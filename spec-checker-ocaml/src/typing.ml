@@ -16,10 +16,40 @@ type ctype =
 type etype = [`Exact of type_ | `Approx of ctype]
 
 (* -------------------------------------------------------------------- *)
+let byte_t = TWord `U8
+let bytes_t = TArray (TWord `U8, None)
+            
 let stdlib = [
+  (([],"array"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array.copy"));
   ((["array"],"copy"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array.copy"));
-  ((["array"],"create"), ([Some (`Exact TInt); None], (fun [aty;bty] -> TArray(bty, None)), Ident.make "array.create"))
-]
+  ((["array"],"create"), ([Some (`Exact TInt); None], (fun [aty;bty] -> TArray(bty, None)), Ident.make "array.create"));
+  ((["array"],"length"), ([Some (`Approx PArray)], (fun [aty] -> TInt), Ident.make "array.length"));
+  ((["array"],"split_blocks"), ([Some (`Approx PArray);Some(`Exact TInt)], (fun [aty;bty] -> TTuple [TArray(aty,None);aty]), Ident.make "array.split_blocks"));
+  ((["array"],"concat_blocks"), ([Some (`Approx PArray);Some(`Approx PArray)], (fun [TArray(aty,None);bty] -> aty), Ident.make "array.concat_blocks"));
+
+  (([],"bytes"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes.copy"));
+  ((["bytes"],"copy"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes.copy"));
+  ((["bytes"],"create"), ([Some (`Exact TInt); Some (`Exact byte_t)], (fun [aty;bty] -> bytes_t), Ident.make "bytes.create"));
+  ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fun [aty] -> TInt), Ident.make "bytes.length"));
+  ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Exact TInt)], (fun [aty;bty] -> TTuple [TArray(bytes_t,None);bytes_t]), Ident.make "bytes.split_blocks"));
+  ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)], (fun [TArray(aty,None);bty] -> aty), Ident.make "bytes.concat_blocks"));
+  ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TArray (TWord `U32,None)), Ident.make "bytes.to_uint32s_le"));
+  ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (TWord `U32,None)))], (fun [aty] -> bytes_t), Ident.make "bytes.from_uint32s_le"));
+  ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TInt), Ident.make "bytes.to_nat_le"));
+  ((["bytes"],"from_nat_le"), ([Some (`Exact TInt)], (fun [aty] -> bytes_t), Ident.make "bytes.from_nat_le"));
+  ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U128), Ident.make "bytes.to_uint128_le"));
+  ((["bytes"],"from_uint128_le"), ([Some (`Exact (TWord `U128))], (fun [aty] -> bytes_t), Ident.make "bytes.from_uint128_le"));
+
+  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt), Ident.make "natmod"));
+  ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fun [aty] -> TInt), Ident.make "natmod.to_nat"));
+  
+  ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> TInt), Ident.make "uintn.to_nat"));
+  ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn.rotate_left"));
+  ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn.rotate_right"));
+
+
+
+  ]
 
 
 module StdLib : sig
@@ -411,6 +441,10 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let ty = tt_type env ty in
       TArray (ty, Some sz)
 
+  | "vlarray_t", [ty] ->
+      let ty = tt_type env ty in
+      TArray (ty, None)
+
   | "bytes_t", [sz] ->
       let sz = tt_cint env sz in
       TArray (TWord `U8, Some sz)
@@ -617,13 +651,23 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
             EBinOp (op, (e1, e2)), TBool
       end
 
-    | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
-        tt_expr ~cty:(`Approx PArray) env a
+    | PECall (nmf, args) when List.mem_assoc (qunloc nmf) stdlib ->
+        let exp,res,target = List.assoc (qunloc nmf) stdlib in
+     
+        let argsty =
+          List.map2 (fun e ty -> 
+                      match ty with
+                      | Some t -> tt_expr ~cty:t env e
+		      | None -> tt_expr env e)
+          args exp in
+        let args,tys = List.split argsty in
+        (ECall (target, args), res tys)
 
-    | PECall (nmf, [a;b]) when qunloc nmf = ([], "natmod") ->
+(*
+    | PECall (nmf, [a;b]) when qunloc nmf = 
         tt_expr ~cty:(`Approx PInt) env a
 
-    | PECall (nmf, [a]) when qunloc nmf = (["array"], "copy") ->
+    | PECall (nmf, [a]) when qunloc nmf = 
         let exp,res,target = List.assoc (["array"],"copy") stdlib in
         let a,aty = 
            (match exp with
@@ -647,24 +691,22 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
     | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
         let a, aty = tt_expr ~cty:(`Approx PArray) env a in
         (ECall (StdLib.Array.copy, [a]), aty)
-  
     | PECall (nmf, [a]) when qunloc nmf = (["array"], "length") ->
         let a, _ = tt_expr ~cty:(`Approx PArray) env a in
         (ECall (StdLib.Array.length, [a]), TInt)
-  
 
     | PECall (nmf, [a; s]) when qunloc nmf = (["array"], "split_blocks") ->
         let b = TArray (TWord `U8, None) in
         let a, _ = tt_expr ~cty:(`Exact b) env a in
         let s, _ = tt_expr ~cty:(`Exact TInt) env s in
         (ECall (StdLib.Array.split_blocks, [a; s]),
-         TTuple [TArray (b, None); b])
 
     | PECall (nmf, [a1; a2]) when qunloc nmf = (["array"], "concat_blocks") ->
         let b = TArray (TWord `U8, None) in
         let a1, _ = tt_expr ~cty:(`Exact (TArray (b, None))) env a1 in
         let a2, _ = tt_expr ~cty:(`Exact b) env a2 in
         (ECall (StdLib.Array.concat_blocks, [a1; a2]), b)
+         TTuple [TArray (b, None); b])
 
     | PECall (nmf, [a; i]) when qunloc nmf = (["uintn"], "rotate_left") ->
         let a, aty = tt_expr ~cty:(`Approx PWord) env a in
@@ -675,6 +717,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let a, aty = tt_expr ~cty:(`Approx PWord) env a in
         let i = fst (tt_expr ~cty:(`Exact TInt) env i) in
         (ECall (StdLib.UIntn.rotate_right, [a; i]), aty)
+  
 
     | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "to_uint32s_le") ->
         let b, bty = tt_expr env pb in
@@ -725,6 +768,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         (* FIXME *)
         (ECall (StdLib.Bytes.copy, [b]), TArray (TWord `U8, None))
 
+ *)
     | PECall ((nm, f) as nmf, args) ->
         let senv = tt_module env nm in
 
