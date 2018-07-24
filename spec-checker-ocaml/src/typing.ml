@@ -415,13 +415,25 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let sz = tt_cint env sz in
       TArray (TWord `U8, Some sz)
 
-  | "refine", [ty; e] ->
+  | "refine", [ty; pe] ->
+     (match unloc pe with
+      | PEFun([x],pe) ->
+      let x = unloc x in
       let ty = tt_type env ty in
-      TRefined (ty, EUnit)      (* FIXME: refinment *)
+      let env',name = Env.Vars.bind env (x,ty) in
+      let e,t = tt_expr ~cty:(`Exact TBool) env' pe in
+      TRefined (ty, EFun([name],e))      (* FIXME: refinment *)
+     | _ -> error ~loc:(loc pe) env InvalidTypeExpr)
 
-  | "refine_t", [ty; e] ->
+  | "refine_t", [ty; pe] ->
+     (match unloc pe with
+      | PEFun([x],pe) ->
+      let x = unloc x in
       let ty = tt_type env ty in
-      TRefined (ty, EUnit)      (* FIXME: refinment *)
+      let env',name = Env.Vars.bind env (x,ty) in
+      let e,t = tt_expr ~cty:(`Exact TBool) env' pe in
+      TRefined (ty, EFun([name],e))      (* FIXME: refinment *)
+     | _ -> error ~loc:(loc pe) env InvalidTypeExpr)
 
   | "tuple2_t", [ty1; ty2] ->
       let ty1 = tt_type env ty1 in
@@ -449,6 +461,53 @@ and tt_cint (env : env) (e : pexpr) =
   | _       -> error ~loc:(loc e) env UIntConstantExpected
 
 (* -------------------------------------------------------------------- *)
+and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
+  let e, ety =
+    match unloc pe with
+    | PLVar ((nm, x) as nmx) -> begin
+        let senv = tt_module env nm in
+
+        match Env.Vars.get senv (unloc x) with
+        | None -> error ~loc:(loc pe) env (UnknownVar (qunloc nmx))
+        | Some x -> (LVar x.Env.vname, x.Env.vrawty)
+      end
+    | PLTuple ([]) ->
+        (LTuple[], TUnit)
+    | PLTuple ([pe]) ->
+        tt_lvalue env pe
+    | PLTuple (pes) ->
+        let es, tys =
+          List.split (List.map (tt_lvalue env) pes)
+        in (LTuple es, TTuple tys) 
+    | PLGet (pl,ps) ->
+        let l,t = tt_lvalue ~cty:(`Approx PArray) env pl in   
+        let s = tt_slice env ps in
+        let ty =
+         match s with
+         | `One   _ -> Type.as_array t
+         | `Slice _ -> t
+        in (LGet(l,s), ty)
+  in
+  let check_ty = check_ty env in
+
+  let check_ty_compat ~loc ~src ~dst =
+    if not (Env.Types.compat env src dst) then
+      error ~loc env (InvalidType (src, [`Exact dst]))
+  in
+  Option.may (fun (cty : etype) ->
+    let compat =
+      match cty with
+      | `Approx cty ->
+          Env.Types.approx env ety cty
+      | `Exact  cty ->
+          Env.Types.compat env ety cty
+    in
+      if not compat then
+        error ~loc:(loc pe) env (InvalidType (ety, [cty])))
+    cty;
+
+  (e, ety)
+  
 and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
   let check_ty = check_ty env in
 
@@ -735,11 +794,18 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
       (* KB: Being a bit more liberal on var decl placement.
 	 was: error ~loc:(loc i) env MisplacedVarDecl *)
 
-  | PSAssign (_, _, e) ->
-      let e = tt_expr env e in (env, [IAssign (None, e)]) (* FIXME *)
-
-  | PSDeclAssign (_, _, e) ->
-      let e = tt_expr env e in (env, [IAssign (None, e)]) (* FIXME *)
+  | PSAssign (pv, pop, e) ->
+     let e,t = tt_expr env e in 
+     let l,tt = tt_lvalue env pv in
+     (env, [IAssign(Some(l,pop),(e,t))])
+  | PSDeclAssign (pi, pop, e) ->
+     let e,t = tt_expr env e in 
+     let senv = tt_module env [] in
+     let l,tt =
+       (match Env.Vars.get senv (unloc pi) with
+        | None -> error ~loc:(loc pi) env (UnknownVar ([],unloc pi))
+        | Some x -> (LVar x.Env.vname, x.Env.vrawty)) in
+     (env, [IAssign(Some(l,`Plain),(e,t))])
 
   | PSReturn None ->
       if Option.is_some rty then

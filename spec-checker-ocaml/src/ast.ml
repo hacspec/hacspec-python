@@ -75,6 +75,7 @@ and expr =
   | EBinOp  of binop * (expr * expr)
   | ECall   of ident * expr list
   | EGet    of expr * slice
+  | EFun    of ident list * expr
 
 and slice = [ `One of expr | `Slice of expr * expr ]
 
@@ -174,13 +175,16 @@ end
 type instr =
   | IFail   of tyexpr
   | IReturn of tyexpr option
-  | IAssign of (lvalue * assop option) option * tyexpr
+  | IAssign of (lvalue * assop) option * tyexpr
   | IIf     of (expr * block) * (expr * block) list * block option
   | IWhile  of (expr * block) * block option
   | IFor    of (ident * range * block) * block option
 
 and block  = instr list
-and lvalue = unit
+and lvalue =
+  | LVar of ident
+  | LTuple of lvalue list
+  | LGet of lvalue * slice
 and range  = expr option * expr
 
 (* -------------------------------------------------------------------- *)

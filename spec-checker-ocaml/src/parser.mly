@@ -166,6 +166,29 @@ slice:
 | e1=expr COLON e2=expr
     { (`Slice (e1, e2) :> pslice) }
 
+
+(* -------------------------------------------------------------------- *)
+slvalue_r:
+| x=qident
+    { PLVar x }
+
+| es=parens(empty)
+    { PLTuple ([]) }
+
+| esb=parens(es=rlist1(slvalue, COMMA) { es })
+    { let es = esb in PLTuple (List.rev es) }
+
+| l=slvalue i=brackets(slice)
+    { PLGet (l, i) }
+
+(* -------------------------------------------------------------------- *)
+%inline lvalue_r:
+| e=slvalue_r
+    { e }
+
+| es=plist2(slvalue, COMMA)
+    { PLTuple (es) }
+
 (* -------------------------------------------------------------------- *)
 sexpr_r:
 | x=qident
@@ -222,6 +245,13 @@ sexpr_r:
     { PETuple (es, false) }
 
 (* -------------------------------------------------------------------- *)
+%inline slvalue:
+| e=loc(slvalue_r) { e }
+(* -------------------------------------------------------------------- *)
+%inline lvalue:
+| e=loc(lvalue_r) { e }
+
+(* -------------------------------------------------------------------- *)
 %inline sexpr:
 | e=loc(sexpr_r) { e }
 
@@ -247,7 +277,7 @@ sinstr_r:
 | x=ident COLON ty=expr
     { PSVarDecl (x, ty) }
 
-| lv=expr o=assop e=expr
+| lv=lvalue o=assop e=expr
     { PSAssign (lv, o, e) }
 
 | x=ident COLON ty=expr EQ e=expr

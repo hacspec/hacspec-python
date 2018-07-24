@@ -76,10 +76,15 @@ type pinstr_r =
   | PSFor     of (potyident * prange * pstmt) * pstmt option
   | PSDef     of pprocdef
 
+and plvalue_r  =
+  | PLVar of pqident
+  | PLTuple of plvalue list
+  | PLGet of plvalue * pslice
+
+and plvalue = plvalue_r located
 and prange   = pexpr option * pexpr
 and pstmt    = pinstr list
 and pinstr   = pinstr_r located
-and plvalue  = pexpr
 and pprocdef = ptyident * ptyident list * pstmt
 
 (* -------------------------------------------------------------------- *)
