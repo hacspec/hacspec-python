@@ -130,9 +130,9 @@ let rec lvars il =
   | IReturn None :: r -> IdentSet.empty
   | IReturn (Some (e,t)) :: r -> IdentSet.empty
   | IAssign (None,(e,t)) :: r -> lvars r
-  | IAssign (Some(LVar v as p,`Plain),(e,t)) :: r -> IdentSet.add (Ident.to_string v) (lvars r)
-  | IAssign (Some(LTuple tl as p,`Plain),(e,t)) :: r -> List.fold_left (fun s v -> match v with LVar v -> IdentSet.add (Ident.to_string v) s | _ -> s) (lvars r) tl
-  | IAssign (Some(LGet(LVar v,sl) as p,`Plain),(e,t)) :: r -> IdentSet.add (Ident.to_string v) (lvars r)
+  | IAssign (Some(LVar v as p,op),(e,t)) :: r -> IdentSet.add (Ident.to_string v) (lvars r)
+  | IAssign (Some(LTuple tl as p,op),(e,t)) :: r -> List.fold_left (fun s v -> match v with LVar v -> IdentSet.add (Ident.to_string v) s | _ -> s) (lvars r) tl
+  | IAssign (Some(LGet(LVar v,sl) as p,op),(e,t)) :: r -> IdentSet.add (Ident.to_string v) (lvars r)
   | IIf ((e,b),ebl,bo) :: r ->
      let else_b = match bo with | None -> IdentSet.empty | Some b -> lvars b in
      List.fold_left (fun s (e,b) -> IdentSet.union (lvars b) s)
@@ -156,12 +156,15 @@ let rec fstar_of_instrs il fin =
   | IAssign (Some(LTuple _ as p,`Plain),(e,t)) :: r ->
      let l,le = fstar_of_lvalue false p in
      "let "^l^" = "^fstar_of_expr false e^" in \n"^fstar_of_instrs r fin
-  | IAssign (Some(LGet(LVar v,sl) as p,`Plain),(e,t)) :: r ->
+  | IAssign (Some(LGet(LVar v,`One e2) as p,`Plain),(e,t)) :: r ->
+     let l,le = fstar_of_lvalue false p in
+     "let "^l^" = "^le^" <- "^fstar_of_expr true e^" in \n"^fstar_of_instrs r fin
+  | IAssign (Some(LGet(LVar v,`One e2) as p,op),(e,t)) :: r ->
+     let l,le = fstar_of_lvalue false p in
+     "let "^l^" = "^le^" <- ("^le^" "^fstar_of_assop op^" "^fstar_of_expr true e^") in \n"^fstar_of_instrs r fin
+  | IAssign (Some(LGet(LVar v,`Slice (e1,e2)) as p,`Plain),(e,t)) :: r ->
      let l,le = fstar_of_lvalue false p in
      "let "^l^" = update_"^le^" "^fstar_of_expr true e^" in \n"^fstar_of_instrs r fin
-  | IAssign (Some(LGet(LVar v,sl) as p,op),(e,t)) :: r ->
-     let l,le = fstar_of_lvalue false p in
-     "let "^l^" = update_"^le^" ("^le^" "^fstar_of_assop op^" "^fstar_of_expr true e^") in \n"^fstar_of_instrs r fin
   | IIf ((e,b),[],bo) as i :: r ->
      let lvs = IdentSet.elements (lvars [i]) in
      let tup = match lvs with [] -> "()" | [x] -> x | tl -> "("^String.concat "," tl^")" in
