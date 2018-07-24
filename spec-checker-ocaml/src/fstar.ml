@@ -43,7 +43,11 @@ let fstar_of_assop b =
   | `BOr -> "|."
   | `BXor -> "^."
   | `Plain -> ""
-            
+
+let paren b s =
+  if b then "("^s^")"
+  else s
+  
 let rec fstar_of_expr b e =
   match e with
   | EVar v -> Ident.to_string v 
@@ -52,21 +56,16 @@ let rec fstar_of_expr b e =
   | EUInt u -> Big_int.string_of_big_int u
   | EString s -> "\""^s^"\""
   | ETuple el -> "("^String.concat "," (List.map (fstar_of_expr false) el)^")"
-  | EArray el -> if b then "(createL ["^String.concat "; " (List.map (fstar_of_expr false) el)^"])"
-                 else "createL ["^String.concat "; " (List.map (fstar_of_expr false) el)^"]"
-  | ECall (i,[e]) when Ident.to_string i = "uint32" -> 
-		if b then "(u32 "^fstar_of_expr true e^")"
-		else "u32 "^fstar_of_expr true e
-  | ECall (i,el) -> 
-                if b then "("^Ident.to_string i^" "^(String.concat " " (List.map (fstar_of_expr true) el))^")" 
-		else Ident.to_string i^" "^(String.concat " " (List.map (fstar_of_expr true) el))
-  | EUniOp (u,e) -> fstar_of_uniop u ^ " " ^ (fstar_of_expr false e)
-  | EBinOp (b,(e1,e2)) -> fstar_of_expr true e1 ^ " " ^ fstar_of_binop b ^ " " ^ fstar_of_expr true e2
+  | EArray el -> paren b ("createL ["^String.concat "; " (List.map (fstar_of_expr false) el)^"]")
+  | ECall (i,[e]) when Ident.to_string i = "uint32" -> paren b ("u32 "^fstar_of_expr true e)
+  | ECall (i,el) -> paren b (Ident.to_string i^" "^(String.concat " " (List.map (fstar_of_expr true) el)))
+  | EUniOp (u,e) -> paren b (fstar_of_uniop u ^ " " ^ (fstar_of_expr false e))
+  | EBinOp (op,(e1,e2)) -> paren b (fstar_of_expr true e1 ^ " " ^ fstar_of_binop op ^ " " ^ fstar_of_expr true e2)
   | EEq (false,(e1,e2)) -> fstar_of_expr true e1 ^ " = " ^ fstar_of_expr true e2
   | EEq (true,(e1,e2)) -> fstar_of_expr true e1 ^ " <> " ^ fstar_of_expr true e2
   | EGet(e1,`One e2) -> (fstar_of_expr true e1)^".["^(fstar_of_expr false e2)^"]"
-  | EGet(e1,`Slice (e2,e3)) -> "slice "^(fstar_of_expr true e1)^" "^(fstar_of_expr true e2)^" "^(fstar_of_expr true e3)
-  | EFun(xl,e) -> "fun "^String.concat " " (List.map Ident.to_string xl)^" -> "^fstar_of_expr false e
+  | EGet(e1,`Slice (e2,e3)) -> paren b ("slice "^(fstar_of_expr true e1)^" "^(fstar_of_expr true e2)^" "^(fstar_of_expr true e3))
+  | EFun(xl,e) -> "(fun "^String.concat " " (List.map Ident.to_string xl)^" -> "^fstar_of_expr false e^")"
   | _ -> ("not an f* expr:")
 
 let rec fstar_of_lvalue b e =
