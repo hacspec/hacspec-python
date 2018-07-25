@@ -16,6 +16,8 @@ module Option : sig
   include module type of BatOption
 
   val split : ('a * 'b) option -> 'a option * 'b option
+
+  val to_list : 'a option -> 'a list
 end = struct
   include BatOption
 
@@ -23,6 +25,9 @@ end = struct
     match xy with
     | None -> None, None
     | Some (x, y) -> Some x, Some y
+
+  let to_list (x : 'a option) =
+    match x with None -> [] | Some x -> [x]
 end
 
 (* -------------------------------------------------------------------- *)

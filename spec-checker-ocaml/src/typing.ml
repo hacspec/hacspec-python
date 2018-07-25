@@ -51,7 +51,7 @@ let stdlib = [
 
   ]
 
-
+(* -------------------------------------------------------------------- *)
 module StdLib : sig
   module Array : sig
     val copy          : ident
@@ -334,6 +334,7 @@ type tyerror =
   | InvalidArgCount
   | InvalidTypeCtor    of symbol
   | InvalidType        of type_ * etype list
+  | InvalidLValueExpr
 
 (* -------------------------------------------------------------------- *)
 let pp_tyerror fmt (error : tyerror) =
@@ -392,6 +393,9 @@ let pp_tyerror fmt (error : tyerror) =
 
   | InvalidType _ ->
       Format.fprintf fmt "this expression has an invalid type"
+
+  | InvalidLValueExpr ->
+      Format.fprintf fmt "invalid lvalue expression"
 
 (* -------------------------------------------------------------------- *)
 exception TyError of (Location.t * env * tyerror)
@@ -498,30 +502,34 @@ and tt_cint (env : env) (e : pexpr) =
 and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
   let e, ety =
     match unloc pe with
-    | PLVar ((nm, x) as nmx) -> begin
+    | PEVar ((nm, x) as nmx) -> begin
         let senv = tt_module env nm in
 
         match Env.Vars.get senv (unloc x) with
         | None -> error ~loc:(loc pe) env (UnknownVar (qunloc nmx))
         | Some x -> (LVar x.Env.vname, x.Env.vrawty)
       end
-    | PLTuple ([]) ->
-        (LTuple[], TUnit)
-    | PLTuple ([pe]) ->
+
+    | PETuple ([], _) ->
+        (LTuple [], TUnit)
+
+    | PETuple ([pe], _) ->
         tt_lvalue env pe
-    | PLTuple (pes) ->
-        let es, tys =
-          List.split (List.map (tt_lvalue env) pes)
-        in (LTuple es, TTuple tys) 
-    | PLGet (pl,ps) ->
+
+    | PETuple (pes, _) ->
+        let es, tys = List.split (List.map (tt_lvalue env) pes) in
+        (LTuple es, TTuple tys) 
+
+    | PEGet (pl, ps) ->
         let l,t = tt_lvalue ~cty:(`Approx PArray) env pl in   
-        let s = tt_slice env ps in
-        let ty =
-         match s with
-         | `One   _ -> Type.as_array t
-         | `Slice _ -> t
-        in (LGet(l,s), ty)
+        let s   = tt_slice env ps in
+        let ty  = match s with `One _ -> Type.as_array t | `Slice _ -> t in
+        (LGet (l, s), ty)
+
+    | _ ->
+        error ~loc:pe.pl_loc env InvalidLValueExpr
   in
+
   let check_ty = check_ty env in
 
   let check_ty_compat ~loc ~src ~dst =
@@ -541,7 +549,8 @@ and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
     cty;
 
   (e, ety)
-  
+
+(* -------------------------------------------------------------------- *)
 and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
   let check_ty = check_ty env in
 
@@ -833,23 +842,22 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
   | PSPass ->
       (env, [])
 
-  | PSVarDecl _ ->
+  | PSVarDecl (_, None) ->
       (env, []) 
-      (* KB: Being a bit more liberal on var decl placement.
-	 was: error ~loc:(loc i) env MisplacedVarDecl *)
+
+  | PSVarDecl ((pi, pity), Some e) ->
+     let e, te = tt_expr env e in 
+     let l, tl =
+       (match Env.Vars.get env (unloc pi) with
+        | None -> error ~loc:(loc pi) env (UnknownVar ([], unloc pi))
+        | Some x -> (LVar x.Env.vname, x.Env.vrawty))
+
+     in (env, [IAssign (Some (l, `Plain), (e, te))])
 
   | PSAssign (pv, pop, e) ->
-     let e,t = tt_expr env e in 
-     let l,tt = tt_lvalue env pv in
-     (env, [IAssign(Some(l,pop),(e,t))])
-  | PSDeclAssign (pi, pop, e) ->
-     let e,t = tt_expr env e in 
-     let senv = tt_module env [] in
-     let l,tt =
-       (match Env.Vars.get senv (unloc pi) with
-        | None -> error ~loc:(loc pi) env (UnknownVar ([],unloc pi))
-        | Some x -> (LVar x.Env.vname, x.Env.vrawty)) in
-     (env, [IAssign(Some(l,`Plain),(e,t))])
+     let e, te = tt_expr env e in 
+     let l, tl = tt_lvalue env pv in
+     (env, [IAssign (Some (l, pop), (e, te))])
 
   | PSReturn None ->
       if Option.is_some rty then
@@ -983,14 +991,13 @@ and tt_vardecl
 and tt_procdef
   (env : env) (((f, fty), args, body) : pprocdef) : env * env procdef
 =
-  let lv, body =
-    let rec aux lv body =
-      match body with
-      | { pl_data = PSVarDecl xty } :: body -> aux (xty :: lv) body
-      | { pl_data = PSDeclAssign (x,t,_) } :: body -> aux ((x,t) :: lv) body
-      | h::t -> aux lv t
-      | [] -> List.rev lv
-    in aux [] body, body in
+  let lv =
+    let rec aux lv instr =
+      match unloc instr with
+      | PSVarDecl (xty, _) -> xty :: lv
+      | PSDef _ -> lv           (* FIXME *)
+      | _ -> AstUtils.pifold aux lv instr
+    in AstUtils.psfold aux [] body in
 
   let fty  = tt_type env fty in
   let args = List.map (fun (x, xty) -> (unloc x, tt_type env xty)) args in

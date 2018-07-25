@@ -181,11 +181,12 @@ type instr =
   | IFor    of (ident * range * block) * block option
 
 and block  = instr list
-and lvalue =
-  | LVar of ident
-  | LTuple of lvalue list
-  | LGet of lvalue * slice
 and range  = expr option * expr
+
+and lvalue =
+  | LVar   of ident
+  | LTuple of lvalue list
+  | LGet   of lvalue * slice
 
 (* -------------------------------------------------------------------- *)
 type tydecl  = { tyd_name : ident; tyd_body : type_; }

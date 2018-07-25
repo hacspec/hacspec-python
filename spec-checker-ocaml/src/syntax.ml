@@ -66,22 +66,16 @@ and potyident = pident * ptype option
 type pinstr_r =
   | PSFail    of pexpr
   | PSPass
-  | PSVarDecl of ptyident
+  | PSVarDecl of ptyident * pexpr option
   | PSReturn  of pexpr option
   | PSExpr    of pexpr
-  | PSAssign  of (plvalue * passop * pexpr)
-  | PSDeclAssign  of (pident * ptype * pexpr)
+  | PSAssign  of (pexpr * passop * pexpr)
   | PSIf      of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
   | PSWhile   of (pexpr * pstmt) * pstmt option
   | PSFor     of (potyident * prange * pstmt) * pstmt option
   | PSDef     of pprocdef
 
-and plvalue_r  =
-  | PLVar of pqident
-  | PLTuple of plvalue list
-  | PLGet of plvalue * pslice
-
-and plvalue = plvalue_r located
+and plvalue  = pexpr
 and prange   = pexpr option * pexpr
 and pstmt    = pinstr list
 and pinstr   = pinstr_r located

@@ -166,7 +166,7 @@ slice:
 | e1=expr COLON e2=expr
     { (`Slice (e1, e2) :> pslice) }
 
-
+(*
 (* -------------------------------------------------------------------- *)
 slvalue_r:
 | x=qident
@@ -188,6 +188,15 @@ slvalue_r:
 
 | es=plist2(slvalue, COMMA)
     { PLTuple (es) }
+
+(* -------------------------------------------------------------------- *)
+%inline slvalue:
+| e=loc(slvalue_r) { e }
+
+(* -------------------------------------------------------------------- *)
+%inline lvalue:
+| e=loc(lvalue_r) { e }
+ *)
 
 (* -------------------------------------------------------------------- *)
 sexpr_r:
@@ -245,13 +254,6 @@ sexpr_r:
     { PETuple (es, false) }
 
 (* -------------------------------------------------------------------- *)
-%inline slvalue:
-| e=loc(slvalue_r) { e }
-(* -------------------------------------------------------------------- *)
-%inline lvalue:
-| e=loc(lvalue_r) { e }
-
-(* -------------------------------------------------------------------- *)
 %inline sexpr:
 | e=loc(sexpr_r) { e }
 
@@ -274,14 +276,11 @@ sinstr_r:
 | RETURN e=expr?
     { PSReturn e }
 
-| x=ident COLON ty=expr
-    { PSVarDecl (x, ty) }
+| x=ident COLON ty=expr e=option(prefix(EQ, expr))
+    { PSVarDecl ((x, ty), e) }
 
-| lv=lvalue o=assop e=expr
+| lv=expr o=assop e=expr
     { PSAssign (lv, o, e) }
-
-| x=ident COLON ty=expr EQ e=expr
-    { PSDeclAssign (x, ty, e) }
 
 | e=expr
     { PSExpr e }
