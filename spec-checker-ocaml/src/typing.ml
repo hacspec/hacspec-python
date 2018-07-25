@@ -453,17 +453,7 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let sz = tt_cint env sz in
       TArray (TWord `U8, Some sz)
 
-  | "refine", [ty; pe] ->
-     (match unloc pe with
-      | PEFun([x],pe) ->
-      let x = unloc x in
-      let ty = tt_type env ty in
-      let env',name = Env.Vars.bind env (x,ty) in
-      let e,t = tt_expr ~cty:(`Exact TBool) env' pe in
-      TRefined (ty, EFun([name],e))      (* FIXME: refinment *)
-     | _ -> error ~loc:(loc pe) env InvalidTypeExpr)
-
-  | "refine_t", [ty; pe] ->
+  | ("refine_t" | "refine"), [ty; pe] ->
      (match unloc pe with
       | PEFun([x],pe) ->
       let x = unloc x in
