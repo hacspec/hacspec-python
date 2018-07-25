@@ -123,9 +123,20 @@ let bytes_from_nat_le l n = nat_to_bytes_le l n
 let bytes_to_uint128_le #l (b:lbytes l) = uint_from_bytes_le #U128 b
 let bytes_from_uint128_le n = uint_to_bytes_le #U128 n
 
-assume val array_split_blocks: #a:Type -> s:seq a -> bs:size_nat{bs > 0} -> (bl:lseq (lseq a bs) (length s / bs) * l:lseq a (length s % bs))
-assume val array_concat_blocks: #a:Type -> #n:size_nat -> #bs:size_nat{bs > 0} -> bl:lseq (lseq a bs) n -> l:seq a -> r:lseq a (n `op_Multiply` bs + length l)
-
+val array_split_blocks: #a:Type -> s:seq a -> bs:size_nat{bs > 0} -> (bl:lseq (lseq a bs) (length s / bs) * l:lseq a (length s % bs))
+let array_split_blocks #a s bs = 
+    let nblocks = length s / bs in
+    let rem = length s % bs in
+    let blocks = create nblocks (create bs (u8 0)) in
+    repeati nblocks (fun i blocks -> blocks.[i] <- sub (to_lseq s) (i `op_Multiply` bs) bs) blocks,
+    sub (to_lseq s) (length s - rem) rem 
+    
+val array_concat_blocks: #a:Type -> #n:size_nat -> #bs:size_nat{bs > 0} -> bl:lseq (lseq a bs) n -> l:seq a -> r:lseq a (n `op_Multiply` bs + length l)
+let array_concat_blocks #a #n #bs bl l = 
+    let msg = create (n `op_Multiply` bs + length l) (u8 0) in
+    let msg = repeati n (fun i msg -> update_sub msg (i `op_Multiply` bs) bs bl.[i]) msg in
+    update_sub msg (n `op_Multiply` bs) (length l) l
+    
 type pfelem_t (p:nat) = x:nat{x < p}
 let pfelem (p:pos) (x:nat): pfelem_t p = x % p
 let pfelem_to_int x = x
