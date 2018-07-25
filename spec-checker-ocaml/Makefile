@@ -15,7 +15,8 @@ OCAMLBUILD_OPTS += $(OCAMLBUILD_EXTRA)
 OCAMLBUILD      := $(OCAMLBUILD_BIN) $(OCAMLBUILD_OPTS)
 
 # --------------------------------------------------------------------
-MAIN    := to_fstar
+CHECKER := checker
+FSTAR   := to_fstar
 NAME    := hacspec
 INSTALL := scripts/install-sh
 DESTDIR ?= /usr/local
@@ -27,23 +28,26 @@ DESTDIR ?= /usr/local
 all: build
 	@true
 
-build: native
+build: checker.native to_fstar.native
 
-%.fst: ../specs/%.py
-	./main.native $< > $*_pre.fst
-	../../FStar/bin/fstar.exe --indent $*_pre.fst > $*.fst
+checker.byte:
+	$(OCAMLBUILD) $@
 
-byte:
-	$(OCAMLBUILD) $(MAIN).$@
+checker.native:
+	$(OCAMLBUILD) $@
 
-native:
-	$(OCAMLBUILD) $(MAIN).$@
-
-install: native
-	$(INSTALL) main.native $(DESTDIR)/bin/$(NAME)
+install: checker.native
+	$(INSTALL) checker.native $(DESTDIR)/bin/$(NAME)
 
 uninstall:
 	rm -f $(DESTDIR)/$(NAME)
+
+to_fstar.native:
+	$(OCAMLBUILD) $@
+
+%.fst: to_fstar.native ../specs/%.py
+	./to_fstar.native ../specs/$*.py > $*_pre.fst
+	../../FStar/bin/fstar.exe --indent $*_pre.fst > $*.fst
 
 clean:
 	$(OCAMLBUILD) -clean

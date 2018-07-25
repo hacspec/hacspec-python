@@ -16,7 +16,7 @@ let main () =
       let stream = P.from_file filename in
       let past   = P.parse_spec stream in
       T.tt_program past
-    in Format.printf "(* Generated from hacspec module %s *)\n%s" filename (Fstar.fstar_of_program modulename p)
+    in Format.printf "Parsed and Type-checked hacspec module %s \n" modulename
   with
   | e ->
       Format.eprintf "%s%!" (Pexception.tostring e);
