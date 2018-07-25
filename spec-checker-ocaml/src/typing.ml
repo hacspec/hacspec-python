@@ -518,9 +518,15 @@ and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
         (LTuple es, TTuple tys) 
 
     | PEGet (pl, ps) ->
-        let l,t = tt_lvalue ~cty:(`Approx PArray) env pl in   
+        let l,t = tt_lvalue env pl in   
         let s   = tt_slice env ps in
-        let ty  = match s with `One _ -> Type.as_array t | `Slice _ -> t in
+        let ty =
+          match t,s with
+          | TWord _, `One _ -> TWord `U1
+          | TWord _, `Slice _ -> TWord `UN
+          | TArray (_,_), `One _ -> Type.as_array t
+          | TArray (_,_), `Slice _ -> t
+        in
         (LGet (l, s), ty)
 
     | _ ->
@@ -670,112 +676,6 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let args,tys = List.split argsty in
         (ECall (target, args), res tys)
 
-(*
-    | PECall (nmf, [a;b]) when qunloc nmf = 
-        tt_expr ~cty:(`Approx PInt) env a
-
-    | PECall (nmf, [a]) when qunloc nmf = 
-        let exp,res,target = List.assoc (["array"],"copy") stdlib in
-        let a,aty = 
-           (match exp with
-    	    | [Some t] -> tt_expr ~cty:t env a 
-            | _ -> tt_expr env a) in
-        (ECall (target, [a]), res [aty])
-
-    | PECall (nmf, args)  when qunloc nmf = (["array"], "create") ->
-        let exp,res,target = List.assoc (["array"],"create") stdlib in
-     
-        let argsty =
-          List.map2 (fun e ty -> 
-                      match ty with
-                      | Some t -> tt_expr ~cty:t env e
-		      | None -> tt_expr env e)
-          args exp in
-        let args,tys = List.split argsty in
-        (ECall (target, args), res tys)
-
-
-    | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
-        let a, aty = tt_expr ~cty:(`Approx PArray) env a in
-        (ECall (StdLib.Array.copy, [a]), aty)
-    | PECall (nmf, [a]) when qunloc nmf = (["array"], "length") ->
-        let a, _ = tt_expr ~cty:(`Approx PArray) env a in
-        (ECall (StdLib.Array.length, [a]), TInt)
-
-    | PECall (nmf, [a; s]) when qunloc nmf = (["array"], "split_blocks") ->
-        let b = TArray (TWord `U8, None) in
-        let a, _ = tt_expr ~cty:(`Exact b) env a in
-        let s, _ = tt_expr ~cty:(`Exact TInt) env s in
-        (ECall (StdLib.Array.split_blocks, [a; s]),
-
-    | PECall (nmf, [a1; a2]) when qunloc nmf = (["array"], "concat_blocks") ->
-        let b = TArray (TWord `U8, None) in
-        let a1, _ = tt_expr ~cty:(`Exact (TArray (b, None))) env a1 in
-        let a2, _ = tt_expr ~cty:(`Exact b) env a2 in
-        (ECall (StdLib.Array.concat_blocks, [a1; a2]), b)
-         TTuple [TArray (b, None); b])
-
-    | PECall (nmf, [a; i]) when qunloc nmf = (["uintn"], "rotate_left") ->
-        let a, aty = tt_expr ~cty:(`Approx PWord) env a in
-        let i = fst (tt_expr ~cty:(`Exact TInt) env i) in
-        (ECall (StdLib.UIntn.rotate_left, [a; i]), aty)
-
-    | PECall (nmf, [a; i]) when qunloc nmf = (["uintn"], "rotate_right") ->
-        let a, aty = tt_expr ~cty:(`Approx PWord) env a in
-        let i = fst (tt_expr ~cty:(`Exact TInt) env i) in
-        (ECall (StdLib.UIntn.rotate_right, [a; i]), aty)
-  
-
-    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "to_uint32s_le") ->
-        let b, bty = tt_expr env pb in
-
-        begin match bty with
-        | TArray (TWord `U8, _) -> ()
-        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
-
-        (ECall (StdLib.Bytes.to_uint32s_le, [b]), TArray (TWord `U32, None))
-
-    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "from_uint32s_le") ->
-        let b, bty = tt_expr env pb in
-
-        begin match bty with
-        | TArray (TWord `U32, _) -> ()
-        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
-
-        (* FIXME *)
-        (ECall (StdLib.Bytes.from_uint32s_le, [b]), TArray (TWord `U8, None))
-
-
-    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "to_nat_le") ->
-        let b, bty = tt_expr env pb in
-
-        begin match bty with
-        | TArray (TWord `U8, _) -> ()
-        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
-
-        (ECall (StdLib.Bytes.to_nat_le, [b]), TInt)
-
-    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "from_nat_le") ->
-        let b, bty = tt_expr env pb in
-
-        begin match bty with
-        | TInt -> ()
-        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
-
-        (* FIXME *)
-        (ECall (StdLib.Bytes.from_nat_le, [b]), TArray (TWord `U8, None))
-
-    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "copy") ->
-        let b, bty = tt_expr env pb in
-
-        begin match bty with
-        | TArray (TWord `U8, _) -> ()
-        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
-
-        (* FIXME *)
-        (ECall (StdLib.Bytes.copy, [b]), TArray (TWord `U8, None))
-
- *)
     | PECall ((nm, f) as nmf, args) ->
         let senv = tt_module env nm in
 
@@ -795,15 +695,16 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         (ECall (f.Env.pname, args), Type.strip f.Env.pret)
 
     | PEGet (pe, ps) ->
-        let e, ety = tt_expr ~cty:(`Approx PArray) env pe in
-        let s = tt_slice env ps in
+        let e,t = tt_expr env pe in   
+        let s   = tt_slice env ps in
         let ty =
-         match s with
-         | `One   _ -> Type.as_array ety
-         | `Slice _ -> ety
-
-        in (EGet (e, s), ty)
-
+          match t,s with
+          | TWord _, `One _ -> TWord `U1
+          | TWord _, `Slice _ -> TWord `UN
+          | TArray (_,_), `One _ -> Type.as_array t
+          | TArray (_,_), `Slice _ -> t
+        in
+        (EGet (e, s), ty)
   in
 
   Option.may (fun (cty : etype) ->

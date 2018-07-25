@@ -22,7 +22,7 @@ INSTALL := scripts/install-sh
 DESTDIR ?= /usr/local
 
 # --------------------------------------------------------------------
-.PHONY: all build native byte install uninstall clean
+.PHONY: all build checker.native checker.byte install uninstall clean to_fstar.native
 .PHONY: %.ml %.mli %.inferred.mli
 
 all: build
