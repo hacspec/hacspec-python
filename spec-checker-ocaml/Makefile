@@ -15,7 +15,7 @@ OCAMLBUILD_OPTS += $(OCAMLBUILD_EXTRA)
 OCAMLBUILD      := $(OCAMLBUILD_BIN) $(OCAMLBUILD_OPTS)
 
 # --------------------------------------------------------------------
-MAIN    := main
+MAIN    := to_fstar
 NAME    := hacspec
 INSTALL := scripts/install-sh
 DESTDIR ?= /usr/local
@@ -28,6 +28,10 @@ all: build
 	@true
 
 build: native
+
+%.fst: ../specs/%.py
+	./main.native $< > $*_pre.fst
+	../../FStar/bin/fstar.exe --indent $*_pre.fst > $*.fst
 
 byte:
 	$(OCAMLBUILD) $(MAIN).$@
@@ -43,4 +47,4 @@ uninstall:
 
 clean:
 	$(OCAMLBUILD) -clean
-	rm -f $(MAIN).native $(MAIN).byte
+	rm -f $(MAIN).native $(MAIN).byte *.fst

@@ -7,7 +7,10 @@ true : bin_annot
 
 # --------------------------------------------------------------------
 <src> : include
+<fstar-compiler> : include
 
 # --------------------------------------------------------------------
 <src/*.{ml,mli}>      : package(batteries,menhirLib)
 <src/*.{native,byte}> : package(batteries,menhirLib)
+<fstar-compiler/*.{ml,mli}>      : package(batteries,menhirLib)
+<fstar-compiler/*.{native,byte}> : package(batteries,menhirLib)

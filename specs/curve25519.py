@@ -3,22 +3,22 @@
 from lib.speclib import *
 
 # Define prime field
-p25519 = (2 ** 255) - 19
+p25519 : nat = (2 ** 255) - 19
 
 felem_t = natmod_t(p25519)
 @typechecked
 def to_felem(x: nat_t) -> felem_t:
     return natmod(x,p25519)
-zero = to_felem(0)
-one = to_felem(1)
+zero : felem_t = to_felem(0)
+one  : felem_t = to_felem(1)
 @typechecked
 def finv(x: felem_t) -> felem_t:
     return x ** (p25519 - 2)
 
-point_t = tuple_t(felem_t, felem_t)  # projective coordinates
+point_t  = tuple_t(felem_t, felem_t)  # projective coordinates
 scalar_t = uintn_t(256)
 @typechecked
-def to_scalar(i:nat_t) -> uintn_t:
+def to_scalar(i:nat_t) -> uintn_t(256):
     return uintn(i,256)
 serialized_point_t = bytes_t(32)
 serialized_scalar_t = bytes_t(32)
@@ -27,13 +27,13 @@ g25519: point_t = (9, 1)
 
 
 @typechecked
-def point(a: int, b: int) -> point_t:
-    return to_felem(nat(a)), to_felem(nat(b))
+def point(a: nat_t, b: nat_t) -> point_t:
+    return to_felem(a), to_felem(b)
 
 
 @typechecked
 def decodeScalar(s: serialized_scalar_t) -> scalar_t:
-    k = bytes.copy(s)
+    k : serialized_scalar_t = bytes.copy(s)
     k[0] &= uint8(248)
     k[31] &= uint8(127)
     k[31] |= uint8(64)
@@ -42,30 +42,39 @@ def decodeScalar(s: serialized_scalar_t) -> scalar_t:
 
 @typechecked
 def decodePoint(u: serialized_point_t) -> point_t:
-    b = bytes.to_nat_le(u)
-    return point((b & ((1 << 255) - 1)) % p25519, 1)
+    b : nat_t = bytes.to_nat_le(u)
+    return point((b % (2 ** 255)) % p25519, 1)
 
 
 @typechecked
 def encodePoint(p: point_t) -> serialized_point_t:
-    b = natmod.to_int(p[0] * finv(p[1]))
+    x:felem_t
+    y:felem_t
+    (x,y) = p
+    b : nat_t = natmod.to_int(x * finv(y))
     return bytes.from_nat_le(b, 32)
 
 
 @typechecked
-def point_add_and_double(q: point_t, nq: point_t, nqp1: point_t) -> tuple2(point_t, point_t):
-    (x_1, _) = q
+def point_add_and_double(q: point_t, nq: point_t, nqp1: point_t) -> tuple_t(point_t, point_t):
+    x_1 : felem_t
+    z_1 : felem_t
+    x_2 : felem_t
+    z_2 : felem_t
+    x_3 : felem_t
+    z_3 : felem_t
+    (x_1, z_1) = q
     (x_2, z_2) = nq
     (x_3, z_3) = nqp1
-    a = x_2 + z_2
-    aa = a ** 2
-    b = x_2 - z_2
-    bb = b * b
-    e = aa - bb
-    c = x_3 + z_3
-    d = x_3 - z_3
-    da = d * a
-    cb = c * b
+    a  : felem_t = x_2 + z_2
+    aa : felem_t = a ** 2
+    b  : felem_t = x_2 - z_2
+    bb : felem_t = b * b
+    e  : felem_t = aa - bb
+    c  : felem_t = x_3 + z_3
+    d  : felem_t = x_3 - z_3
+    da : felem_t = d * a
+    cb : felem_t = c * b
     x_3 = (da + cb) ** 2
     z_3 = x_1 * ((da - cb) ** 2)
     x_2 = aa * bb

@@ -11,7 +11,7 @@ let qunloc ((nm, x) : pqident) : qsymbol =
 (* -------------------------------------------------------------------- *)
 type ctype =
   | PUnit | PBool | PInt   | PString
-  | PBit  | PWord | PTuple | PArray
+  | PWord | PTuple | PArray
 
 type etype = [`Exact of type_ | `Approx of ctype]
 
@@ -20,34 +20,35 @@ let byte_t = TWord `U8
 let bytes_t = TArray (TWord `U8, None)
             
 let stdlib = [
-  (([],"array"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array.copy"));
-  ((["array"],"copy"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array.copy"));
-  ((["array"],"create"), ([Some (`Exact TInt); None], (fun [aty;bty] -> TArray(bty, None)), Ident.make "array.create"));
-  ((["array"],"length"), ([Some (`Approx PArray)], (fun [aty] -> TInt), Ident.make "array.length"));
-  ((["array"],"split_blocks"), ([Some (`Approx PArray);Some(`Exact TInt)], (fun [aty;bty] -> TTuple [TArray(aty,None);aty]), Ident.make "array.split_blocks"));
-  ((["array"],"concat_blocks"), ([Some (`Approx PArray);Some(`Approx PArray)], (fun [TArray(aty,None);bty] -> aty), Ident.make "array.concat_blocks"));
+  (([],"array"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array"));
+  ((["array"],"copy"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array_copy"));
+  ((["array"],"create"), ([Some (`Exact TInt); None], (fun [aty;bty] -> TArray(bty, None)), Ident.make "array_create"));
+  ((["array"],"length"), ([Some (`Approx PArray)], (fun [aty] -> TInt), Ident.make "array_length"));
+  ((["array"],"split_blocks"), ([Some (`Approx PArray);Some(`Exact TInt)], (fun [aty;bty] -> TTuple [TArray(aty,None);aty]), Ident.make "array_split_blocks"));
+  ((["array"],"concat_blocks"), ([Some (`Approx PArray);Some(`Approx PArray)], (fun [TArray(aty,None);bty] -> aty), Ident.make "array_concat_blocks"));
 
-  (([],"bytes"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes.copy"));
-  ((["bytes"],"copy"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes.copy"));
-  ((["bytes"],"create"), ([Some (`Exact TInt); Some (`Exact byte_t)], (fun [aty;bty] -> bytes_t), Ident.make "bytes.create"));
-  ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fun [aty] -> TInt), Ident.make "bytes.length"));
-  ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Exact TInt)], (fun [aty;bty] -> TTuple [TArray(bytes_t,None);bytes_t]), Ident.make "bytes.split_blocks"));
-  ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)], (fun [TArray(aty,None);bty] -> aty), Ident.make "bytes.concat_blocks"));
-  ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TArray (TWord `U32,None)), Ident.make "bytes.to_uint32s_le"));
-  ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (TWord `U32,None)))], (fun [aty] -> bytes_t), Ident.make "bytes.from_uint32s_le"));
-  ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TInt), Ident.make "bytes.to_nat_le"));
-  ((["bytes"],"from_nat_le"), ([Some (`Exact TInt)], (fun [aty] -> bytes_t), Ident.make "bytes.from_nat_le"));
-  ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U128), Ident.make "bytes.to_uint128_le"));
-  ((["bytes"],"from_uint128_le"), ([Some (`Exact (TWord `U128))], (fun [aty] -> bytes_t), Ident.make "bytes.from_uint128_le"));
+  (([],"bytes"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes"));
+  ((["bytes"],"copy"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes_copy"));
+  ((["bytes"],"create"), ([Some (`Exact TInt); Some (`Exact byte_t)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_create"));
+  ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fun [aty] -> TInt), Ident.make "bytes_length"));
+  ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Exact TInt)], (fun [aty;bty] -> TTuple [TArray(bytes_t,None);bytes_t]), Ident.make "bytes_split_blocks"));
+  ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)], (fun [TArray(aty,None);bty] -> aty), Ident.make "bytes_concat_blocks"));
+  ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TArray (TWord `U32,None)), Ident.make "bytes_to_uint32s_le"));
+  ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (TWord `U32,None)))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint32s_le"));
+  ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TInt), Ident.make "bytes_to_nat_le"));
+  ((["bytes"],"from_nat_le"), ([Some (`Exact TInt); Some (`Exact TInt)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_from_nat_le"));
+  ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U128), Ident.make "bytes_to_uint128_le"));
+  ((["bytes"],"from_uint128_le"), ([Some (`Exact (TWord `U128))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint128_le"));
 
   (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt), Ident.make "natmod"));
-  ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fun [aty] -> TInt), Ident.make "natmod.to_nat"));
+  ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fun [aty] -> TInt), Ident.make "natmod_to_nat"));
+  ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fun [aty] -> TInt), Ident.make "natmod_to_int"));
   
-  ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> TInt), Ident.make "uintn.to_nat"));
-  ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn.rotate_left"));
-  ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn.rotate_right"));
-
-
+  (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN)), Ident.make "uintn"));
+  ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> TInt), Ident.make "uintn_to_nat"));
+  ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Exact TInt)], (fun [aty;bty] -> TWord `U1), Ident.make "uintn_get_bit"));
+  ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_left"));
+  ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_right"));
 
   ]
 
@@ -149,6 +150,8 @@ end = struct
     ("int"      , TInt       );
     ("nat"      , TInt       );
     ("string"   , TString    );
+    ("nat_t"    , TInt       );
+    ("bit_t"    , TWord `U1  );
     ("uint8_t"  , TWord `U8  );
     ("uint16_t" , TWord `U16 );
     ("uint32_t" , TWord `U32 );
@@ -158,6 +161,7 @@ end = struct
   ]
 
   let dprocs = [
+    ("bit"    , [TInt], TWord `U1  );
     ("uint8"  , [TInt], TWord `U8  );
     ("uint16" , [TInt], TWord `U16 );
     ("uint32" , [TInt], TWord `U32 );
@@ -208,8 +212,7 @@ end = struct
         | TUnit  , TUnit
         | TBool  , TBool
         | TInt   , TInt
-        | TString, TString
-        | TBit   , TBit    -> true
+        | TString, TString -> true
 
         | TWord sz1, TWord sz2  ->
             sz1 = sz2
@@ -251,7 +254,6 @@ end = struct
         | TBool     , PBool    -> true
         | TInt      , PInt     -> true
         | TString   , PString  -> true
-        | TBit      , PBit     -> true
         | TWord    _, PWord    -> true
         | TArray   _, PArray   -> true
         | TTuple   _, PTuple   -> true
@@ -430,11 +432,12 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let j = tt_cint env j in
       TRange (i, j)
 
-  | ("array_t" | "vlarray"), [ty] ->
-      TArray (tt_type env ty, None)
-
   | "natmod_t", [ty] ->
       TInt
+
+  | "uintn_t", [sz] ->
+      let sz = tt_cint env sz in
+      TWord (`UN)
 
   | "array_t", [ty; sz] ->
       let sz = tt_cint env sz in
@@ -448,16 +451,6 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
   | "bytes_t", [sz] ->
       let sz = tt_cint env sz in
       TArray (TWord `U8, Some sz)
-
-  | "refine", [ty; pe] ->
-     (match unloc pe with
-      | PEFun([x],pe) ->
-      let x = unloc x in
-      let ty = tt_type env ty in
-      let env',name = Env.Vars.bind env (x,ty) in
-      let e,t = tt_expr ~cty:(`Exact TBool) env' pe in
-      TRefined (ty, EFun([name],e))      (* FIXME: refinment *)
-     | _ -> error ~loc:(loc pe) env InvalidTypeExpr)
 
   | "refine_t", [ty; pe] ->
      (match unloc pe with
@@ -479,6 +472,10 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let ty2 = tt_type env ty2 in
       let ty3 = tt_type env ty3 in
       TTuple [ty1; ty2; ty3]
+
+  | "tuple_t", tyl ->
+      let tyl = List.map (fun t -> tt_type env t) tyl in
+      TTuple tyl
 
   | _, [] -> begin
       match Env.Types.get env (unloc x) with
@@ -653,13 +650,14 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
 
     | PECall (nmf, args) when List.mem_assoc (qunloc nmf) stdlib ->
         let exp,res,target = List.assoc (qunloc nmf) stdlib in
-     
+        (*        Format.printf "start PECall:%s\n" (snd (qunloc nmf)); *)
         let argsty =
           List.map2 (fun e ty -> 
                       match ty with
                       | Some t -> tt_expr ~cty:t env e
 		      | None -> tt_expr env e)
           args exp in
+        (*        Format.printf "done PECall:%s\n" (snd (qunloc nmf)); *)
         let args,tys = List.split argsty in
         (ECall (target, args), res tys)
 
@@ -780,10 +778,11 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         if List.length args <> List.length f.Env.psig then
           error ~loc:(loc pe) env InvalidArgCount;
 
+        (*        Format.printf "start PECall:%s\n" (snd (qunloc nmf)); *)
         let args =
           List.map2 (fun e ty -> fst (tt_expr ~cty:(`Exact ty) env e))
           args f.Env.psig in
-
+        (*        Format.printf "done PECall:%s\n" (snd (qunloc nmf)); *)
         (ECall (f.Env.pname, args), Type.strip f.Env.pret)
 
     | PEGet (pe, ps) ->

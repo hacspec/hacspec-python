@@ -76,8 +76,7 @@ def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
     block : block_t
     st = chacha20(k,counter,nonce)
     block = bytes.from_uint32s_le(st)
-    # If block is not cast to block_t, the type isn't checked!
-    return block_t(block)
+    return block
 
 # Many ways of extending this to CTR
 # This version: use first-order CTR function specific to Chacha20 with a loop
@@ -92,7 +91,7 @@ def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
 
 @typechecked
 def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
-    blocks   : vlarray(block_t)
+    blocks   : vlarray_t(block_t)
     last     : subblock_t
     ctr      : uint32_t
     keyblock : block_t

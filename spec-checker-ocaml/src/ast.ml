@@ -25,9 +25,9 @@ end
 type symbol  = string
 type qsymbol = (string list * string)
 type ident   = Ident.ident
-type wsize   = [`U8 | `U16 | `U32 | `U64 | `U128]
+type wsize   = [`U1 | `U8 | `U16 | `U32 | `U64 | `U128 | `UN]
 
-(* -------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------- *)
 module QSymbol : sig
   val to_string : qsymbol -> string
   val equal     : qsymbol -> qsymbol -> bool
@@ -52,7 +52,6 @@ type type_ =
   | TBool
   | TInt
   | TString
-  | TBit
   | TWord    of wsize
   | TTuple   of type_ list
   | TArray   of type_ * Big_int.big_int option
@@ -89,7 +88,6 @@ let rec string_of_type (ty : type_) =
   | TBool    -> "bool"
   | TInt     -> "int"
   | TString  -> "string"
-  | TBit     -> "bit"
   | TWord _  -> "word[.]"
 
   | TTuple tys ->
@@ -123,7 +121,6 @@ module Type : sig
   val is_bool    : type_ -> bool
   val is_int     : type_ -> bool
   val is_string  : type_ -> bool
-  val is_bit     : type_ -> bool
   val is_word    : type_ -> bool
   val is_tuple   : type_ -> bool
   val is_array   : type_ -> bool
@@ -142,7 +139,6 @@ end = struct
   let is_bool    = function TBool      -> true | _ -> false
   let is_int     = function TInt       -> true | _ -> false
   let is_string  = function TString    -> true | _ -> false
-  let is_bit     = function TBit       -> true | _ -> false
   let is_word    = function TWord    _ -> true | _ -> false
   let is_tuple   = function TTuple   _ -> true | _ -> false
   let is_array   = function TArray   _ -> true | _ -> false
@@ -159,7 +155,6 @@ end = struct
     | TBool           -> TBool
     | TInt            -> TInt
     | TString         -> TString
-    | TBit            -> TBit
     | TWord    ws     -> TWord ws
     | TTuple   t      -> TTuple (List.map strip t)
     | TArray   (t, _) -> TArray (strip t, None)
