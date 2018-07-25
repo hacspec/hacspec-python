@@ -25,7 +25,7 @@ end
 type symbol  = string
 type qsymbol = (string list * string)
 type ident   = Ident.ident
-type wsize   = [`U1 | `U8 | `U16 | `U32 | `U64 | `U128 | `UN]
+type wsize   = [`U1 | `U8 | `U16 | `U32 | `U64 | `U128 | `UN of Big_int.big_int]
 
 (* ------------------------------------------------------------------- *)
 module QSymbol : sig
@@ -46,11 +46,12 @@ type assop = Syntax.passop
 (* -------------------------------------------------------------------- *)
 type refined = private unit
 type raw     = private unit
-
+                   
+                     
 type type_ =
   | TUnit
   | TBool
-  | TInt
+  | TInt     of int_sub
   | TString
   | TWord    of wsize
   | TTuple   of type_ list
@@ -59,6 +60,8 @@ type type_ =
   | TRefined of type_ * expr
   | TNamed   of qsymbol
 
+and int_sub = [`Int | `Nat | `Pos | `Natm of expr]
+              
 (* -------------------------------------------------------------------- *)
 and expr =
   | EVar    of ident
@@ -86,7 +89,7 @@ let rec string_of_type (ty : type_) =
   match ty with
   | TUnit    -> "unit"
   | TBool    -> "bool"
-  | TInt     -> "int"
+  | TInt _   -> "int[.]"
   | TString  -> "string"
   | TWord _  -> "word[.]"
 
@@ -137,7 +140,7 @@ end = struct
 
   let is_unit    = function TUnit      -> true | _ -> false
   let is_bool    = function TBool      -> true | _ -> false
-  let is_int     = function TInt       -> true | _ -> false
+  let is_int     = function TInt _     -> true | _ -> false
   let is_string  = function TString    -> true | _ -> false
   let is_word    = function TWord    _ -> true | _ -> false
   let is_tuple   = function TTuple   _ -> true | _ -> false
@@ -153,13 +156,13 @@ end = struct
     match ty with
     | TUnit           -> TUnit
     | TBool           -> TBool
-    | TInt            -> TInt
+    | TInt x          -> TInt `Int
     | TString         -> TString
     | TWord    ws     -> TWord ws
     | TTuple   t      -> TTuple (List.map strip t)
     | TArray   (t, _) -> TArray (strip t, None)
     | TRefined (t, _) -> strip t  
-    | TRange   _      -> TInt
+    | TRange   _      -> TInt `Int
     | TNamed   _      -> ty
 
   let compat (ty1 : type_) (ty2 : type_) =

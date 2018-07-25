@@ -85,7 +85,10 @@ let rec fstar_of_type b ty =
   match ty with
   | TUnit    -> "unit"
   | TBool    -> "bool"
-  | TInt     -> "int"
+  | TInt `Int  -> "int"
+  | TInt `Nat  -> "nat"
+  | TInt `Pos  -> "pos"
+  | TInt (`Natm x)  -> "natmod_t "^ (fstar_of_expr true x)
   | TString  -> "string"
   | TWord `U1  -> "bit_t"
   | TWord `U8  -> "uint8_t"
@@ -93,7 +96,7 @@ let rec fstar_of_type b ty =
   | TWord `U32  -> "uint32_t"
   | TWord `U64  -> "uint64_t"
   | TWord `U128  -> "uint128_t"
-  | TWord `UN    -> "uintn_t"
+  | TWord (`UN x)    -> "uintn_t "^(Big_int.string_of_big_int x)
 
   | TTuple tys ->
         "("^(String.concat ", " (List.map (fstar_of_type false) tys))^")"

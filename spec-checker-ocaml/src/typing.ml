@@ -20,36 +20,39 @@ let byte_t = TWord `U8
 let bytes_t = TArray (TWord `U8, None)
 let get_bit = Ident.make "uintn_get_bit"
 let get_bits = Ident.make "uintn_get_bits"
-            
+let int_t = TInt `Int
+let nat_t = TInt `Nat
+let pos_t = TInt `Pos
+          
 let stdlib = [
   (([],"array"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array"));
   ((["array"],"copy"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array_copy"));
-  ((["array"],"create"), ([Some (`Exact TInt); None], (fun [aty;bty] -> TArray(bty, None)), Ident.make "array_create"));
-  ((["array"],"length"), ([Some (`Approx PArray)], (fun [aty] -> TInt), Ident.make "array_length"));
-  ((["array"],"split_blocks"), ([Some (`Approx PArray);Some(`Exact TInt)], (fun [aty;bty] -> TTuple [TArray(aty,None);aty]), Ident.make "array_split_blocks"));
+  ((["array"],"create"), ([Some (`Approx PInt); None], (fun [aty;bty] -> TArray(bty, None)), Ident.make "array_create"));
+  ((["array"],"length"), ([Some (`Approx PArray)], (fun [aty] -> nat_t), Ident.make "array_length"));
+  ((["array"],"split_blocks"), ([Some (`Approx PArray);Some(`Exact int_t)], (fun [aty;bty] -> TTuple [TArray(aty,None);aty]), Ident.make "array_split_blocks"));
   ((["array"],"concat_blocks"), ([Some (`Approx PArray);Some(`Approx PArray)], (fun [TArray(aty,None);bty] -> aty), Ident.make "array_concat_blocks"));
 
   (([],"bytes"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes"));
   ((["bytes"],"copy"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes_copy"));
-  ((["bytes"],"create"), ([Some (`Exact TInt); Some (`Exact byte_t)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_create"));
-  ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fun [aty] -> TInt), Ident.make "bytes_length"));
-  ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Exact TInt)], (fun [aty;bty] -> TTuple [TArray(bytes_t,None);bytes_t]), Ident.make "bytes_split_blocks"));
+  ((["bytes"],"create"), ([Some (`Approx PInt); Some (`Exact byte_t)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_create"));
+  ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fun [aty] -> nat_t), Ident.make "bytes_length"));
+  ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Approx PInt)], (fun [aty;bty] -> TTuple [TArray(bytes_t,None);bytes_t]), Ident.make "bytes_split_blocks"));
   ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)], (fun [TArray(aty,None);bty] -> aty), Ident.make "bytes_concat_blocks"));
   ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TArray (TWord `U32,None)), Ident.make "bytes_to_uint32s_le"));
   ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (TWord `U32,None)))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint32s_le"));
-  ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TInt), Ident.make "bytes_to_nat_le"));
-  ((["bytes"],"from_nat_le"), ([Some (`Exact TInt); Some (`Exact TInt)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_from_nat_le"));
+  ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fun [aty] -> nat_t), Ident.make "bytes_to_nat_le"));
+  ((["bytes"],"from_nat_le"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_from_nat_le"));
   ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U128), Ident.make "bytes_to_uint128_le"));
   ((["bytes"],"from_uint128_le"), ([Some (`Exact (TWord `U128))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint128_le"));
 
-  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt), Ident.make "natmod"));
-  ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fun [aty] -> TInt), Ident.make "natmod_to_nat"));
-  ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fun [aty] -> TInt), Ident.make "natmod_to_int"));
+  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));
+  ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fun [aty] -> nat_t), Ident.make "natmod_to_nat"));
+  ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fun [aty] -> int_t), Ident.make "natmod_to_int"));
   
-  (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN)), Ident.make "uintn"));
-  ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> TInt), Ident.make "uintn_to_nat"));
-  ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Exact TInt)], (fun [aty;bty] -> TWord `U1), Ident.make "uintn_get_bit"));
-  ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Exact TInt);Some (`Exact TInt)], (fun [aty;bty;cty] -> TWord `UN), Ident.make "uintn_get_bits"));
+  (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN Big_int.zero)), Ident.make "uintn"));
+  ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> nat_t), Ident.make "uintn_to_nat"));
+  ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Approx PInt)], (fun [aty;bty] -> TWord `U1), Ident.make "uintn_get_bit"));
+  ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Approx PInt);Some (`Approx PInt)], (fun [aty;bty;cty] -> TWord (`UN Big_int.zero)), Ident.make "uintn_get_bits"));
   ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_left"));
   ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_right"));
 
@@ -150,10 +153,11 @@ end = struct
 
   let dtypes = [
     ("bool"     , TBool      );
-    ("int"      , TInt       );
-    ("nat"      , TInt       );
+    ("int"      , TInt `Int  );
+    ("nat"      , TInt `Nat  );
     ("string"   , TString    );
-    ("nat_t"    , TInt       );
+    ("nat_t"    , TInt `Nat  );
+    ("pos_t"    , TInt `Pos  );
     ("bit_t"    , TWord `U1  );
     ("uint8_t"  , TWord `U8  );
     ("uint16_t" , TWord `U16 );
@@ -164,12 +168,14 @@ end = struct
   ]
 
   let dprocs = [
-    ("bit"    , [TInt], TWord `U1  );
-    ("uint8"  , [TInt], TWord `U8  );
-    ("uint16" , [TInt], TWord `U16 );
-    ("uint32" , [TInt], TWord `U32 );
-    ("uint64" , [TInt], TWord `U64 );
-    ("uint128", [TInt], TWord `U128);
+    ("nat"    , [TInt `Int], TInt  `Pos );
+    ("pos"    , [TInt `Int], TInt  `Nat );
+    ("bit"    , [TInt `Int], TWord `U1  );
+    ("uint8"  , [TInt `Int], TWord `U8  );
+    ("uint16" , [TInt `Int], TWord `U16 );
+    ("uint32" , [TInt `Int], TWord `U32 );
+    ("uint64" , [TInt `Int], TWord `U64 );
+    ("uint128", [TInt `Int], TWord `U128);
   ]
 
   module Mod = struct
@@ -214,7 +220,7 @@ end = struct
         match ty1, ty2 with
         | TUnit  , TUnit
         | TBool  , TBool
-        | TInt   , TInt
+        | TInt _ , TInt _
         | TString, TString -> true
 
         | TWord sz1, TWord sz2  ->
@@ -227,8 +233,8 @@ end = struct
         | TArray (aty1, _), TArray (aty2, _) -> (* FIXME *)
             compat aty1 aty2
 
-        | TRange _, _ -> compat TInt ty2
-        | _, TRange _ -> compat TInt ty1
+        | TRange _, _ -> compat (TInt `Nat) ty2
+        | _, TRange _ -> compat (TInt `Nat) ty1
 
         | TRefined (ty1, _), _ ->
             compat ty1 ty2
@@ -255,7 +261,7 @@ end = struct
         match ty, cty with
         | TUnit     , PUnit    -> true
         | TBool     , PBool    -> true
-        | TInt      , PInt     -> true
+        | TInt _    , PInt     -> true
         | TString   , PString  -> true
         | TWord    _, PWord    -> true
         | TArray   _, PArray   -> true
@@ -439,12 +445,13 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let j = tt_cint env j in
       TRange (i, j)
 
-  | "natmod_t", [ty] ->
-      TInt
+  | "natmod_t", [sz] ->
+      let sz,_ = tt_expr ~cty:(`Approx PInt) env sz in
+      TInt (`Natm sz)
 
   | "uintn_t", [sz] ->
       let sz = tt_cint env sz in
-      TWord (`UN)
+      TWord (`UN sz)
 
   | "array_t", [ty; sz] ->
       let sz = tt_cint env sz in
@@ -575,7 +582,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
       end
 
     | PEBool   b -> (EBool   b, TBool  )
-    | PEUInt   i -> (EUInt   i, TInt   )
+    | PEUInt   i -> (EUInt   i, TInt `Int )
     | PEString s -> (EString s, TString)
   
     | PETuple ([], _) ->
@@ -619,7 +626,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
 
         | `Neg as op ->
             check_ty ~loc:(loc pe) [PInt] ty;
-            EUniOp (op, e), TInt
+            EUniOp (op, e), TInt `Int
 
         | `BNot as op ->
             check_ty ~loc:(loc pe) [PWord] ty;
@@ -702,7 +709,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let e,ty =
           match t,s with
           | TWord _, `One i -> ECall(get_bit,[e;i]),TWord `U1
-          | TWord _, `Slice (s,f) -> ECall(get_bits,[e;s;f]),TWord `UN
+          | TWord _, `Slice (s,f) -> ECall(get_bits,[e;s;f]),TWord (`UN Big_int.zero)
           | TArray (_,_), `One _ -> EGet(e,s),Type.as_array t
           | TArray (_,_), `Slice _ -> EGet(e,s),t
         in
@@ -793,15 +800,15 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
       (env, [IIf (cbc, elifs, el)])
 
   | PSFor (((x, xty), (i, j), bc), el) ->
-      let i = Option.map (tt_expr ~cty:(`Exact TInt) env %> fst) i in
-      let j = fst (tt_expr ~cty:(`Exact TInt) env j) in
+      let i = Option.map (tt_expr ~cty:(`Approx PInt) env %> fst) i in
+      let j = fst (tt_expr ~cty:(`Approx PInt) env j) in
 
       Option.may (fun xty ->
         let ty = tt_type env xty in
         check_ty ~loc:(loc x) env [PInt] ty)
       xty;
 
-      let env, x = Env.Vars.bind env (unloc x, TInt) in
+      let env, x = Env.Vars.bind env (unloc x, TInt `Int) in
 
       let env, bc = tt_stmt ?rty env bc in
       let env, el =
