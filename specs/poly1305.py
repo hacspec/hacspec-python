@@ -11,10 +11,10 @@ subblock_t = refine_t(vlbytes_t, lambda x: bytes.length(x) <= 16)
 
 # Define prime field
 
-p130m5 : nat = (2 ** 130) - 5
+p130m5 : nat_t = (2 ** 130) - 5
 felem_t = natmod_t(p130m5)
 @typechecked
-def felem(n:nat) -> felem_t:
+def felem(n:nat_t) -> felem_t:
     return natmod(n,p130m5)
 
 @typechecked
@@ -29,7 +29,7 @@ def encode(block: subblock_t) -> felem_t:
 def encode_r(r: block_t) -> felem_t:
     ruint : uint128_t = bytes.to_uint128_le(r)
     ruint = ruint & uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
-    r_nat : nat = uintn.to_nat(ruint)
+    r_nat : nat_t = uintn.to_nat(ruint)
     return felem(r_nat)
 
 # There are many ways of writing the polynomial evaluation function

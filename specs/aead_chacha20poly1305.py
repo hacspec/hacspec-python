@@ -9,13 +9,13 @@ nonce_t  = bytes_t(12)
 tag_t    = bytes_t(16)
 
 @typechecked
-def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple2(int,vlbytes_t):
-    laad = len(aad)
-    lmsg = len(msg)
-    pad_aad = 16 * (laad // 16 + 1)
+def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple_t(int,vlbytes_t):
+    laad: int = len(aad)
+    lmsg: int = len(msg)
+    pad_aad: int = 16 * (laad // 16 + 1)
     if laad % 16 == 0:
         pad_aad = laad
-    pad_msg = 16 * (lmsg // 16 + 1)
+    pad_msg: int = 16 * (lmsg // 16 + 1)
     if lmsg % 16 == 0:
         pad_msg = lmsg
     to_mac = array.create(pad_aad + pad_msg + 16,uint8(0))
@@ -27,11 +27,13 @@ def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple2(int,vlbytes_t):
 
 @typechecked
 def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> tuple2(vlbytes_t,tag_t):
-    keyblock0 = chacha20_block(key,uint32(0),nonce)
-    mac_key = keyblock0[0:32]
-    ciphertext = chacha20_encrypt(key,uint32(1),nonce,msg)
+    keyblock0: block_t = chacha20_block(key,uint32(0),nonce)
+    mac_key: bytes_t = keyblock0[0:32]
+    ciphertext: vlbytes_t = chacha20_encrypt(key,uint32(1),nonce,msg)
+    len: int
+    to_mac: vlbytes_t
     len, to_mac = padded_aad_msg(aad, ciphertext)
-    mac = poly1305_mac(to_mac,mac_key)
+    mac: tag_t = poly1305_mac(to_mac,mac_key)
     return ciphertext, mac
 
 @typechecked
@@ -39,12 +41,13 @@ def aead_chacha20poly1305_decrypt(key:key_t,nonce:nonce_t,
                                   aad:vlbytes_t,
                                   ciphertext:vlbytes_t,
                                   tag:tag_t) -> vlbytes_t:
-    keyblock0 = chacha20_block(key, uint32(0), nonce)
-    mac_key = keyblock0[0:32]
+    keyblock0: block_t = chacha20_block(key, uint32(0), nonce)
+    mac_key: bytes_t = keyblock0[0:32]
+    to_mac: vlbytes_t
     _, to_mac = padded_aad_msg(aad,ciphertext)
-    mac = poly1305_mac(to_mac,mac_key)
+    mac: tag_t = poly1305_mac(to_mac,mac_key)
     if mac == tag:
-        msg = chacha20_decrypt(key, uint32(1), nonce, ciphertext)
+        msg: vlbytes_t = chacha20_decrypt(key, uint32(1), nonce, ciphertext)
         return msg
     else:
         fail("mac failed")

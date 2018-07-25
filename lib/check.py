@@ -88,6 +88,60 @@ def read_function_signature(f):
         fail("Every hacpsec function must have a return type: \"" + fun_name+"\"")
     return
 
+def read_function_body(body):
+    # Make sure that all local variables are typed by either:
+    # i) annotated assign or
+    # ii) typed variable declaration
+    variables = []
+    speclibFunctions = ["array.copy", "array.create"]
+    for line in body:
+        if isinstance(line, Assign):
+            if len(line.targets) > 0 and isinstance(line.targets[0], Tuple):
+                # This is a tuple assignment. The variables have to be declared
+                # before use.
+                for target in line.targets[0].elts:
+                    if not isinstance(target, Name):
+                        fail("Tuple values must be names.")
+                    if not target.id in variables and not target.id is "_":
+                        fail("Untyped variable used in tuple assignment \"" + str(target.id) + "\"")
+            elif len(line.targets) > 1:
+                fail("Only tuple assignment or single variable assignments are allowed")
+            else:
+                target = line.targets[0]
+                if isinstance(target, Subscript):
+                    # Subscripts assign to arrays that are typed in speclib.
+                    continue
+                if not isinstance(target, Name):
+                    print(target)
+                    fail("Variable assignment targets have to be variable names.")
+                if isinstance(line.value, Call) and \
+                   isinstance(line.value.func, Name) and \
+                   line.value.func.id in ["array"]:
+                    # No type for arrays needed.
+                    continue
+                if isinstance(line.value, Call) and \
+                   isinstance(line.value.func, Attribute) and \
+                   isinstance(line.value.func.value, Name) and \
+                   line.value.func.value.id +"."+ line.value.func.attr in speclibFunctions:
+                    # No type for arrays needed.
+                    continue
+                if target.id.endswith("_t"):
+                    # This is a type not a variable. Ignore it.
+                    continue
+                if not target.id in variables:
+                    fail("Variable assignment doesn't have a type \""+target.id+"\"")
+        if isinstance(line, AnnAssign):
+            if line.value is None:
+                # This is a variable declaration.
+                variables.append(line.target.id)
+            else:
+                if isinstance(line.annotation, Name):
+                    # We could check the type here of line.annotation.id.
+                    # But seeing n annotation here is enough for us atm.
+                    pass
+                if not isinstance(line.target, Name):
+                    fail("Variable ann-assignment target must be a Name \""+str(line.target)+"\"")
+                variables.append(line.target.id)
 
 def import_is_hacspec(filename):
     if filename.endswith("speclib"):
@@ -119,6 +173,8 @@ def is_valid_compop(op):
     return True
 
 def is_expression(node):
+    if node is None:
+        return True
     if isinstance(node, Lambda):
         # TODO: do we want to check the lambda?
         return True
@@ -200,11 +256,16 @@ def is_valid_type(node):
         node = node.id
     if node is None:
         return True
+    if isinstance(node, Call):
+        fun_name = node.func.id
+        if fun_name in ("vlarray_t"):
+            return True
     if not isinstance(node, str):
         return False
     if not (node.endswith("_t") or node is "tuple2" or node is "tuple3" \
         or node is "tuple4" or node is "tuple5" or node is "FunctionType" \
-        or node is "int" or node is "bool") or node is "refine_t":
+        or node is "int" or node is "bool" or node is "refine_t" \
+        or node is "vlarray_t"):
         return False
     return True
 
@@ -411,6 +472,7 @@ def read(node) -> None:
     # Functions
     if isinstance(node, FunctionDef):
         read_function_signature(node)
+        read_function_body(node.body)
         read(node.body)
         return
 
@@ -511,6 +573,8 @@ def main():
         code = py_file.read()
         ast = parse(source=code, filename=path)
         parsed = read(ast)
+        # Check types of global variables.
+        read_function_body(ast.body)
         print(path + " is a valid hacspec.")
 
 

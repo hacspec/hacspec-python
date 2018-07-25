@@ -2,7 +2,7 @@
 
 from lib.speclib import *
 
-blocksize = 16
+blocksize: int = 16
 block_t  = bytes_t(16)
 subblock_t  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
 

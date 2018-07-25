@@ -3,7 +3,7 @@
 from lib.speclib import *
 
 # Define prime field
-p25519 : nat = (2 ** 255) - 19
+p25519 : nat_t = (2 ** 255) - 19
 
 felem_t = natmod_t(p25519)
 @typechecked

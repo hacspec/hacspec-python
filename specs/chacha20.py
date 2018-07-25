@@ -22,7 +22,7 @@ def line(a: index_t, b: index_t, d: index_t, s: rotval_t, m: state_t) -> state_t
 
 @typechecked
 def quarter_round(a: index_t, b: index_t, c:index_t, d: index_t, m: state_t) -> state_t :
-    m = line(a, b, d, 16, m)
+    m: state_t = line(a, b, d, 16, m)
     m = line(c, d, b, 12, m)
     m = line(a, b, d,  8, m)
     m = line(c, d, b,  7, m)
@@ -30,7 +30,7 @@ def quarter_round(a: index_t, b: index_t, c:index_t, d: index_t, m: state_t) -> 
 
 @typechecked
 def double_round(m: state_t) -> state_t :
-    m = quarter_round(0, 4,  8, 12, m)
+    m: state_t = quarter_round(0, 4,  8, 12, m)
     m = quarter_round(1, 5,  9, 13, m)
     m = quarter_round(2, 6, 10, 14, m)
     m = quarter_round(3, 7, 11, 15, m)
