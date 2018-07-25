@@ -107,10 +107,11 @@ def scalarmult(s: serialized_scalar_t, p: serialized_point_t) -> serialized_poin
 def is_on_curve(s: serialized_point_t) -> bool:
     n : nat_t = bytes.to_nat_le(s)
     disallowed : array_t(nat_t,12) = array([0, 1, 325606250916557431795983626356110631294008115727848805560023387167927233504, 39382357235489614581723060781553021112529911719440698176882885853963445705823, 2**255 - 19 - 1, 2**255 - 19, 2**255 - 19 + 1, 2**255 - 19 + 325606250916557431795983626356110631294008115727848805560023387167927233504, 2**255 - 19 + 39382357235489614581723060781553021112529911719440698176882885853963445705823, 2*(2**255 - 19) - 1, 2*(2**255 - 19), 2*(2**255 - 19) + 1])
+    res: bool = True
     for i in range(array.length(disallowed)):
         if n == disallowed[i]:
-            return False
-    return True
+            res = False
+    return res
 
 
 @typechecked

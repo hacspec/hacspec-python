@@ -45,9 +45,9 @@ uninstall:
 to_fstar.native:
 	$(OCAMLBUILD) $@
 
-%.fst: to_fstar.native ../specs/%.py
-	./to_fstar.native ../specs/$*.py > $*_pre.fst
-	../../FStar/bin/fstar.exe --indent $*_pre.fst > $*.fst
+fstar-compiler/specs/%.fst: to_fstar.native ../specs/%.py
+	./to_fstar.native ../specs/$*.py > fstar-compiler/specs/$*_pre.fst
+	../../FStar/bin/fstar.exe --indent fstar-compiler/specs/$*_pre.fst > fstar-compiler/specs/$*.fst
 
 clean:
 	$(OCAMLBUILD) -clean

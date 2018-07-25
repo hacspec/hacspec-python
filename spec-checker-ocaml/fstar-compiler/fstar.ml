@@ -56,15 +56,15 @@ let rec fstar_of_expr b e =
   | EUInt u -> Big_int.string_of_big_int u
   | EString s -> "\""^s^"\""
   | ETuple el -> "("^String.concat "," (List.map (fstar_of_expr false) el)^")"
-  | EArray el -> paren b ("createL ["^String.concat "; " (List.map (fstar_of_expr false) el)^"]")
-  | ECall (i,[e]) when Ident.to_string i = "uint32" -> paren b ("u32 "^fstar_of_expr true e)
+  | EArray el -> paren b ("array_createL ["^String.concat "; " (List.map (fstar_of_expr false) el)^"]")
+  | ECall (i,[e]) when Ident.to_string i = "uint32" -> paren b ("uint32 "^fstar_of_expr true e)
   | ECall (i,el) -> paren b (Ident.to_string i^" "^(String.concat " " (List.map (fstar_of_expr true) el)))
   | EUniOp (u,e) -> paren b (fstar_of_uniop u ^ " " ^ (fstar_of_expr false e))
   | EBinOp (op,(e1,e2)) -> paren b (fstar_of_expr true e1 ^ " " ^ fstar_of_binop op ^ " " ^ fstar_of_expr true e2)
   | EEq (false,(e1,e2)) -> fstar_of_expr true e1 ^ " = " ^ fstar_of_expr true e2
   | EEq (true,(e1,e2)) -> fstar_of_expr true e1 ^ " <> " ^ fstar_of_expr true e2
   | EGet(e1,`One e2) -> (fstar_of_expr true e1)^".["^(fstar_of_expr false e2)^"]"
-  | EGet(e1,`Slice (e2,e3)) -> paren b ("slice "^(fstar_of_expr true e1)^" "^(fstar_of_expr true e2)^" "^(fstar_of_expr true e3))
+  | EGet(e1,`Slice (e2,e3)) -> paren b ("array_slice "^(fstar_of_expr true e1)^" "^(fstar_of_expr true e2)^" "^(fstar_of_expr true e3))
   | EFun(xl,e) -> "(fun "^String.concat " " (List.map Ident.to_string xl)^" -> "^fstar_of_expr false e^")"
   | _ -> ("not an f* expr:")
 
@@ -165,7 +165,7 @@ let rec fstar_of_instrs il fin =
      "let "^l^" = "^le^" <- ("^le^" "^fstar_of_assop op^" "^fstar_of_expr true e^") in \n"^fstar_of_instrs r fin
   | IAssign (Some(LGet(LVar v,`Slice (e1,e2)) as p,`Plain),(e,t)) :: r ->
      let l,le = fstar_of_lvalue false p in
-     "let "^l^" = update_"^le^" "^fstar_of_expr true e^" in \n"^fstar_of_instrs r fin
+     "let "^l^" = array_update_"^le^" "^fstar_of_expr true e^" in \n"^fstar_of_instrs r fin
   | IIf ((e,b),[],bo) as i :: r ->
      let lvs = IdentSet.elements (lvars [i]) in
      let tup = match lvs with [] -> "()" | [x] -> x | tl -> "("^String.concat "," tl^")" in
