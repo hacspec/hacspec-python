@@ -82,29 +82,30 @@ def chacha20_block(k: key_t, counter:uint32_t, nonce: nonce_t) -> block_t:
 # This version: use first-order CTR function specific to Chacha20 with a loop
 
 @typechecked
-def xor_block(block:subblock_t, keyblock:block_t) -> subblock_t:
-    out : subblock_t
-    out = bytes.copy(block)
-    for i in range(array.length(block)):
+def xor_block(block:block_t, keyblock:block_t) -> block_t:
+    out : block_t = bytes.copy(block)
+    for i in range(blocksize):
         out[i] ^= keyblock[i]
     return out
+
 
 @typechecked
 def chacha20_counter_mode(key: key_t, counter: uint32_t, nonce: nonce_t, msg:vlbytes_t) -> vlbytes_t:
     blocks   : vlarray_t(block_t)
     last     : subblock_t
-    ctr      : uint32_t
-    keyblock : block_t
-
     blocks, last = array.split_blocks(msg, blocksize)
-    keyblock = array.create(blocksize, uint8(0))
-    ctr = counter
+    keyblock   : block_t  = array.create(blocksize, uint8(0))
+    last_block : block_t  = array.create(blocksize, uint8(0))
+    ctr        : uint32_t = counter
     for i in range(array.length(blocks)):
         keyblock = chacha20_block(key, ctr, nonce)
         blocks[i] = xor_block(blocks[i], keyblock)
         ctr += uint32(1)
+
     keyblock = chacha20_block(key, ctr, nonce)
-    last = xor_block(last, keyblock)
+    last_block[0:array.length(last)] = last
+    last_block = xor_block(last_block, keyblock)
+    last = last_block[0:array.length(last)]
     return array.concat_blocks(blocks, last)
 
 @typechecked

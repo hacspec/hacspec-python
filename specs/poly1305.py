@@ -54,5 +54,5 @@ def poly1305_mac(text: vlbytes_t, k: key_t) -> tag_t:
     relem : felem_t = encode_r(r)
     selem : uint128_t = bytes.to_uint128_le(s)
     a : felem_t   = poly(text, relem)
-    n : uint128_t = uint128(natmod.to_nat(a)) + selem
-    return tag_t(bytes.from_uint128_le(n))
+    n : uint128_t = uint128(natmod.to_nat(a) % (2 ** 128)) + selem
+    return bytes.from_uint128_le(n)

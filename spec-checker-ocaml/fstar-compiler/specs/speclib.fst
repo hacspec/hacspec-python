@@ -53,6 +53,10 @@ let ( &. ) (#n:numeric{machineint n}) (a:numeric_t n) (b:numeric_t n) : numeric_
   match n with
   | Word t -> (a <: uint_t t) &. b
 
+let ( ^. ) (#n:numeric{machineint n}) (a:numeric_t n) (b:numeric_t n) : numeric_t n = 
+  match n with
+  | Word t -> (a <: uint_t t) ^. b
+
 let ( <=. ) (#n:numeric{comparable n}) (a:numeric_t n) (b:numeric_t n) : bool = 
   match n with
   | Word t -> (a <: uint_t t) <=. b
@@ -75,10 +79,10 @@ let ( **. ) (#n:numeric{n <> Word U128}) (x:numeric_t n) (y:nat) : numeric_t n =
 let range_t min max = n:nat{n >= min /\ n < max}
 let array_t t len = lseq t len
 let vlarray_t t = seq t
-let uint32_t = uint32
-let uint8_t = uint8
-let uint128_t = uint128
-let uint64_t = uint64
+let uint32_t = numeric_t (Word U32)
+let uint8_t = numeric_t (Word U8)
+let uint128_t = numeric_t (Word U128)
+let uint64_t = numeric_t (Word U64)
 let bytes_t len = lbytes len
 let vlbytes_t = bytes
 let vlcopy (s:seq 'a) = to_lseq s
@@ -89,16 +93,16 @@ unfold let range i = i
 
 let array x = x
 let array_length a = length a
-let array_copy a = a
+let array_copy #a #l (x:array_t a l) : array_t a l = x
 let op_String_Access #a #len = index #a #len
 let op_String_Assignment #a #len = upd #a #len
 let repeati = repeati
 
 let uintn_rotate_left (#t:m_inttype) (a:uint_t t) b = a <<<. (u32 b)
 let uintn_rotate_right (#t:m_inttype) (a:uint_t t) b = a >>>. (u32 b)
-let uint8 x = u8 x
-let uint32 x = u32 x
-let uint128 x = u128 x
+let uint8 x : uint8_t = u8 x
+let uint32 x : uint32_t = u32 x
+let uint128 x : uint128_t = u128 x
 let array_createL l = createL l
 let array_create x y = create x y
 let array_slice #l (x:lseq 'a l) y z = slice x y z
@@ -120,9 +124,7 @@ let bytes_to_uint128_le #l (b:lbytes l) = uint_from_bytes_le #U128 b
 let bytes_from_uint128_le n = uint_to_bytes_le #U128 n
 
 assume val array_split_blocks: #a:Type -> s:seq a -> bs:size_nat{bs > 0} -> (bl:lseq (lseq a bs) (length s / bs) * l:lseq a (length s % bs))
-assume val array_concat_blocks: #a:Type -> #len:size_nat -> #bs:size_nat{bs > 0} -> 
-  bl:seq (lseq a bs){length bl == len / bs} -> l:seq a{length l == len % bs} ->
-  r:seq a{length r == len}
+assume val array_concat_blocks: #a:Type -> #n:size_nat -> #bs:size_nat{bs > 0} -> bl:lseq (lseq a bs) n -> l:seq a -> r:lseq a (n `op_Multiply` bs + length l)
 
 type pfelem_t (p:nat) = x:nat{x < p}
 let pfelem (p:pos) (x:nat): pfelem_t p = x % p
