@@ -18,6 +18,8 @@ type etype = [`Exact of type_ | `Approx of ctype]
 (* -------------------------------------------------------------------- *)
 let byte_t = TWord `U8
 let bytes_t = TArray (TWord `U8, None)
+let get_bit = Ident.make "uintn_get_bit"
+let get_bits = Ident.make "uintn_get_bits"
             
 let stdlib = [
   (([],"array"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array"));
@@ -47,6 +49,7 @@ let stdlib = [
   (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN)), Ident.make "uintn"));
   ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> TInt), Ident.make "uintn_to_nat"));
   ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Exact TInt)], (fun [aty;bty] -> TWord `U1), Ident.make "uintn_get_bit"));
+  ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Exact TInt);Some (`Exact TInt)], (fun [aty;bty;cty] -> TWord `UN), Ident.make "uintn_get_bits"));
   ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_left"));
   ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_right"));
 
@@ -518,12 +521,11 @@ and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
         (LTuple es, TTuple tys) 
 
     | PEGet (pl, ps) ->
-        let l,t = tt_lvalue env pl in   
+        let l,t = tt_lvalue ~cty:(`Approx PArray) env pl in   
         let s   = tt_slice env ps in
         let ty =
           match t,s with
-          | TWord _, `One _ -> TWord `U1
-          | TWord _, `Slice _ -> TWord `UN
+          | TWord _, _ -> error ~loc:(loc pe) env InvalidLValueExpr
           | TArray (_,_), `One _ -> Type.as_array t
           | TArray (_,_), `Slice _ -> t
         in
@@ -697,14 +699,14 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
     | PEGet (pe, ps) ->
         let e,t = tt_expr env pe in   
         let s   = tt_slice env ps in
-        let ty =
+        let e,ty =
           match t,s with
-          | TWord _, `One _ -> TWord `U1
-          | TWord _, `Slice _ -> TWord `UN
-          | TArray (_,_), `One _ -> Type.as_array t
-          | TArray (_,_), `Slice _ -> t
+          | TWord _, `One i -> ECall(get_bit,[e;i]),TWord `U1
+          | TWord _, `Slice (s,f) -> ECall(get_bits,[e;s;f]),TWord `UN
+          | TArray (_,_), `One _ -> EGet(e,s),Type.as_array t
+          | TArray (_,_), `Slice _ -> EGet(e,s),t
         in
-        (EGet (e, s), ty)
+        (e, ty)
   in
 
   Option.may (fun (cty : etype) ->

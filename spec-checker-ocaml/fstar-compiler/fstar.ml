@@ -93,6 +93,7 @@ let rec fstar_of_type b ty =
   | TWord `U32  -> "uint32_t"
   | TWord `U64  -> "uint64_t"
   | TWord `U128  -> "uint128_t"
+  | TWord `UN    -> "uintn_t"
 
   | TTuple tys ->
         "("^(String.concat ", " (List.map (fstar_of_type false) tys))^")"
@@ -121,6 +122,7 @@ let rec fstar_of_type b ty =
   | TNamed name ->
       Format.sprintf "%s" (QSymbol.to_string name)
 
+  | _ -> "TODO TYPE ******"
 module IdentSet = Set.Make(String)
 let rec lvars il =
   match il with
@@ -173,7 +175,7 @@ let rec fstar_of_instrs il fin =
      let lvs = IdentSet.elements (IdentSet.remove (Ident.to_string v) (lvars b)) in
      let tup = match lvs with [] -> "()" | [x] -> x | tl -> "("^String.concat "," tl^")" in
      "let "^tup^" = repeati "^fstar_of_expr true e^" (fun "^Ident.to_string v^" "^tup^" -> "^fstar_of_instrs b tup^") "^tup^" in \n"^fstar_of_instrs r fin
-  | _ -> failwith "TODO: fstar_of_instrs"
+  | _ -> "TODO: fstar_of_instrs ****"
   
 let fstar_of_topdecl d =
     match d with

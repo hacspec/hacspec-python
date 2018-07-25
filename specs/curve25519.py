@@ -96,18 +96,18 @@ def montgomery_ladder(k: scalar_t, init: point_t) -> point_t:
 
 @typechecked
 def scalarmult(s: serialized_scalar_t, p: serialized_point_t) -> serialized_point_t:
-    s_ = decodeScalar(s)
-    p_ = decodePoint(p)
-    r = montgomery_ladder(s_, p_)
+    s_:scalar_t = decodeScalar(s)
+    p_:point_t  = decodePoint(p)
+    r :point_t  = montgomery_ladder(s_, p_)
     return encodePoint(r)
 
 # ECDH API: we assume a key generation function that generates 32 random bytes for serialized_scalar_t
 
 @typechecked
 def is_on_curve(s: serialized_point_t) -> bool:
-    n = bytes.to_nat_le(s)
-    disallowed = array([0, 1, 325606250916557431795983626356110631294008115727848805560023387167927233504, 39382357235489614581723060781553021112529911719440698176882885853963445705823, 2**255 - 19 - 1, 2**255 - 19, 2**255 - 19 + 1, 2**255 - 19 + 325606250916557431795983626356110631294008115727848805560023387167927233504, 2**255 - 19 + 39382357235489614581723060781553021112529911719440698176882885853963445705823, 2*(2**255 - 19) - 1, 2*(2**255 - 19), 2*(2**255 - 19) + 1])
-    for i in range(len(disallowed)):
+    n : nat_t = bytes.to_nat_le(s)
+    disallowed : array_t(nat_t,12) = array([0, 1, 325606250916557431795983626356110631294008115727848805560023387167927233504, 39382357235489614581723060781553021112529911719440698176882885853963445705823, 2**255 - 19 - 1, 2**255 - 19, 2**255 - 19 + 1, 2**255 - 19 + 325606250916557431795983626356110631294008115727848805560023387167927233504, 2**255 - 19 + 39382357235489614581723060781553021112529911719440698176882885853963445705823, 2*(2**255 - 19) - 1, 2*(2**255 - 19), 2*(2**255 - 19) + 1])
+    for i in range(array.length(disallowed)):
         if n == disallowed[i]:
             return False
     return True
@@ -115,7 +115,7 @@ def is_on_curve(s: serialized_point_t) -> bool:
 
 @typechecked
 def private_to_public(s: serialized_scalar_t) -> serialized_point_t:
-    return scalarmult(s, g25519)
+    return scalarmult(s, encodePoint(g25519))
 
 
 @typechecked
