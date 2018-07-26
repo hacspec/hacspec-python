@@ -45,16 +45,19 @@ let stdlib = [
   ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U128), Ident.make "bytes_to_uint128_le"));
   ((["bytes"],"from_uint128_le"), ([Some (`Exact (TWord `U128))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint128_le"));
 
-  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));
+  (*  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));*)
   ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fun [aty] -> nat_t), Ident.make "natmod_to_nat"));
   ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fun [aty] -> int_t), Ident.make "natmod_to_int"));
   
-  (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN Big_int.zero)), Ident.make "uintn"));
+  (*   (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN Big_int.zero)), Ident.make "uintn")); *)
   ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> nat_t), Ident.make "uintn_to_nat"));
   ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Approx PInt)], (fun [aty;bty] -> TWord `U1), Ident.make "uintn_get_bit"));
   ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Approx PInt);Some (`Approx PInt)], (fun [aty;bty;cty] -> TWord (`UN Big_int.zero)), Ident.make "uintn_get_bits"));
   ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_left"));
   ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_right"));
+
+  ((["result"],"retval"), ([None], (fun [aty] -> TResult aty), Ident.make "result_retval"));
+  ((["result"],"error"),  ([Some (`Exact TString)], (fun [aty] -> TResult TString), Ident.make "result_error"));
 
   ]
 
@@ -223,6 +226,9 @@ end = struct
         | TInt _ , TInt _
         | TString, TString -> true
 
+        | TWord (`UN n1), TWord (`UN n2)  ->
+            Big_int.compare_big_int n1 n1 = 0
+
         | TWord sz1, TWord sz2  ->
             sz1 = sz2
 
@@ -251,6 +257,8 @@ end = struct
         | _, TNamed q ->
             compat ty1 (Option.get (unfold env q))
 
+        | TResult _, TResult _ ->
+            true
         | _, _ ->
             false
 
@@ -462,6 +470,10 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let ty = tt_type env ty in
       TArray (ty, None)
 
+  | "result_t", [ty] ->
+      let ty = tt_type env ty in
+      TResult (ty)
+      
   | "bytes_t", [sz] ->
       let sz = tt_cint env sz in
       TArray (TWord `U8, Some sz)
@@ -672,6 +684,17 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
             EBinOp (op, (e1, e2)), TBool
       end
 
+    | PECall (nmf, [x;y]) when (qunloc nmf) = ([],"uintn") ->
+       let xe,xt = tt_expr ~cty:(`Approx PInt) env x in
+       let ye,yt = tt_expr ~cty:(`Approx PInt) env y in
+       let n = tt_cint env y in
+       (ECall (Ident.make("uintn"), [xe;ye]), TWord (`UN n))
+
+    | PECall (nmf, [x;y]) when (qunloc nmf) = ([],"natmod") ->
+       let xe,xt = tt_expr ~cty:(`Approx PInt) env x in
+       let ye,yt = tt_expr ~cty:(`Approx PInt) env y in
+       (ECall (Ident.make("natmod"), [xe;ye]), TInt (`Natm ye))
+
     | PECall (nmf, args) when List.mem_assoc (qunloc nmf) stdlib ->
         let exp,res,target = List.assoc (qunloc nmf) stdlib in
         (*        Format.printf "start PECall:%s\n" (snd (qunloc nmf)); *)
@@ -684,7 +707,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         (*        Format.printf "done PECall:%s\n" (snd (qunloc nmf)); *)
         let args,tys = List.split argsty in
         (ECall (target, args), res tys)
-
+        
     | PECall ((nm, f) as nmf, args) ->
         let senv = tt_module env nm in
 
@@ -777,7 +800,7 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
       let ety =
         match rty with
         | None    -> error ~loc:(loc i) env ExpectVoidReturn
-        | Some ty -> tt_expr ~cty:(`Exact ty) env e
+        | Some ty ->   tt_expr ~cty:(`Exact ty) env e
       in (env, [IReturn (Some ety)])
     end
 

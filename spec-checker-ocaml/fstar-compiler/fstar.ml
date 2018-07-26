@@ -99,7 +99,7 @@ let rec fstar_of_type b ty =
   | TWord (`UN x)    -> "uintn_t "^(Big_int.string_of_big_int x)
 
   | TTuple tys ->
-        "("^(String.concat ", " (List.map (fstar_of_type false) tys))^")"
+        "("^(String.concat " * " (List.map (fstar_of_type false) tys))^")"
 
   | TArray (ty, None) ->
        if b then Format.sprintf "(vlarray_t %s)" (fstar_of_type true ty)
@@ -125,7 +125,11 @@ let rec fstar_of_type b ty =
   | TNamed name ->
       Format.sprintf "%s" (QSymbol.to_string name)
 
+  | TResult ty ->
+      Format.sprintf "result_t %s" (fstar_of_type true ty)
+
   | _ -> "TODO TYPE ******"
+       
 module IdentSet = Set.Make(String)
 let rec lvars il =
   match il with
@@ -182,7 +186,7 @@ let rec fstar_of_instrs il fin =
   
 let fstar_of_topdecl d =
     match d with
-    | TD_TyDecl td -> "let "^Ident.to_string td.tyd_name^" : Type0 = "^fstar_of_type false td.tyd_body
+    | TD_TyDecl td ->  "let "^Ident.to_string td.tyd_name^" : Type0 = "^fstar_of_type false td.tyd_body
     | TD_VarDecl vd -> "let "^Ident.to_string vd.vrd_name^" : "^fstar_of_type false vd.vrd_type^" = "^fstar_of_expr false vd.vrd_init
     | TD_ProcDef pd -> "let "^Ident.to_string pd.prd_name^" "^(String.concat " " (List.map (fun (v,t) -> "(" ^ Ident.to_string v ^ " : " ^ fstar_of_type false t ^ ")") pd.prd_args)) ^" : " ^(fstar_of_type false pd.prd_ret)^" = \n"^fstar_of_instrs (snd pd.prd_body) ""
 let fstar_of_program (n:string) (p: T.Env.env program) : string =

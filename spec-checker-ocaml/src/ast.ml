@@ -58,6 +58,7 @@ type type_ =
   | TArray   of type_ * Big_int.big_int option
   | TRange   of Big_int.big_int * Big_int.big_int
   | TRefined of type_ * expr
+  | TResult  of type_
   | TNamed   of qsymbol
 
 and int_sub = [`Int | `Nat | `Pos | `Natm of expr]
@@ -112,8 +113,12 @@ let rec string_of_type (ty : type_) =
   | TRefined (ty, _) ->
       Format.sprintf "refine[%s]" (string_of_type ty)
 
+  | TResult (ty) ->
+      Format.sprintf "result[%s]" (string_of_type ty)
+
   | TNamed name ->
       Format.sprintf "named[%s]" (QSymbol.to_string name)
+
 
 (* -------------------------------------------------------------------- *)
 module Type : sig
@@ -162,6 +167,7 @@ end = struct
     | TTuple   t      -> TTuple (List.map strip t)
     | TArray   (t, _) -> TArray (strip t, None)
     | TRefined (t, _) -> strip t  
+    | TResult  (t)    -> TResult(strip t)
     | TRange   _      -> TInt `Int
     | TNamed   _      -> ty
 

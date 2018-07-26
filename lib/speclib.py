@@ -65,7 +65,49 @@ def tuple_t(*args) -> type:
         return Tuple[args[0],args[1],args[2],args[3],args[4],args[5]]
     else:
         fail("only implemented tuples up to size 6")
-        
+
+class _result(Generic[T]):
+    @typechecked
+    def __init__(self, is_valid:bool, value:Union[T,str]) -> None:
+        self.is_valid = True;
+        self.value = value
+
+    @staticmethod
+    @typechecked
+    def retval(v:T) -> '_result[T]':
+        return _result(true,v)    
+
+    @staticmethod
+    @typechecked
+    def error(v:str) -> '_result[T]':
+        return _result(false,v)
+
+    @staticmethod
+    @typechecked
+    def is_valid(a:'_result[T]') -> bool:
+        return a.is_valid
+
+    @staticmethod
+    @typechecked
+    def get_value(a:'_result[T]') -> T:
+        if a.is_valid:
+            return a.value
+        else:
+            fail ("cannot call get_value on error result")
+
+    @staticmethod
+    @typechecked
+    def get_error(a:'_result[T]') -> T:
+        if a.is_valid:
+            fail ("cannot call get_error on valid result")
+        else:
+            return a.value
+
+result = _result
+@typechecked
+def result_t(T: type):
+    return _result
+
 @typechecked
 def option_t(T: type) -> Union[T, None]:
     return Union[T, None]
@@ -886,7 +928,7 @@ class _vector(_array[T]):
         if not (all(v.__class__ == zero.__class__ for v in self.l)):
             for v in self.l:
                 print(str(v.__class__) + " - " + str(zero.__class__))
-            fail("vector must have all values of same type as zero")
+            fail("vector must have all valus of same type as zero")
 
     @staticmethod
     @typechecked

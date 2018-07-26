@@ -53,6 +53,10 @@ let ( &. ) (#n:numeric{machineint n}) (a:numeric_t n) (b:numeric_t n) : numeric_
   match n with
   | Word t -> (a <: uint_t t) &. b
 
+let ( |. ) (#n:numeric{machineint n}) (a:numeric_t n) (b:numeric_t n) : numeric_t n = 
+  match n with
+  | Word t -> (a <: uint_t t) |. b
+
 let ( ^. ) (#n:numeric{machineint n}) (a:numeric_t n) (b:numeric_t n) : numeric_t n = 
   match n with
   | Word t -> (a <: uint_t t) ^. b
@@ -61,6 +65,11 @@ let ( <=. ) (#n:numeric{comparable n}) (a:numeric_t n) (b:numeric_t n) : bool =
   match n with
   | Word t -> (a <: uint_t t) <=. b
   | Int -> a <= b
+
+let ( =. ) (#n:numeric{comparable n}) (a:numeric_t n) (b:numeric_t n) : bool = 
+  match n with
+  | Word t -> (a <: uint_t t) =. b
+  | Int -> a = b
 
 let ( >. ) (#n:numeric{comparable n}) (a:numeric_t n) (b:numeric_t n) : bool = 
   match n with
@@ -75,11 +84,17 @@ let ( **. ) (#n:numeric{n <> Word U128}) (x:numeric_t n) (y:nat) : numeric_t n =
     if n = Int && x = 2 then pow2 y
     else exp #n x y
 
-  
+type result_t (t:Type0) = 
+  | Retval of t
+  | Error of string
+let result_retval #t (x:t) : result_t t = Retval x
+let result_error #t (x:string) : result_t t = Error x
+
 let range_t min max = n:nat{n >= min /\ n < max}
 let array_t t len = lseq t len
 let vlarray_t t = seq t
 let uint32_t = numeric_t (Word U32)
+let bit_t = numeric_t (Word (NATm 2))
 let uint8_t = numeric_t (Word U8)
 let uint128_t = numeric_t (Word U128)
 let uint64_t = numeric_t (Word U64)
@@ -100,6 +115,7 @@ let repeati = repeati
 
 let uintn_rotate_left (#t:m_inttype) (a:uint_t t) b = a <<<. (u32 b)
 let uintn_rotate_right (#t:m_inttype) (a:uint_t t) b = a >>>. (u32 b)
+let bit x : bit_t = modulo x 2
 let uint8 x : uint8_t = u8 x
 let uint32 x : uint32_t = u32 x
 let uint128 x : uint128_t = u128 x
@@ -110,16 +126,20 @@ let array_update_slice #l (x:lseq 'a l) y z w = update_slice x y z w
 
 let natmod_t (n:pos) = numeric_t (Word (NATm n))
 let natmod n p : natmod_t p = n % p
-
+let uintn_t (n:nat) = numeric_t (Word (NATm (pow2 n)))
+let uintn n p : uintn_t p = natmod n (pow2 p)
 let uintn_to_nat #t (a:uint_t t) : nat = Lib.RawIntTypes.uint_to_nat a
+let uintn_get_bit #b (x:uintn_t b) (i:nat) : bit_t  = bit (((uintn_to_nat x) / pow2 i) % 2)
+
 let natmod_to_nat (#m:pos) (a:natmod_t m) : x:nat{x < m}  = a
+let natmod_to_int (#m:pos) (a:natmod_t m) : x:nat{x < m}  = a
 
 let bytes_copy x = x
 let bytes_length x = length x
 let bytes_to_uint32s_le #l (b:lbytes (l `op_Multiply` 4)) = uints_from_bytes_le #U32 #l b
 let bytes_from_uint32s_le #l (b:lseq uint32_t l) = uints_to_bytes_le #U32 b 
 let bytes_to_nat_le #l (b:lbytes l) = nat_from_bytes_le #l b
-let bytes_from_nat_le l n = nat_to_bytes_le l n 
+let bytes_from_nat_le n l = nat_to_bytes_le l n 
 let bytes_to_uint128_le #l (b:lbytes l) = uint_from_bytes_le #U128 b
 let bytes_from_uint128_le n = uint_to_bytes_le #U128 n
 

@@ -23,7 +23,7 @@ def to_scalar(i:nat_t) -> uintn_t(256):
 serialized_point_t = bytes_t(32)
 serialized_scalar_t = bytes_t(32)
 
-g25519: point_t = (9, 1)
+g25519: point_t = (to_felem 9, to_felem 1)
 
 
 @typechecked
@@ -120,9 +120,10 @@ def private_to_public(s: serialized_scalar_t) -> serialized_point_t:
 
 
 @typechecked
-def ecdh_shared_secret(private: serialized_scalar_t, public: serialized_point_t) -> serialized_point_t:
-    if is_on_curve(public):
-        return scalarmult(private, public)
+def ecdh_shared_secret(priv: serialized_scalar_t, pub: serialized_point_t) -> result_t(serialized_point_t):
+    res : result_t (serialized_point_t)
+    if is_on_curve(pub):
+        res = result.retval(scalarmult(priv, pub))
     else:
-        fail("public key is not on curve")
-
+        res = result.error("public key is not on curve")
+    return res
