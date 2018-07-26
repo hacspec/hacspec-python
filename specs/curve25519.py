@@ -23,7 +23,7 @@ def to_scalar(i:nat_t) -> uintn_t(256):
 serialized_point_t = bytes_t(32)
 serialized_scalar_t = bytes_t(32)
 
-g25519: point_t = (to_felem 9, to_felem 1)
+g25519: point_t = (to_felem(9), to_felem(1))
 
 
 @typechecked

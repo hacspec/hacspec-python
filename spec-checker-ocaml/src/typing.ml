@@ -38,8 +38,12 @@ let stdlib = [
   ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fun [aty] -> nat_t), Ident.make "bytes_length"));
   ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Approx PInt)], (fun [aty;bty] -> TTuple [TArray(bytes_t,None);bytes_t]), Ident.make "bytes_split_blocks"));
   ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)], (fun [TArray(aty,None);bty] -> aty), Ident.make "bytes_concat_blocks"));
+  ((["bytes"],"to_uint32_be"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U32), Ident.make "bytes_to_uint32_be"));
+  ((["bytes"],"from_uint32_be"), ([Some (`Exact (TWord `U32))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint32_be"));
   ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TArray (TWord `U32,None)), Ident.make "bytes_to_uint32s_le"));
   ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (TWord `U32,None)))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint32s_le"));
+  ((["bytes"],"to_uint32s_be"), ([Some (`Exact bytes_t)], (fun [aty] -> TArray (TWord `U32,None)), Ident.make "bytes_to_uint32s_be"));
+  ((["bytes"],"from_uint32s_be"), ([Some (`Exact (TArray (TWord `U32,None)))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint32s_be"));
   ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fun [aty] -> nat_t), Ident.make "bytes_to_nat_le"));
   ((["bytes"],"from_nat_le"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_from_nat_le"));
   ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U128), Ident.make "bytes_to_uint128_le"));
@@ -50,6 +54,7 @@ let stdlib = [
   ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fun [aty] -> int_t), Ident.make "natmod_to_int"));
   
   (*   (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN Big_int.zero)), Ident.make "uintn")); *)
+  ((["uintn"],"to_int"), ([Some (`Approx PWord)], (fun [aty] -> nat_t), Ident.make "uintn_to_int"));
   ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> nat_t), Ident.make "uintn_to_nat"));
   ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Approx PInt)], (fun [aty;bty] -> TWord `U1), Ident.make "uintn_get_bit"));
   ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Approx PInt);Some (`Approx PInt)], (fun [aty;bty;cty] -> TWord (`UN Big_int.zero)), Ident.make "uintn_get_bits"));
