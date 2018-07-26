@@ -135,6 +135,7 @@ module Env : sig
     val bind   : env -> symbol * type_ -> env * ident
     val unfold : env -> qsymbol -> type_ option
     val hred   : env -> type_ -> type_
+    val inline : env -> type_ -> type_
   end
 
   module Vars : sig
@@ -222,6 +223,19 @@ end = struct
         | _ -> ty
 
       in fun ty -> hred ty
+
+
+    let inline (env : env) =
+      let rec inline (ty : type_) =
+        match ty with
+        | TNamed qs -> inline (Option.get (unfold env qs))
+        | TTuple tl -> TTuple (List.map inline tl)
+        | TArray (t,s) -> TArray (inline t,s)
+        | TRefined (t,s) -> TRefined (inline t,s)
+        | TResult (t) -> TResult (inline t)
+        | _ -> ty
+
+      in fun ty -> inline ty
 
     let compat (env : env) =
       let rec compat (ty1 : type_) (ty2 : type_) : bool =
@@ -508,11 +522,14 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let tyl = List.map (fun t -> tt_type env t) tyl in
       TTuple tyl
 
-  | _, [] -> begin
+  | tn, [] -> TNamed ([],tn)
+(*
+     begin
       match Env.Types.get env (unloc x) with
       | None -> error ~loc:(loc x) env (UnknownTypeName ([], unloc x))
       | Some decl -> decl.Env.tdef
     end
+ *)
 
   | _ -> error ~loc:(loc x) env (InvalidTypeCtor (unloc x))
 
@@ -547,10 +564,11 @@ and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
     | PEGet (pl, ps) ->
         let l,t = tt_lvalue ~cty:(`Approx PArray) env pl in   
         let s   = tt_slice env ps in
+        let lt = Env.Types.inline env t in
         let ty =
-          match t,s with
+          match lt,s with
           | TWord _, _ -> error ~loc:(loc pe) env InvalidLValueExpr
-          | TArray (_,_), `One _ -> Type.as_array t
+          | TArray (ty,_), `One _ -> ty
           | TArray (_,_), `Slice _ -> t
         in
         (LGet (l, s), ty)
@@ -625,9 +643,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
     | PEEq (b, (pe1, pe2)) ->
         let e1, ty1 = tt_expr env pe1 in
         let e2, ty2 = tt_expr env pe2 in
-  
-        if not (Type.eq ty1 ty2) then
-          error ~loc:(loc pe) env (InvalidType (ty1, [`Exact ty2]));
+        check_ty_compat ~loc:(loc pe) ~dst:ty1 ~src:ty2;
         (EEq (b, (e1, e2)), TBool)
 
     | PEFun _ ->
@@ -735,10 +751,10 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let e,t = tt_expr env pe in   
         let s   = tt_slice env ps in
         let e,ty =
-          match t,s with
+          match Env.Types.inline env t,s with
           | TWord _, `One i -> ECall(get_bit,[e;i]),TWord `U1
           | TWord _, `Slice (s,f) -> ECall(get_bits,[e;s;f]),TWord (`UN Big_int.zero)
-          | TArray (_,_), `One _ -> EGet(e,s),Type.as_array t
+          | TArray (ty,_), `One _ -> EGet(e,s),ty
           | TArray (_,_), `Slice _ -> EGet(e,s),t
         in
         (e, ty)

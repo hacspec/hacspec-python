@@ -3,6 +3,9 @@ open Lib.IntTypes
 open Lib.Sequence
 open Lib.ByteSequence
 
+type nat_t = nat
+type pos_t = pos
+
 type numeric = 
   | Word of inttype
   | Int 

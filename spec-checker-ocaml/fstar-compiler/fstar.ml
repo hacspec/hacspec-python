@@ -148,6 +148,7 @@ let rec lvars il =
   | IFor ((i,rg,b),None) :: r -> IdentSet.union (IdentSet.remove (Ident.to_string i) (lvars b)) (lvars r)
   | _ -> IdentSet.empty
 
+
 let rec fstar_of_instrs il fin =
   match il with
   | [] -> fin
@@ -155,34 +156,42 @@ let rec fstar_of_instrs il fin =
   | IReturn None :: [] when fin = "" -> "()"
   | IReturn (Some (e,t)) :: [] when fin = "" -> fstar_of_expr false e
   | IAssign (None,(e,t)) :: r -> "let _ = "^fstar_of_expr false e^" in \n"^fstar_of_instrs r fin
-  | IAssign (Some(LVar _ as p,`Plain),(e,t)) :: r ->
-     let l,le = fstar_of_lvalue false p in
-     "let "^l^" = "^fstar_of_expr false e^" in \n"^fstar_of_instrs r fin
-  | IAssign (Some(LVar _ as p,op),(e,t)) :: r ->
-     let l,le = fstar_of_lvalue false p in
-     "let "^l^" = "^le^" "^fstar_of_assop op^" "^fstar_of_expr false e^" in \n"^fstar_of_instrs r fin
-  | IAssign (Some(LTuple _ as p,`Plain),(e,t)) :: r ->
-     let l,le = fstar_of_lvalue false p in
-     "let "^l^" = "^fstar_of_expr false e^" in \n"^fstar_of_instrs r fin
-  | IAssign (Some(LGet(LVar v,`One e2) as p,`Plain),(e,t)) :: r ->
-     let l,le = fstar_of_lvalue false p in
-     "let "^l^" = "^le^" <- "^fstar_of_expr true e^" in \n"^fstar_of_instrs r fin
-  | IAssign (Some(LGet(LVar v,`One e2) as p,op),(e,t)) :: r ->
-     let l,le = fstar_of_lvalue false p in
-     "let "^l^" = "^le^" <- ("^le^" "^fstar_of_assop op^" "^fstar_of_expr true e^") in \n"^fstar_of_instrs r fin
-  | IAssign (Some(LGet(LVar v,`Slice (e1,e2)) as p,`Plain),(e,t)) :: r ->
-     let l,le = fstar_of_lvalue false p in
-     "let "^l^" = array_update_"^le^" "^fstar_of_expr true e^" in \n"^fstar_of_instrs r fin
+  | IAssign (Some(LVar _ as p,op),(e,t)) :: r 
+  | IAssign (Some(LTuple _ as p,op),(e,t)) :: r ->
+     assign p None op e r fin
+  | IAssign (Some(LGet(LVar v,sl) as p,op),(e,t)) :: r ->
+     assign p (Some sl) op e r fin
   | IIf ((e,b),[],bo) as i :: r ->
      let lvs = IdentSet.elements (lvars [i]) in
      let tup = match lvs with [] -> "()" | [x] -> x | tl -> "("^String.concat "," tl^")" in
      let else_b = match bo with None -> tup | Some b -> fstar_of_instrs b tup in
-     "let "^tup^" = if "^fstar_of_expr false e^" then ("^fstar_of_instrs b tup^") else " ^ else_b ^ " in \n"^fstar_of_instrs r fin
+     let ife = "if "^fstar_of_expr false e^" then "^fstar_of_instrs b tup^" else " ^ else_b in
+     if r = [] && tup = fin then ife
+     else "let "^tup^" = "^ife^" in \n"^fstar_of_instrs r fin
   | IFor ((v,(None,e),b),None) as i :: r ->
      let lvs = IdentSet.elements (IdentSet.remove (Ident.to_string v) (lvars b)) in
      let tup = match lvs with [] -> "()" | [x] -> x | tl -> "("^String.concat "," tl^")" in
-     "let "^tup^" = repeati "^fstar_of_expr true e^" (fun "^Ident.to_string v^" "^tup^" -> "^fstar_of_instrs b tup^") "^tup^" in \n"^fstar_of_instrs r fin
+     let fore = "repeati "^fstar_of_expr true e^" (fun "^Ident.to_string v^" "^tup^" -> "^fstar_of_instrs b tup^") "^tup in
+     if r = [] && tup = fin then fore
+     else "let "^tup^" = "^fore^" in \n"^fstar_of_instrs r fin
   | _ -> "TODO: fstar_of_instrs ****"
+
+and assign p slo op e r fin =
+  let l,le = fstar_of_lvalue false p in
+  let e = 
+    match op with
+    | `Plain -> fstar_of_expr false e
+    | _ -> le ^ " " ^ fstar_of_assop op ^ " " ^ fstar_of_expr false e
+  in
+  let e =
+    match slo with
+    | None -> e
+    | Some (`One _) -> le ^" <- "^e
+    | Some (`Slice _) -> "array_update_"^le^" "^e 
+  in
+  if (r = [] && l = fin) then e
+  else "let "^l^" = "^e^" in \n"^fstar_of_instrs r fin
+    
   
 let fstar_of_topdecl d =
     match d with
