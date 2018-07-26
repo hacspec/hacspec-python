@@ -187,7 +187,7 @@ and assign p slo op e r fin =
     match slo with
     | None -> e
     | Some (`One _) -> le ^" <- "^e
-    | Some (`Slice _) -> "array_update_"^le^" "^e 
+    | Some (`Slice _) -> "array_update_"^le^" ("^e^")"
   in
   if (r = [] && l = fin) then e
   else "let "^l^" = "^e^" in \n"^fstar_of_instrs r fin

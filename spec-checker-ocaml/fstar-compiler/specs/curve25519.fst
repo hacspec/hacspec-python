@@ -1,4 +1,4 @@
-(* Generated from hacspec module ../specs/curve25519.py *)
+(* Generated from hacspec module ../../../specs/curve25519.py *)
 module Curve25519
 open Speclib
 let p25519: nat_t = (2 **. 255) -. 19

@@ -1,4 +1,4 @@
-(* Generated from hacspec module ../specs/chacha20.py *)
+(* Generated from hacspec module ../../../specs/chacha20.py *)
 module Chacha20
 open Speclib
 let blocksize: int = 64
@@ -36,10 +36,10 @@ let constants: constants_t =
   array (array_createL [uint32 1634760805; uint32 857760878; uint32 2036477234; uint32 1797285236])
 let chacha20_init (k: key_t) (counter: uint32_t) (nonce: nonce_t) : state_t =
   let st = array_create 16 (uint32 0) in
-  let st = array_update_slice st 0 4 constants in
-  let st = array_update_slice st 4 12 bytes_to_uint32s_le k in
+  let st = array_update_slice st 0 4 (constants) in
+  let st = array_update_slice st 4 12 (bytes_to_uint32s_le k) in
   let st = st.[ 12 ] <- counter in
-  let st = array_update_slice st 13 16 bytes_to_uint32s_le nonce in
+  let st = array_update_slice st 13 16 (bytes_to_uint32s_le nonce) in
   st
 let chacha20_core (st: state_t) : state_t =
   let working_state = array_copy st in
@@ -78,7 +78,7 @@ let chacha20_counter_mode (key: key_t) (counter: uint32_t) (nonce: nonce_t) (msg
       (blocks, ctr, keyblock)
   in
   let keyblock = chacha20_block key ctr nonce in
-  let last_block = array_update_slice last_block 0 (array_length last) last in
+  let last_block = array_update_slice last_block 0 (array_length last) (last) in
   let last_block = xor_block last_block keyblock in
   let last = array_slice last_block 0 (array_length last) in
   array_concat_blocks blocks last

@@ -1,4 +1,4 @@
-(* Generated from hacspec module ../specs/poly1305.py *)
+(* Generated from hacspec module ../../../specs/poly1305.py *)
 module Poly1305
 open Speclib
 let blocksize: int = 16
@@ -11,7 +11,7 @@ let felem_t: Type0 = natmod_t p130m5
 let felem (n: nat_t) : felem_t = natmod n p130m5
 let encode (block: subblock_t) : felem_t =
   let b = array_create 16 (uint8 0) in
-  let b = array_update_slice b 0 (bytes_length block) block in
+  let b = array_update_slice b 0 (bytes_length block) (block) in
   let welem = felem (bytes_to_nat_le b) in
   let lelem = felem (2 **. (8 *. (array_length block))) in
   lelem +. welem

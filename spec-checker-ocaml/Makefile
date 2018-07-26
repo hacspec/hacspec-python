@@ -45,10 +45,8 @@ uninstall:
 to_fstar.native:
 	$(OCAMLBUILD) $@
 
-fstar-compiler/specs/%.fst: to_fstar.native ../specs/%.py
-	./to_fstar.native ../specs/$*.py > fstar-compiler/specs/$*_pre.fst
-	../../FStar/bin/fstar.exe --indent fstar-compiler/specs/$*_pre.fst > fstar-compiler/specs/$*.fst
-
+test:
+	make -C fstar-compiler/specs
 clean:
 	$(OCAMLBUILD) -clean
 	rm -f $(MAIN).native $(MAIN).byte *.fst
