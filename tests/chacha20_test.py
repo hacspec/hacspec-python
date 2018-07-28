@@ -1,10 +1,12 @@
 from specs.chacha20 import *
 
-from test_vectors.chacha20_test_vectors import *
 from sys import exit
+import json
 
 # mypy only checks functions that have types. So add an argument :)
 def main(x: int) -> None:
+    file = open('tests/test_vectors/chacha20_test_vectors.json')
+    chacha20_test_vectors = json.load(file)
     # Quarter round test vectors from RFC 7539
     a = uint32(0x11111111)
     b = uint32(0x01020304)

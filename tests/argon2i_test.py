@@ -1,10 +1,11 @@
 from specs.argon2i import *
-
-from test_vectors.argon2i_test_vectors import *
 from sys import exit
 from tests.testlib import print_dot, exit
+import json
 
 def main():
+    file = open('tests/test_vectors/argon2i_test_vectors.json')
+    argon2i_test_vectors = json.load(file)
     t = print_dot()
     for i, vec in enumerate(argon2i_test_vectors):
         p = bytes.from_hex(vec['p'])

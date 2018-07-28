@@ -1,10 +1,11 @@
 from lib.speclib import *
-from specs.keccak import shake128, shake256, sha3_224, sha3_256, sha3_384, sha3_512
-from test_vectors.keccak_test_vectors import sha3_test_vectors, shake128_test_vectors, shake256_test_vectors
+from specs.sha3 import shake128, shake256, sha3_224, sha3_256, sha3_384, sha3_512
 from sys import exit
 import json
 
 def sha3_test():
+    file = open('tests/test_vectors/sha3_test_vectors.json')
+    sha3_test_vectors = json.load(file)
     for i in range(len(sha3_test_vectors)):
         msg = bytes.from_hex(sha3_test_vectors[i]['msg'])
         expected224 = sha3_test_vectors[i]['expected224']
@@ -32,6 +33,8 @@ def sha3_test():
             exit(1)
 
 def shake128_test():
+    file = open('tests/test_vectors/shake128_test_vectors.json')
+    shake128_test_vectors = json.load(file)
     for i in range(len(shake128_test_vectors)):
         msg = bytes.from_hex(shake128_test_vectors[i]['msg'])
         output = shake128_test_vectors[i]['output']
@@ -47,6 +50,8 @@ def shake128_test():
             exit(1)
 
 def shake256_test():
+    file = open('tests/test_vectors/shake256_test_vectors.json')
+    shake256_test_vectors = json.load(file)
     for i in range(len(shake256_test_vectors)):
         msg = bytes.from_hex(shake256_test_vectors[i]['msg'])
         output = shake256_test_vectors[i]['output']

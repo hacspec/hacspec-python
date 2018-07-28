@@ -1,10 +1,13 @@
 from lib.speclib import *
 from specs.frodo import Frodo
-from test_vectors.frodo_test_vectors import frodo_test_vectors
 from sys import exit
 import json
+from tests.testlib import print_dot
 
 def main (x: int) -> None :
+    file = open('tests/test_vectors/frodo_test_vectors.json')
+    frodo_test_vectors = json.load(file)
+    print_dot()
     for i in range(len(frodo_test_vectors)):
         frodo_kem = frodo_test_vectors[i]['frodo_kem']
         gen_a = frodo_test_vectors[i]['gen_a']

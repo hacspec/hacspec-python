@@ -51,7 +51,7 @@ let montgomery_ladder (k: scalar_t) (init: point_t) : point_t =
   let p0, p1 =
     repeati 256
       (fun i (p0, p1) ->
-          if (uintn_get_bit k (255 -. i)) = (bit 1)
+          if (uintn_get_bit k (255 -. i)) =. (bit 1)
           then point_add_and_double init p1 p0
           else
             let p1, p0 = point_add_and_double init p0 p1 in
@@ -66,8 +66,7 @@ let scalarmult (s: serialized_scalar_t) (p: serialized_point_t) : serialized_poi
   encodePoint r
 let is_on_curve (s: serialized_point_t) : bool =
   let n = bytes_to_nat_le s in
-  let disallowed =
-    array (array_createL [
+  let disallowed_l = [
             0; 1; 325606250916557431795983626356110631294008115727848805560023387167927233504;
             39382357235489614581723060781553021112529911719440698176882885853963445705823;
             ((2 **. 255) -. 19) -. 1; (2 **. 255) -. 19; ((2 **. 255) -. 19) +. 1;
@@ -77,8 +76,11 @@ let is_on_curve (s: serialized_point_t) : bool =
             39382357235489614581723060781553021112529911719440698176882885853963445705823;
             (2 *. ((2 **. 255) -. 19)) -. 1; 2 *. ((2 **. 255) -. 19);
             (2 *. ((2 **. 255) -. 19)) +. 1
-          ])
+          ]
   in
+  assert_norm(List.Tot.length disallowed_l = 12);
+  let disallowed = array_createL disallowed_l in
+  
   let res = true in
   let res =
     repeati (array_length disallowed) (fun i res -> if n = disallowed.[ i ] then false else res) res

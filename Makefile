@@ -1,9 +1,9 @@
 #To run these specs in Python you need to install Python >= 3.6
 PYTHON?=python3.6
 
-SPECS=poly1305 chacha20 aead_chacha20poly1305 sha2 keccak \
+SPECS=poly1305 chacha20 aead_chacha20poly1305 sha2 sha3 \
 curve25519 ed25519 p256 curve448 rsapss aes gf128 aead_aes128gcm blake2
-SLOW_SPECS=wots kyber
+SLOW_SPECS=wots kyber frodo
 FAILING_SPECS=argon2i
 BROKEN_SPECS=vrf
 
