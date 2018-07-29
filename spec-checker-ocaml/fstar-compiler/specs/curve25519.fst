@@ -12,7 +12,7 @@ let scalar_t: Type0 = uintn_t 256
 let to_scalar (i: nat_t) : uintn_t 256 = uintn i 256
 let serialized_point_t: Type0 = array_t uint8_t 32
 let serialized_scalar_t: Type0 = array_t uint8_t 32
-let g25519: point_t = (to_felem 1, to_felem 9)
+let g25519: point_t = (to_felem 9, to_felem 1)
 let point (a: nat_t) (b: nat_t) : point_t = (to_felem a, to_felem b)
 let decodeScalar (s: serialized_scalar_t) : scalar_t =
   let k = bytes_copy s in
@@ -24,13 +24,13 @@ let decodePoint (u: serialized_point_t) : point_t =
   let b = bytes_to_nat_le u in
   point ((b % (2 **. 255)) % p25519) 1
 let encodePoint (p: point_t) : serialized_point_t =
-  let y, x = p in
+  let x, y = p in
   let b = natmod_to_int (x *. (finv y)) in
   bytes_from_nat_le b 32
 let point_add_and_double (q: point_t) (nq: point_t) (nqp1: point_t) : (point_t * point_t) =
-  let z_1, x_1 = q in
-  let z_2, x_2 = nq in
-  let z_3, x_3 = nqp1 in
+  let x_1, z_1 = q in
+  let x_2, z_2 = nq in
+  let x_3, z_3 = nqp1 in
   let a = x_2 +. z_2 in
   let aa = a **. 2 in
   let b = x_2 -. z_2 in
@@ -44,18 +44,18 @@ let point_add_and_double (q: point_t) (nq: point_t) (nqp1: point_t) : (point_t *
   let z_3 = x_1 *. ((da -. cb) **. 2) in
   let x_2 = aa *. bb in
   let z_2 = e *. (aa +. ((to_felem 121665) *. e)) in
-  ((z_3, x_3), (z_2, x_2))
+  ((x_2, z_2), (x_3, z_3))
 let montgomery_ladder (k: scalar_t) (init: point_t) : point_t =
   let p0 = point 1 0 in
   let p1 = init in
   let p0, p1 =
     repeati 256
       (fun i (p0, p1) ->
-          if (uintn_get_bit k (255 -. i)) =. (bit 1)
-          then point_add_and_double init p1 p0
-          else
-            let p1, p0 = point_add_and_double init p0 p1 in
-            (p0, p1))
+          if (uintn_get_bit k (255 -. i)) = (bit 1)
+          then
+            let p1, p0 = point_add_and_double init p1 p0 in
+            (p0, p1)
+          else point_add_and_double init p0 p1)
       (p0, p1)
   in
   p0
@@ -66,7 +66,8 @@ let scalarmult (s: serialized_scalar_t) (p: serialized_point_t) : serialized_poi
   encodePoint r
 let is_on_curve (s: serialized_point_t) : bool =
   let n = bytes_to_nat_le s in
-  let disallowed_l = [
+  let disallowed =
+    array (array_createL [
             0; 1; 325606250916557431795983626356110631294008115727848805560023387167927233504;
             39382357235489614581723060781553021112529911719440698176882885853963445705823;
             ((2 **. 255) -. 19) -. 1; (2 **. 255) -. 19; ((2 **. 255) -. 19) +. 1;
@@ -76,11 +77,8 @@ let is_on_curve (s: serialized_point_t) : bool =
             39382357235489614581723060781553021112529911719440698176882885853963445705823;
             (2 *. ((2 **. 255) -. 19)) -. 1; 2 *. ((2 **. 255) -. 19);
             (2 *. ((2 **. 255) -. 19)) +. 1
-          ]
+          ])
   in
-  assert_norm(List.Tot.length disallowed_l = 12);
-  let disallowed = array_createL disallowed_l in
-  
   let res = true in
   let res =
     repeati (array_length disallowed) (fun i res -> if n = disallowed.[ i ] then false else res) res
