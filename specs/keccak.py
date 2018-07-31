@@ -11,9 +11,9 @@ size_nat_1600_t, size_nat_1600 = refine(int, lambda x: x <= 1600 and x %
 
 @typechecked
 def lfsr86540(lfsr: uint8_t) -> tuple2(uint8_t, bool):
-    lfsr1 = lfsr & uint8(1)
-    result = not (lfsr1 == uint8(0))
-    lfsr2 = lfsr << 1
+    lfsr1 : uint8_t = lfsr & uint8(1)
+    result : bool = not (lfsr1 == uint8(0))
+    lfsr2 : uint8_t = lfsr << 1
     if (lfsr & uint8(0x80)) != uint8(0):
         return (lfsr2 ^ uint8(0x71), result)
     else:
@@ -39,24 +39,25 @@ def state_permute1(s: state_t, lfsr: uint8_t) -> tuple2(state_t, uint8_t):
             s, x, 2) ^ readLane(s, x, 3) ^ readLane(s, x, 4)
 
     s_theta = array.copy(s)
+    _D : uint64_t
     for x in range(5):
         _D = _C[(x + 4) % 5] ^ uintn.rotate_left(_C[(x + 1) % 5], 1)
         for y in range(5):
             s_theta = writeLane(s_theta, x, y, readLane(s_theta, x, y) ^ _D)
 
-    x = 1
-    y = 0
-    current = readLane(s_theta, x, y)
+    x : int = 1
+    y : int = 0
+    current : uint64_t = readLane(s_theta, x, y)
     s_pi_rho = array.copy(s_theta)
 
     for t in range(24):
-        r = ((t + 1) * (t + 2)//2) % 64
-        _Y = (2 * x + 3 * y) % 5
-        x = y
-        y = _Y
-        temp = readLane(s_pi_rho, x, y)
-        s_pi_rho = writeLane(s_pi_rho, x, y, uintn.rotate_left(current, r))
-        current = temp
+        r : int = ((t + 1) * (t + 2)//2) % 64
+        _Y : index_t = (2 * x + 3 * y) % 5
+        x : index_t = y
+        y : index_t = _Y
+        temp : uint64_t = readLane(s_pi_rho, x, y)
+        s_pi_rho : state_t = writeLane(s_pi_rho, x, y, uintn.rotate_left(current, r))
+        current : uint64_t = temp
 
     temp = array.copy(s_pi_rho)
     s_chi = array.copy(s_pi_rho)
@@ -69,7 +70,9 @@ def state_permute1(s: state_t, lfsr: uint8_t) -> tuple2(state_t, uint8_t):
     s_iota = array.copy(s_chi)
 
     for j in range(7):
-        bitPosition = 2 ** j - 1
+        bitPosition : int = 2 ** j - 1
+        lfsr : uint8_t
+        result : bool
         lfsr, result = lfsr86540(lfsr)
         if result == True:
             s_iota = writeLane(s_iota, 0, 0, readLane(
@@ -80,8 +83,10 @@ def state_permute1(s: state_t, lfsr: uint8_t) -> tuple2(state_t, uint8_t):
 
 @typechecked
 def state_permute(s: state_t) -> state_t:
-    lfsr = uint8(0x01)
+    lfsr : uint8_t = uint8(0x01)
     for i in range(24):
+        s : state_t
+        lfsr : uint8_t
         s, lfsr = state_permute1(s, lfsr)
     return s
 
@@ -94,7 +99,7 @@ def loadState(rateInBytes: size_nat_200_t, input_b: vlbytes_t, s: state_t) -> st
     block = array.create(200, uint8(0))
     block[0:rateInBytes] = input_b
     for j in range(25):
-        nj = bytes.to_uint64_le(block[(j * 8):(j * 8 + 8)])
+        nj : uint64_t = bytes.to_uint64_le(block[(j * 8):(j * 8 + 8)])
         s[j] = s[j] ^ nj
     return s
 
@@ -119,14 +124,15 @@ def absorb(s: state_t,
            inputByteLen: size_nat_t,
            input_b: vlbytes_t,
            delimitedSuffix: uint8_t) -> state_t:
-    n = inputByteLen // rateInBytes
+    n : int = inputByteLen // rateInBytes
+    s : state_t
     for i in range(n):
         s = loadState(rateInBytes, input_b[(
             i*rateInBytes):(i*rateInBytes + rateInBytes)], s)
         s = state_permute(s)
 
-    rem = inputByteLen % rateInBytes
-    last = input_b[(inputByteLen - rem):inputByteLen]
+    rem : int = inputByteLen % rateInBytes
+    last : uint8_t = input_b[(inputByteLen - rem):inputByteLen]
     lastBlock = bytes(array.create(rateInBytes, uint8(0)))
     lastBlock[0:rem] = last
     lastBlock[rem] = delimitedSuffix
@@ -151,14 +157,14 @@ def squeeze(s: state_t,
             rateInBytes: nat_t,
             outputByteLen: size_nat_t) -> vlbytes_t:
     output = bytes(array.create(outputByteLen, uint8(0)))
-    outBlocks = outputByteLen // rateInBytes
+    outBlocks : int = outputByteLen // rateInBytes
     for i in range(outBlocks):
-        block = storeState(rateInBytes, s)
+        block : vlbytes_t = storeState(rateInBytes, s)
         output[(i*rateInBytes):(i*rateInBytes + rateInBytes)] = block
-        s = state_permute(s)
+        s : state_t = state_permute(s)
 
-    remOut = outputByteLen % rateInBytes
-    outBlock = storeState(remOut, s)
+    remOut : int = outputByteLen % rateInBytes
+    outBlock : state_t = storeState(remOut, s)
     output[(outputByteLen - remOut):outputByteLen] = outBlock
     return output
 
@@ -166,10 +172,10 @@ def squeeze(s: state_t,
 @typechecked
 def keccak(rate: size_nat_1600_t, capacity: size_nat_t, inputByteLen: size_nat_t,
            input_b: vlbytes_t, delimitedSuffix: uint8_t, outputByteLen: size_nat_t) -> vlbytes_t:
-    rateInBytes = nat(rate // 8)
+    rateInBytes : nat_t = nat(rate // 8)
     s = array.create(25, uint64(0))
     s = absorb(s, rateInBytes, inputByteLen, input_b, delimitedSuffix)
-    output = squeeze(s, rateInBytes, outputByteLen)
+    output : vlbytes_t = squeeze(s, rateInBytes, outputByteLen)
     return output
 
 

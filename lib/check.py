@@ -6,6 +6,7 @@ from os import environ
 import os
 
 file_dir = None
+variables = []
 
 def fail(s):
     print("\n *** " + s + "\n")
@@ -88,60 +89,68 @@ def read_function_signature(f):
         fail("Every hacpsec function must have a return type: \"" + fun_name+"\"")
     return
 
-def read_function_body(body):
+def check_variable_is_typed(line):
     # Make sure that all local variables are typed by either:
     # i) annotated assign or
     # ii) typed variable declaration
-    variables = []
-    speclibFunctions = ["array.copy", "array.create"]
-    for line in body:
-        if isinstance(line, Assign):
-            if len(line.targets) > 0 and isinstance(line.targets[0], Tuple):
-                # This is a tuple assignment. The variables have to be declared
-                # before use.
-                for target in line.targets[0].elts:
-                    if not isinstance(target, Name):
-                        fail("Tuple values must be names.")
-                    if not target.id in variables and not target.id is "_":
-                        fail("Untyped variable used in tuple assignment \"" + str(target.id) + "\"")
-            elif len(line.targets) > 1:
-                fail("Only tuple assignment or single variable assignments are allowed")
-            else:
-                target = line.targets[0]
-                if isinstance(target, Subscript):
-                    # Subscripts assign to arrays that are typed in speclib.
-                    continue
+    global variables
+    speclibFunctions = ["array.copy", "array.create", "refine", "bytes"]
+    if isinstance(line, Assign):
+        if len(line.targets) > 0 and isinstance(line.targets[0], Tuple):
+            # This is a tuple assignment. The variables have to be declared
+            # before use.
+            for target in line.targets[0].elts:
                 if not isinstance(target, Name):
-                    print(target)
-                    fail("Variable assignment targets have to be variable names.")
-                if isinstance(line.value, Call) and \
-                   isinstance(line.value.func, Name) and \
-                   line.value.func.id in ["array"]:
-                    # No type for arrays needed.
-                    continue
-                if isinstance(line.value, Call) and \
-                   isinstance(line.value.func, Attribute) and \
-                   isinstance(line.value.func.value, Name) and \
-                   line.value.func.value.id +"."+ line.value.func.attr in speclibFunctions:
-                    # No type for arrays needed.
-                    continue
-                if target.id.endswith("_t"):
-                    # This is a type not a variable. Ignore it.
-                    continue
-                if not target.id in variables:
-                    fail("Variable assignment doesn't have a type \""+target.id+"\"")
-        if isinstance(line, AnnAssign):
-            if line.value is None:
-                # This is a variable declaration.
-                variables.append(line.target.id)
-            else:
-                if isinstance(line.annotation, Name):
-                    # We could check the type here of line.annotation.id.
-                    # But seeing n annotation here is enough for us atm.
-                    pass
-                if not isinstance(line.target, Name):
-                    fail("Variable ann-assignment target must be a Name \""+str(line.target)+"\"")
-                variables.append(line.target.id)
+                    fail("Tuple values must be names.")
+                if not target.id in variables and not target.id is "_":
+                    if isinstance(line.value, Call) and \
+                       line.value.func.id is "refine":
+                        return None
+                    fail("Untyped variable used in tuple assignment \"" + str(target.id) + "\"")
+        elif len(line.targets) > 1:
+            fail("Only tuple assignment or single variable assignments are allowed")
+        else:
+            target = line.targets[0]
+            if isinstance(target, Subscript):
+                # Subscripts assign to arrays that are typed in speclib.
+                return None
+            if not isinstance(target, Name):
+                fail("Variable assignment targets have to be variable names.")
+            if isinstance(line.value, Call) and \
+               isinstance(line.value.func, Name) and \
+               (line.value.func.id in ["array"] or line.value.func.id in speclibFunctions):
+                # No type for arrays needed.
+                variables.append(target.id)
+                return None
+            if isinstance(line.value, Call) and \
+               isinstance(line.value.func, Attribute) and \
+               isinstance(line.value.func.value, Name) and \
+               line.value.func.value.id +"."+ line.value.func.attr in speclibFunctions:
+                # No type for arrays needed.
+                variables.append(target.id)
+                return None
+            if target.id.endswith("_t"):
+                # This is a type not a variable. Ignore it.
+                return None
+            if not target.id in variables:
+                fail("Variable assignment doesn't have a type \""+target.id+"\"")
+    if isinstance(line, AnnAssign):
+        if line.value is None:
+            # This is a variable declaration.
+            variables.append(line.target.id)
+        else:
+            if isinstance(line.annotation, Name):
+                # We could check the type here of line.annotation.id.
+                # But seeing n annotation here is enough for us atm.
+                pass
+            if not isinstance(line.target, Name):
+                fail("Variable ann-assignment target must be a Name \""+str(line.target)+"\"")
+            variables.append(line.target.id)
+
+# def read_function_body(body):
+#     variables = []
+#     for line in body:
+#         read_line(line, variables)
 
 def import_is_hacspec(filename):
     if filename.endswith("speclib"):
@@ -258,7 +267,7 @@ def is_valid_type(node):
         return True
     if isinstance(node, Call):
         fun_name = node.func.id
-        if fun_name in ("vlarray_t"):
+        if fun_name in ("vlarray_t", "result_t", "array_t", "array"):
             return True
     if not isinstance(node, str):
         return False
@@ -328,6 +337,7 @@ def read(node) -> None:
                         type_name_string = type_name.elts[0].id
                     if not type_name_string.endswith("_t"):
                         fail("Custom type names must end on _t " + str(type_name.id))
+        check_variable_is_typed(node)
         return
 
     if isinstance(node, AugAssign):
@@ -353,10 +363,11 @@ def read(node) -> None:
             fail("Invalid ann assignment (Name) " + str(node.target))
         read(node.annotation)
         if not is_valid_type(node.annotation):
-            fail("Invalid ann assignment (annotation) " + str(node.target))
+            fail("Invalid ann assignment (annotation) " + str(node.target.id))
         read(node.value)
         if not is_expression(node.value):
             fail("Invalid ann assignment. Right side must be expression " + str(node.value))
+        check_variable_is_typed(node)
         return
 
     # Lists are ok as long as they aren't assigned directly.
@@ -472,7 +483,9 @@ def read(node) -> None:
     # Functions
     if isinstance(node, FunctionDef):
         read_function_signature(node)
-        read_function_body(node.body)
+        # Reset variables.
+        global variables
+        variables = []
         read(node.body)
         return
 
@@ -573,8 +586,6 @@ def main():
         code = py_file.read()
         ast = parse(source=code, filename=path)
         parsed = read(ast)
-        # Check types of global variables.
-        read_function_body(ast.body)
         print(path + " is a valid hacspec.")
 
 

@@ -9,13 +9,13 @@ from specs.sha2 import sha512
 d25519: felem_t = (to_felem(
     37095705934669439343138083508754565189542113879843219016388785533085940283555))
 
-q25519 = nat((1 << 252) + 27742317777372353535851937790883648493)
+q25519 : nat_t = nat((1 << 252) + 27742317777372353535851937790883648493)
 qelem_t = natmod_t(q25519)
 @typechecked
 def to_qelem(n:nat_t) -> qelem_t:
     return natmod(n,q25519)
 
-extended_point_t = tuple4(felem_t, felem_t, felem_t, felem_t)
+extended_point_t = tuple_t(felem_t, felem_t, felem_t, felem_t)
 
 @typechecked
 def extended_point(a: felem_t, b: felem_t, c: felem_t, d: felem_t) -> extended_point_t:
@@ -23,7 +23,7 @@ def extended_point(a: felem_t, b: felem_t, c: felem_t, d: felem_t) -> extended_p
 
 @typechecked
 def sha512_modq(s: vlbytes_t) -> qelem_t:
-    h = sha512(s)
+    h : digest_t = sha512(s)
     return to_qelem(bytes.to_nat_le(h))
 
 
@@ -33,20 +33,28 @@ def point_add(p: extended_point_t, q: extended_point_t) -> extended_point_t:
         return q
     if q == extended_point(zero, one, one, zero):
         return p
+    x1 : felem_t
+    x2 : felem_t
+    y1 : felem_t
+    y2 : felem_t
+    z1 : felem_t
+    z2 : felem_t
+    t1 : felem_t
+    t2 : felem_t
     (x1, y1, z1, t1) = p
     (x2, y2, z2, t2) = q
-    a = (y1 - x1) * (y2 - x2)
-    b = (y1 + x1) * (y2 + x2)
-    c = to_felem(2) * d25519 * t1 * t2
-    d = to_felem(2) * z1 * z2
-    e = b - a
-    f = d - c
-    g = d + c
-    h = b + a
-    x3 = e * f
-    y3 = g * h
-    t3 = e * h
-    z3 = f * g
+    a : felem_t = (y1 - x1) * (y2 - x2)
+    b : felem_t = (y1 + x1) * (y2 + x2)
+    c : felem_t = to_felem(2) * d25519 * t1 * t2
+    d : felem_t = to_felem(2) * z1 * z2
+    e : felem_t = b - a
+    f : felem_t = d - c
+    g : felem_t = d + c
+    h : felem_t = b + a
+    x3 : felem_t = e * f
+    y3 : felem_t = g * h
+    t3 : felem_t = e * h
+    z3 : felem_t = f * g
     return extended_point(x3, y3, z3, t3)
 
 
