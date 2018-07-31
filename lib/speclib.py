@@ -75,12 +75,12 @@ class _result(Generic[T]):
     @staticmethod
     @typechecked
     def retval(v:T) -> '_result[T]':
-        return _result(true,v)    
+        return _result(True,v)    
 
     @staticmethod
     @typechecked
     def error(v:str) -> '_result[T]':
-        return _result(false,v)
+        return _result(False,v)
 
     @staticmethod
     @typechecked
@@ -189,6 +189,7 @@ class _natmod:
     @typechecked
     def __eq__(self, other) -> bool:
         if not isinstance(other, _natmod):
+            print(type(other))
             fail("You can only compare two natmods.")
         return (self.modulus == other.modulus and
                 self.v == other.v)

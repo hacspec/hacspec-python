@@ -18,7 +18,7 @@ def finv(x: felem_t) -> felem_t:
 point_t  = tuple_t(felem_t, felem_t)  # projective coordinates
 scalar_t = uintn_t(256)
 @typechecked
-def to_scalar(i:nat_t) -> uintn_t(256):
+def to_scalar(i:nat_t) -> scalar_t:
     return uintn(i,256)
 serialized_point_t = bytes_t(32)
 serialized_scalar_t = bytes_t(32)
