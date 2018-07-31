@@ -1,6 +1,6 @@
 from lib.speclib import *
 
-prime = 2**256 - 2**224 + 2**192 + 2**96 - 1
+prime : int = 2**256 - 2**224 + 2**192 + 2**96 - 1
 felem_t = natmod_t(prime)
 @typechecked
 def to_felem(x: nat_t) -> felem_t:
@@ -12,8 +12,8 @@ def finv(x: felem_t) -> felem_t:
     return x ** (prime - 2)
 
 
-jacobian_t = tuple3(felem_t, felem_t, felem_t)
-affine_t = tuple2(felem_t, felem_t)
+jacobian_t = tuple_t(felem_t, felem_t, felem_t)
+affine_t = tuple_t(felem_t, felem_t)
 
 
 @typechecked
@@ -30,11 +30,14 @@ def to_scalar(n:int) -> scalar_t:
 
 @typechecked
 def toAffine(p: jacobian_t) -> affine_t:
+    x : felem_t
+    y : felem_t
+    z : felem_t
     (x, y, z) = p
-    z2 = z ** 2
-    z2i = finv(z2)
-    z3 = z * z2
-    z3i = finv(z3)
+    z2 : felem_t = z ** 2
+    z2i : felem_t = finv(z2)
+    z3 : felem_t = z * z2
+    z3i : felem_t = finv(z3)
     x = x * z2i
     y = y * z3i
     return x, y
@@ -42,29 +45,33 @@ def toAffine(p: jacobian_t) -> affine_t:
 
 @typechecked
 def pointDouble(p: jacobian_t) -> jacobian_t:
+    x1 : felem_t
+    y1 : felem_t
+    z1 : felem_t
     (x1, y1, z1) = p
-    delta = z1 ** 2
-    gamma = y1 ** 2
+    delta : felem_t = z1 ** 2
+    gamma : felem_t = y1 ** 2
 
-    beta = x1 * gamma
+    beta : felem_t = x1 * gamma
 
-    alpha_1 = x1 - delta
-    alpha_2 = x1 + delta
-    alpha = to_felem(3) * (alpha_1 * alpha_2)
+    alpha_1 : felem_t = x1 - delta
+    alpha_2 : felem_t = x1 + delta
+    alpha : felem_t = to_felem(3) * (alpha_1 * alpha_2)
 
-    x3 = (alpha ** 2) - (to_felem(8) * beta)
+    x3 : felem_t = (alpha ** 2) - (to_felem(8) * beta)
 
-    z3_ = (y1 + z1) ** 2
-    z3 = z3_ - (gamma + delta)
+    z3_ : felem_t = (y1 + z1) ** 2
+    z3 : felem_t = z3_ - (gamma + delta)
 
-    y3_1 = (to_felem(4) * beta) - x3
-    y3_2 = to_felem(8) * (gamma ** 2)
-    y3 = (alpha * y3_1) - y3_2
+    y3_1 : felem_t = (to_felem(4) * beta) - x3
+    y3_2 : felem_t = to_felem(8) * (gamma ** 2)
+    y3 : felem_t = (alpha * y3_1) - y3_2
     return x3, y3, z3
 
 
 @typechecked
 def isPointAtInfinity(p: jacobian_t) -> bool:
+    z : felem_t
     (_, _, z) = p
     return (z == to_felem(0))
 
@@ -75,47 +82,53 @@ def pointAdd(p: jacobian_t, q: jacobian_t) -> jacobian_t:
         return q
     if isPointAtInfinity(q):
         return p
+    x1 : felem_t
+    y1 : felem_t
+    z1 : felem_t
+    x2 : felem_t
+    y2 : felem_t
+    z2 : felem_t
     (x1, y1, z1) = p
     (x2, y2, z2) = q
-    z1z1 = z1 ** 2
-    z2z2 = z2 ** 2
-    u1 = x1 * z2z2
-    u2 = x2 * z1z1
-    s1 = (y1 * z2) * z2z2
-    s2 = (y2 * z1) * z1z1
+    z1z1 : felem_t = z1 ** 2
+    z2z2 : felem_t = z2 ** 2
+    u1 : felem_t = x1 * z2z2
+    u2 : felem_t = x2 * z1z1
+    s1 : felem_t = (y1 * z2) * z2z2
+    s2 : felem_t = (y2 * z1) * z1z1
     if u1 == u2:
         if s1 == s2:
             return pointDouble(p)
         else:
             return jacobian(0, 1, 0)
-    h = u2 - u1
-    i = (to_felem(2) * h) ** 2
-    j = h * i
-    r = to_felem(2) * (s2 - s1)
-    v = u1 * i
+    h : felem_t = u2 - u1
+    i : felem_t = (to_felem(2) * h) ** 2
+    j : felem_t = h * i
+    r : felem_t = to_felem(2) * (s2 - s1)
+    v : felem_t = u1 * i
 
-    x3_1 = to_felem(2) * v
-    x3_2 = (r ** 2) - j
-    x3 = x3_2 - x3_1
+    x3_1 : felem_t = to_felem(2) * v
+    x3_2 : felem_t = (r ** 2) - j
+    x3 : felem_t = x3_2 - x3_1
 
-    y3_1 = (to_felem(2) * s1) * j
-    y3_2 = r * (v - x3)
-    y3 = y3_2 - y3_1
+    y3_1 : felem_t = (to_felem(2) * s1) * j
+    y3_2 : felem_t = r * (v - x3)
+    y3 : felem_t = y3_2 - y3_1
 
-    z3_ = (z1 + z2) ** 2
-    z3 = (z3_ - (z1z1 + z2z2)) * h
+    z3_ : felem_t = (z1 + z2) ** 2
+    z3 : felem_t = (z3_ - (z1z1 + z2z2)) * h
     return x3, y3, z3
 
 
 @typechecked
 def montgomery_ladder(k: scalar_t, init: jacobian_t) -> jacobian_t:
-    p0 = jacobian(0, 1, 0)
-    p1 = init
+    p0 : jacobian_t = jacobian(0, 1, 0)
+    p1 : jacobian_t = init
     for i in range(256):
         if k[255-i] == bit(1):
             (p0, p1) = (p1, p0)
-        xx = pointDouble(p0)
-        xp1 = pointAdd(p0, p1)
+        xx : jacobian_t = pointDouble(p0)
+        xp1 : jacobian_t = pointAdd(p0, p1)
         if k[255-i] == bit(1):
             (p0, p1) = (xp1, xx)
         else:
@@ -123,12 +136,12 @@ def montgomery_ladder(k: scalar_t, init: jacobian_t) -> jacobian_t:
     return p0
 
 
-basePoint = jacobian(0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296,
-                     0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5,
-                     1)
+basePoint : jacobian_t = jacobian(0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296,
+                                  0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5,
+                                  1)
 
 
 @typechecked
 def point_mul(k: scalar_t) -> affine_t:
-    jac = montgomery_ladder(k, basePoint)
+    jac : jacobian_t = montgomery_ladder(k, basePoint)
     return toAffine(jac)
