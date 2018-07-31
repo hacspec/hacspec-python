@@ -234,7 +234,7 @@ sexpr_r:
     { PETuple ([], false) }
 
 | esb=parens(es=rlist1(sexpr, COMMA) b=iboption(COMMA) { (es, b) })
-    { let (es, b) = esb in PETuple (List.rev es, b) }
+    { let (es, b) = esb in PETuple (es, b) }
 
 | es=brackets(rlist0(sexpr, COMMA))
     { PEArray es }

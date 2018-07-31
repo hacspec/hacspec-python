@@ -1,6 +1,5 @@
 from specs.curve25519 import *
 import json
-from test_vectors.curve25519_test_vectors import curve25519_test_vectors
 from sys import exit
 
 def main (x: int) -> None :
@@ -19,6 +18,9 @@ def main (x: int) -> None :
         print("expected:",expected)
         print("computed:",computed)
 
+    file = open('tests/test_vectors/curve25519_test_vectors.json')
+    curve25519_test_vectors = json.load(file)
+        
     for i in range(len(curve25519_test_vectors)):
         s = bytes.from_hex(curve25519_test_vectors[i]['private'])
         p = bytes.from_hex(curve25519_test_vectors[i]['public'])
@@ -26,8 +28,11 @@ def main (x: int) -> None :
         valid = curve25519_test_vectors[i]['valid']
         computed = scalarmult(s,p)
         if not is_on_curve(p):
-            print("u",i+1," is not on curve")
-        if (computed == expected and valid):
+            if valid:
+                print("Curve25519 Test ",i+1," failed (public key is not on curve).")
+            else:
+                print("Curve25519 Test ",i+1," passed (public key is not on curve).")
+        elif (computed == expected and valid):
             print("Curve25519 Test ",i+1," passed.")
         elif (not(computed == expected) and not valid):
             print("Curve25519 Test ",i+1," passed.")

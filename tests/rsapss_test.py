@@ -1,10 +1,11 @@
 from lib.speclib import *
 from specs.rsapss import rsapss_sign, rsapss_verify, os2ip
-from test_vectors.rsapss_test_vectors import rsapss_test_vectors
 from sys import exit
 import json
 
 def main (x: int) -> None :
+    file = open('tests/test_vectors/rsapss_test_vectors.json')
+    rsapss_test_vectors = json.load(file)
     for i in range(len(rsapss_test_vectors)):
         modBits = nat(rsapss_test_vectors[i]['modBits'])
         nBytes = bytes.from_hex(rsapss_test_vectors[i]['n'])

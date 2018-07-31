@@ -1,11 +1,12 @@
 from lib.speclib import *
 from specs.kyber import Kyber #crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec
-from test_vectors.kyber_test_vectors import kyber_test_vectors
 from sys import exit
 import json
 from tests.testlib import print_dot
 
 def main (x: int) -> None :
+    file = open('tests/test_vectors/kyber_test_vectors.json')
+    kyber_test_vectors = json.load(file)
     print_dot()
     for i in range(len(kyber_test_vectors)):
         kyber_k = kyber_test_vectors[i]['kyber_k']

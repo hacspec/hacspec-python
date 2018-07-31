@@ -1,7 +1,6 @@
 from specs.aead_chacha20poly1305 import *
-
-from test_vectors.aead_chacha20poly1305_test_vectors import *
 from sys import exit
+import json
 
 def main(x: int) -> None :
     k = bytes.from_ints([0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,
@@ -55,6 +54,8 @@ def main(x: int) -> None :
         print("expected mac: ", exp_mac)
         print("computed mac: ", mac)
         exit(1)
+    file = open('tests/test_vectors/aead_chacha20poly1305_test_vectors.json')
+    aead_chacha20poly1305_test_vectors = json.load(file)
     for i in range(len(aead_chacha20poly1305_test_vectors)):
         msg = bytes.from_hex(aead_chacha20poly1305_test_vectors[i]['input'])
         k   = bytes.from_hex(aead_chacha20poly1305_test_vectors[i]['key'])

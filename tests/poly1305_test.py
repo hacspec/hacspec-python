@@ -1,9 +1,10 @@
 from specs.poly1305 import *
 import json
-from test_vectors.poly1305_test_vectors import poly1305_test_vectors
 from sys import exit
 
 def main (x: int) -> None :
+    file = open('tests/test_vectors/poly1305_test_vectors.json')
+    poly1305_test_vectors = json.load(file)
     # RFC 7539 Test Vectors
     msg = bytes.from_ints([
         0x43, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x67, 0x72,
