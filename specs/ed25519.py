@@ -196,8 +196,8 @@ def sign(priv: serialized_scalar_t, msg: vlbytes_t) -> sigval_t:
     ap : serialized_point_t = point_compress(point_mul(a, g_ed25519))
     tmp = bytes(array.create(array.length(msg)+64, uint8(0)))
     tmp[32:64] = prefix
-    tmp[64:array.length(msg)] = msg
-    pmsg : bytes_t = tmp[32:array.length(msg)]
+    tmp[64:array.length(msg)+64] = msg
+    pmsg : bytes_t = tmp[32:array.length(msg)+64]
     r : qelem_t = sha512_modq(pmsg)
     rp : serialized_point_t = point_compress(point_mul(bytes.from_nat_le(natmod.to_int(r)), g_ed25519))
     tmp[0:32] = rp
@@ -241,7 +241,7 @@ def verify(pub: serialized_point_t, msg: vlbytes_t, sigval: sigval_t) -> bool:
         tmp = bytes(array.create(array.length(msg)+64, uint8(0)))
         tmp[0:32] = rs
         tmp[32:64] = pub
-        tmp[64:array.length(msg)] = msg
+        tmp[64:array.length(msg)+64] = msg
         h : qelem_t = sha512_modq(tmp)
         sB : extended_point_t = point_mul(bytes.from_nat_le(s), g_ed25519)
         hA : extended_point_t = point_mul(bytes.from_nat_le(natmod.to_int(h)), ap)
