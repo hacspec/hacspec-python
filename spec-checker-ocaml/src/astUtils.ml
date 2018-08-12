@@ -19,8 +19,8 @@ let pifold (f : 'a -> pinstr -> 'a) (x : 'a) (i : pinstr) =
       let bs = List.flatten (b :: Option.to_list ob) in
       List.fold_left f x bs
 
-  | PSDef (_, _, pf) ->
-      List.fold_left f x pf
+  | PSDef pf ->
+      List.fold_left f x pf.pf_body
 
 (* -------------------------------------------------------------------- *)
 let psfold (f : 'a -> pinstr -> 'a) (x : 'a) (s : pstmt) =

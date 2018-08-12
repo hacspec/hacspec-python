@@ -373,6 +373,7 @@ type tyerror =
   | InvalidTypeCtor    of symbol
   | InvalidType        of type_ * etype list
   | InvalidLValueExpr
+  | UnsupportedAnnotation
 
 (* -------------------------------------------------------------------- *)
 let pp_tyerror fmt (error : tyerror) =
@@ -434,6 +435,9 @@ let pp_tyerror fmt (error : tyerror) =
 
   | InvalidLValueExpr ->
       Format.fprintf fmt "invalid lvalue expression"
+
+  | UnsupportedAnnotation ->
+      Format.fprintf fmt "unsupported annotation"
 
 (* -------------------------------------------------------------------- *)
 exception TyError of (Location.t * env * tyerror)
@@ -940,10 +944,30 @@ and tt_vardecl
   (env, aout)
 
 (* -------------------------------------------------------------------- *)
+and tt_annotation (env : env) (att : pexpr) : ident * expr list =
+  match fst (tt_expr env att) with
+  | EVar x ->
+      (x, [])
+
+  | ECall (x, args) ->
+      (x, args)
+
+  | _ ->
+      error ~loc:(loc att) env UnsupportedAnnotation
+
+(* -------------------------------------------------------------------- *)
 (* FIXME: check for duplicate argument name *)
-and tt_procdef
-  (env : env) (((f, fty), args, body) : pprocdef) : env * env procdef
-=
+and tt_procdef (env : env) (pf : pprocdef) : env * env procdef =
+  let {
+    pf_name  = f   ;
+    pf_att   = fatt;
+    pf_retty = fty ;
+    pf_args  = args;
+    pf_body  = body;
+  } = pf in
+
+  let fatt = List.map (tt_annotation env) fatt in
+
   let lv =
     let rec aux lv instr =
       match unloc instr with
@@ -969,6 +993,7 @@ and tt_procdef
 
   let aout = {
     prd_name = name;
+    prd_att  = fatt;
     prd_args = args;
     prd_ret  = fty;
     prd_body = (env1, body);
