@@ -14,7 +14,7 @@ jobs:
     - stage: build
       script:
         - make -C build test
-        - make -C spec-compilers
+        - make -C spec-checker-ocaml
         - make -C rfc
     - stage: test
       script: make run
