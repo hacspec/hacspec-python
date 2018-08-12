@@ -26,7 +26,7 @@ def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple_t(int,vlbytes_t):
     return pad_aad+pad_msg+16, to_mac
 
 @typechecked
-def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> tuple2(vlbytes_t,tag_t):
+def aead_chacha20poly1305_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> tuple_t(vlbytes_t,tag_t):
     keyblock0: block_t = chacha20_block(key,uint32(0),nonce)
     mac_key: bytes_t = keyblock0[0:32]
     ciphertext: vlbytes_t = chacha20_encrypt(key,uint32(1),nonce,msg)

@@ -10,7 +10,7 @@ size_nat_1600_t, size_nat_1600 = refine(int, lambda x: x <= 1600 and x %
 
 
 @typechecked
-def lfsr86540(lfsr: uint8_t) -> tuple2(uint8_t, bool):
+def lfsr86540(lfsr: uint8_t) -> tuple_t(uint8_t, bool):
     lfsr1 : uint8_t = lfsr & uint8(1)
     result : bool = not (lfsr1 == uint8(0))
     lfsr2 : uint8_t = lfsr << 1
@@ -32,7 +32,7 @@ def writeLane(s: state_t, x: index_t, y: index_t, v: uint64_t) -> state_t:
 
 
 @typechecked
-def state_permute1(s: state_t, lfsr: uint8_t) -> tuple2(state_t, uint8_t):
+def state_permute1(s: state_t, lfsr: uint8_t) -> tuple_t(state_t, uint8_t):
     _C = array.create(5, uint64(0))
     for x in range(5):
         _C[x] = readLane(s, x, 0) ^ readLane(s, x, 1) ^ readLane(

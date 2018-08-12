@@ -161,7 +161,7 @@ def point_decompress(s:serialized_point_t) -> result_t(extended_point_t) :
     return result.error("Couldn't recover X coordinate.")
 
 @typechecked
-def expand_secret(s: serialized_scalar_t) -> tuple2(serialized_scalar_t, serialized_scalar_t):
+def expand_secret(s: serialized_scalar_t) -> tuple_t(serialized_scalar_t, serialized_scalar_t):
     h : digest_t = sha512(s)
     h_low : bytes_t = h[0:32]
     h_high : bytes_t = h[32:64]

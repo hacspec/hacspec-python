@@ -94,7 +94,8 @@ def check_variable_is_typed(line):
     # i) annotated assign or
     # ii) typed variable declaration
     global variables
-    speclibFunctions = ["array.copy", "array.create", "refine", "bytes"]
+    # TODO: add all array and byte speclib functions
+    speclibFunctions = ["array.copy", "array.create", "refine", "bytes", "bytes.copy", "bytes.from_uint32_be"]
     if isinstance(line, Assign):
         if len(line.targets) > 0 and isinstance(line.targets[0], Tuple):
             # This is a tuple assignment. The variables have to be declared
@@ -271,8 +272,7 @@ def is_valid_type(node):
             return True
     if not isinstance(node, str):
         return False
-    if not (node.endswith("_t") or node is "tuple2" or node is "tuple3" \
-        or node is "tuple4" or node is "tuple5" or node is "FunctionType" \
+    if not (node.endswith("_t") or node is "tuple_t" or node is "FunctionType" \
         or node is "int" or node is "bool" or node is "refine_t" \
         or node is "vlarray_t"):
         return False

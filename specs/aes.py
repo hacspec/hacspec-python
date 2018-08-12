@@ -56,7 +56,7 @@ def shiftRow(i:rowindex_t,shift:rowindex_t,state:block_t) -> block_t:
 
 @typechecked
 def shiftRows(state:block_t) -> block_t:
-    state = shiftRow(1,1,state)
+    state : block_t = shiftRow(1,1,state)
     state = shiftRow(2,2,state)
     state = shiftRow(3,3,state)
     return state
@@ -86,7 +86,7 @@ def mixColumn(c:rowindex_t,state:block_t) -> block_t:
 
 @typechecked
 def mixColumns(state:block_t) -> block_t:
-    state = mixColumn(0,state)
+    state : block_t = mixColumn(0,state)
     state = mixColumn(1,state)
     state = mixColumn(2,state)
     state = mixColumn(3,state)
@@ -101,7 +101,7 @@ def addRoundKey(state:block_t,key:block_t) -> block_t:
 
 @typechecked
 def aes_enc(state:block_t,round_key:block_t) -> block_t:
-    state = subBytes(state)
+    state : block_t = subBytes(state)
     state = shiftRows(state)
     state = mixColumns(state)
     state = addRoundKey(state,round_key)
@@ -109,7 +109,7 @@ def aes_enc(state:block_t,round_key:block_t) -> block_t:
 
 @typechecked
 def aes_enc_last(state:block_t,round_key:block_t) -> block_t:
-    state = subBytes(state)
+    state : block_t = subBytes(state)
     state = shiftRows(state)
     state = addRoundKey(state,round_key)
     return state
@@ -125,7 +125,7 @@ def rounds(state:block_t,key:bytes_t(144)) -> block_t:
 def block_cipher(input:block_t,key:bytes_t(176)) -> block_t:
     state : block_t = bytes(array.copy(input))
     k0    : block_t = key[0:16]
-    k     : bytes_t(144) = key[16:10*16]
+    k     : bytes_t = key[16:10*16]
     kn    : block_t = key[10*16:11*16]
     state = addRoundKey(state,k0)
     state = rounds(state,k)
@@ -171,7 +171,7 @@ def key_expansion_word(w0:word_t, w1:word_t, i:expindex_t) -> word_t:
 
 @typechecked
 def key_expansion(key:block_t) -> bytes_t(176):
-    key_ex : bytes_t(176) = bytes(array.create(11*16,uint8(0)))
+    key_ex : bytes_t = bytes(array.create(11*16,uint8(0)))
     key_ex[0:16] = key
     i : nat_t = 0
     for j in range(40):
@@ -181,7 +181,7 @@ def key_expansion(key:block_t) -> bytes_t(176):
 
 @typechecked
 def aes128_encrypt_block(k:key_t,input:bytes_t(16)) -> block_t:
-    key_ex : bytes_t(176) = key_expansion(k)
+    key_ex : bytes_t = key_expansion(k)
     out    : block_t = block_cipher(input,key_ex)
     return out
 
