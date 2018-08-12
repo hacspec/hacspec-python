@@ -16,6 +16,8 @@ WORKDIR /home/worker
 # Build F*, HACL*. Install a few more dependencies.
 ENV OPAMYES true
 ENV PATH "/home/worker/hacl-star/dependencies/z3/bin:/home/worker/hacl-star/dependencies/FStar/bin/:$PATH"
+ENV FSTAR_HOME "/home/worker/hacl-star/dependencies/FStar"
+ENV HACL_HOME "/home/worker/hacl-star/"
 ADD setup.sh /tmp/setup.sh
 ADD setup-root.sh /tmp/setup-root.sh
 RUN bash /tmp/setup-root.sh
