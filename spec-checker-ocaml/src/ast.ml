@@ -228,6 +228,7 @@ type 'env procdef = {
   prd_args : (ident * type_) list;
   prd_ret  : type_;
   prd_body : 'env * block;
+  prd_subs : ('env procdef) list;
 }
 
 (* -------------------------------------------------------------------- *)

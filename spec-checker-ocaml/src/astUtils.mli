@@ -5,6 +5,7 @@ open Ast
 (* -------------------------------------------------------------------- *)
 val piiter : (pinstr -> unit) -> pinstr -> unit
 val pifold : ('a -> pinstr -> 'a) -> 'a -> pinstr -> 'a
+val psiter : (pinstr -> unit) -> pstmt -> unit
 val psfold : ('a -> pinstr -> 'a) -> 'a -> pstmt -> 'a
 
 (* -------------------------------------------------------------------- *)

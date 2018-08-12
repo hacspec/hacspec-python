@@ -371,6 +371,7 @@ type tyerror =
   | CannotUnpack
   | DoNotSupportSlicing of [`LValue | `RValue]
   | MisplacedVarDecl
+  | MisplacedProcDef
   | MustReturnAValue
   | UIntConstantExpected
   | ExpectVoidReturn
@@ -402,6 +403,10 @@ let pp_tyerror fmt (error : tyerror) =
   | MisplacedVarDecl ->
       Format.fprintf fmt
         "variable declarations can only occur at beginning of procs"
+
+  | MisplacedProcDef ->
+      Format.fprintf fmt
+        "inner procedures definitions can only occur at beginning of procs"
 
   | UnknownVar x ->
       Format.fprintf fmt "unknown variable: `%a'" pp_qsymbol x
@@ -890,9 +895,8 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
 
       (env, [IWhile ((c, bc), el)])
 
-  | PSDef pf ->
-      (* FIXME *)
-      let env, _ = tt_procdef env pf in (env, [])
+  | PSDef _ ->
+      (env, [])
 
 (* -------------------------------------------------------------------- *)
 and tt_stmt ?(rty : type_ option) (env : env) (s : pstmt) : env * block =
@@ -970,7 +974,7 @@ and tt_annotation (env : env) (att : pexpr) : ident * expr list =
       error ~loc:(loc att) env UnsupportedAnnotation
 
 (* -------------------------------------------------------------------- *)
-(* FIXME: check for duplicate argument name *)
+(* FIXME: check for duplicate argument name / local variables / inner procs *)
 and tt_procdef (env : env) (pf : pprocdef) : env * env procdef =
   let {
     pf_name  = f   ;
@@ -986,7 +990,7 @@ and tt_procdef (env : env) (pf : pprocdef) : env * env procdef =
     let rec aux lv instr =
       match unloc instr with
       | PSVarDecl (xty, _) -> xty :: lv
-      | PSDef _ -> lv           (* FIXME *)
+      | PSDef _ -> lv
       | _ -> AstUtils.pifold aux lv instr
     in AstUtils.psfold aux [] body in
 
@@ -996,6 +1000,22 @@ and tt_procdef (env : env) (pf : pprocdef) : env * env procdef =
     List.fold_left_map (fun env (x, ty) ->
         let env, x = Env.Vars.bind env (x, ty) in (env, (x, ty)))
       env args in
+
+  let subs, body =
+    let rec doit acc body =
+      match body with
+      | { pl_data = PSDef pf } :: body -> doit (pf :: acc) body
+      | _ -> List.rev acc, body
+    in doit [] body in
+
+  let () =
+    let rec aux instr =
+      match unloc instr with
+      | PSDef _ -> error ~loc:(loc instr) env MisplacedProcDef
+      | _ -> AstUtils.piiter aux instr
+    in AstUtils.psiter aux body in
+
+  let env1, subs = List.fold_left_map tt_procdef env1 subs in
 
   let env1 = List.fold_left (fun env (x, ty) ->
     let ty = tt_type env ty in
@@ -1011,6 +1031,7 @@ and tt_procdef (env : env) (pf : pprocdef) : env * env procdef =
     prd_args = args;
     prd_ret  = fty;
     prd_body = (env1, body);
+    prd_subs = subs;
   }
 
   in (env, aout)

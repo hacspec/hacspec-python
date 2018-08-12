@@ -31,6 +31,10 @@ let piiter (f : pinstr -> unit) (i : pinstr) =
   pifold (fun () -> f) () i
 
 (* -------------------------------------------------------------------- *)
+let psiter (f : pinstr -> unit) (s : pstmt) =
+  psfold (fun () -> f) () s
+
+(* -------------------------------------------------------------------- *)
 let ifold (f : 'a -> instr -> 'a) (x : 'a) (i : instr) =
   match i with
   | IFail _ | IReturn _ | IAssign _ -> x
