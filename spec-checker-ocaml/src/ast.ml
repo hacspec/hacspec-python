@@ -64,7 +64,6 @@ type assop = Syntax.passop
 type refined = private unit
 type raw     = private unit
                    
-                     
 type type_ =
   | TUnit
   | TBool

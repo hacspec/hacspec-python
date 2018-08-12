@@ -10,7 +10,7 @@ let qunloc ((nm, x) : pqident) : qsymbol =
 
 (* -------------------------------------------------------------------- *)
 type ctype =
-  | PUnit | PBool | PInt   | PString
+  | PUnit | PBool  | PInt   | PString
   | PWord | PTuple | PArray
 
 type etype = [`Exact of type_ | `Approx of ctype]
@@ -162,11 +162,11 @@ end = struct
 
   let dtypes = [
     ("bool"     , TBool      );
-    ("int"      , TInt `Int  );
-    ("nat"      , TInt `Nat  );
+    ("int"      , TInt  `Int );
+    ("nat"      , TInt  `Nat );
     ("string"   , TString    );
-    ("nat_t"    , TInt `Nat  );
-    ("pos_t"    , TInt `Pos  );
+    ("nat_t"    , TInt  `Nat );
+    ("pos_t"    , TInt  `Pos );
     ("bit_t"    , TWord `U1  );
     ("uint8_t"  , TWord `U8  );
     ("uint16_t" , TWord `U16 );
@@ -224,16 +224,15 @@ end = struct
 
       in fun ty -> hred ty
 
-
     let inline (env : env) =
       let rec inline (ty : type_) =
         match ty with
-        | TNamed qs -> inline (Option.get (unfold env qs))
-        | TTuple tl -> TTuple (List.map inline tl)
-        | TArray (t,s) -> TArray (inline t,s)
-        | TRefined (t,s) -> TRefined (inline t,s)
-        | TResult (t) -> TResult (inline t)
-        | _ -> ty
+        | TNamed qs       -> inline (Option.get (unfold env qs))
+        | TTuple tl       -> TTuple (List.map inline tl)
+        | TArray (t, s)   -> TArray (inline t,s)
+        | TRefined (t, s) -> TRefined (inline t,s)
+        | TResult t       -> TResult (inline t)
+        | _               -> ty
 
       in fun ty -> inline ty
 
@@ -364,6 +363,7 @@ type tyerror =
   | DuplicatedTypeName of symbol
   | DuplicatedArgName  of symbol
   | CannotUnpack
+  | DoNotSupportSlicing of [`LValue | `RValue]
   | MisplacedVarDecl
   | MustReturnAValue
   | UIntConstantExpected
@@ -386,6 +386,12 @@ let pp_tyerror fmt (error : tyerror) =
 
   | CannotUnpack ->
       Format.fprintf fmt "cannot unpack"
+
+  | DoNotSupportSlicing `RValue ->
+      Format.fprintf fmt "this expression cannot be indexed/sliced"
+
+  | DoNotSupportSlicing `LValue ->
+      Format.fprintf fmt "this expression cannot be indexed/sliced (in lvalues)"
 
   | MisplacedVarDecl ->
       Format.fprintf fmt
@@ -460,6 +466,10 @@ let check_ty ~loc env (etys : ctype list) (ty : type_) =
   if not (List.exists (Env.Types.approx env ty) etys) then
     error ~loc env (InvalidType (ty, List.map (fun ty -> `Approx ty) etys))
 
+let check_ty_compat ~loc env ~src ~dst =
+  if not (Env.Types.compat env src dst) then
+    error ~loc env (InvalidType (src, [`Exact dst]))
+
 (* -------------------------------------------------------------------- *)
 let rec tt_type (env : env) (pty : ptype) =
   match unloc pty with
@@ -501,14 +511,14 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let sz = tt_cint env sz in
       TArray (TWord `U8, Some sz)
 
-  | ("refine" | "refine_t"), [ty; pe] ->
+  | ("refine" | "refine_t"), [pty; pe] ->
      (match unloc pe with
-      | PEFun([x],pe) ->
-      let x = unloc x in
-      let ty = tt_type env ty in
-      let env',name = Env.Vars.bind env (x,ty) in
-      let e,t = tt_expr ~cty:(`Exact TBool) env' pe in
-      TRefined (ty, EFun([name],e))      (* FIXME: refinment *)
+      | PEFun ([{ pl_data = x }], pr) ->
+        let ty = tt_type env pty in
+        let env1, name = Env.Vars.bind env (x, ty) in
+        let r = fst (tt_expr ~cty:(`Exact TBool) env1 pr) in
+        TRefined (ty, EFun ([name], r))
+
      | _ -> error ~loc:(loc pe) env InvalidTypeExpr)
 
   | "tuple2_t", [ty1; ty2] ->
@@ -566,27 +576,22 @@ and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
         (LTuple es, TTuple tys) 
 
     | PEGet (pl, ps) ->
-        let l,t = tt_lvalue ~cty:(`Approx PArray) env pl in   
-        let s   = tt_slice env ps in
-        let lt = Env.Types.inline env t in
-        let ty =
-          match lt,s with
-          | TWord _, _ -> error ~loc:(loc pe) env InvalidLValueExpr
-          | TArray (ty,_), `One _ -> ty
-          | TArray (_,_), `Slice _ -> t
-        in
-        (LGet (l, s), ty)
+        let l, lty = tt_lvalue ~cty:(`Approx PArray) env pl in   
+        let s      = tt_slice env ps in
+        let ty     =
+          match Env.Types.inline env lty, s with
+          | TArray (ty, _), `One _   -> ty
+          | TArray _      , `Slice _ -> lty
+
+          | _, _ ->
+              error ~loc:(loc pe) env (DoNotSupportSlicing `LValue)
+
+        in (LGet (l, s), ty)
 
     | _ ->
         error ~loc:pe.pl_loc env InvalidLValueExpr
   in
 
-  let check_ty = check_ty env in
-
-  let check_ty_compat ~loc ~src ~dst =
-    if not (Env.Types.compat env src dst) then
-      error ~loc env (InvalidType (src, [`Exact dst]))
-  in
   Option.may (fun (cty : etype) ->
     let compat =
       match cty with
@@ -604,11 +609,7 @@ and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
 (* -------------------------------------------------------------------- *)
 and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
   let check_ty = check_ty env in
-
-  let check_ty_compat ~loc ~src ~dst =
-    if not (Env.Types.compat env src dst) then
-      error ~loc env (InvalidType (src, [`Exact dst]))
-  in
+  let check_ty_compat = check_ty_compat env in
 
   let e, ety =
     match unloc pe with
@@ -710,28 +711,26 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
       end
 
     | PECall (nmf, [x;y]) when (qunloc nmf) = ([],"uintn") ->
-       let xe,xt = tt_expr ~cty:(`Approx PInt) env x in
-       let ye,yt = tt_expr ~cty:(`Approx PInt) env y in
+       let xe, _ = tt_expr ~cty:(`Approx PInt) env x in
+       let ye, _ = tt_expr ~cty:(`Approx PInt) env y in
        let n = tt_cint env y in
        (ECall (Ident.make("uintn"), [xe;ye]), TWord (`UN n))
 
     | PECall (nmf, [x;y]) when (qunloc nmf) = ([],"natmod") ->
-       let xe,xt = tt_expr ~cty:(`Approx PInt) env x in
-       let ye,yt = tt_expr ~cty:(`Approx PInt) env y in
+       let xe, _ = tt_expr ~cty:(`Approx PInt) env x in
+       let ye, _ = tt_expr ~cty:(`Approx PInt) env y in
        (ECall (Ident.make("natmod"), [xe;ye]), TInt (`Natm ye))
 
     | PECall (nmf, args) when List.mem_assoc (qunloc nmf) stdlib ->
-        let exp,res,target = List.assoc (qunloc nmf) stdlib in
-        (*        Format.printf "start PECall:%s\n" (snd (qunloc nmf)); *)
-        let argsty =
-          List.map2 (fun e ty -> 
-                      match ty with
-                      | Some t -> tt_expr ~cty:t env e
-		      | None -> tt_expr env e)
-          args exp in
-        (*        Format.printf "done PECall:%s\n" (snd (qunloc nmf)); *)
-        let args,tys = List.split argsty in
-        (ECall (target, args), res tys)
+        let exp, rty, name = List.assoc (qunloc nmf) stdlib in
+
+        if List.length args <> List.length exp then
+          error ~loc:(loc pe) env InvalidArgCount;
+        let args, tys =
+             List.combine args exp
+          |> List.map (fun (e, ty) -> tt_expr ?cty:ty env e)
+          |> List.split in
+        (ECall (name, args), rty tys)
         
     | PECall ((nm, f) as nmf, args) ->
         let senv = tt_module env nm in
@@ -744,24 +743,31 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         if List.length args <> List.length f.Env.psig then
           error ~loc:(loc pe) env InvalidArgCount;
 
-        (*        Format.printf "start PECall:%s\n" (snd (qunloc nmf)); *)
         let args =
           List.map2 (fun e ty -> fst (tt_expr ~cty:(`Exact ty) env e))
           args f.Env.psig in
-        (*        Format.printf "done PECall:%s\n" (snd (qunloc nmf)); *)
         (ECall (f.Env.pname, args), Type.strip f.Env.pret)
 
     | PEGet (pe, ps) ->
-        let e,t = tt_expr env pe in   
-        let s   = tt_slice env ps in
-        let e,ty =
-          match Env.Types.inline env t,s with
-          | TWord _, `One i -> ECall(get_bit,[e;i]),TWord `U1
-          | TWord _, `Slice (s,f) -> ECall(get_bits,[e;s;f]),TWord (`UN Big_int.zero)
-          | TArray (ty,_), `One _ -> EGet(e,s),ty
-          | TArray (_,_), `Slice _ -> EGet(e,s),t
-        in
-        (e, ty)
+        let e, ty = tt_expr env pe in   
+        let s     = tt_slice env ps in
+        let e, ty =
+          match Env.Types.inline env ty, s with
+          | TWord _, `One i ->
+              ECall(get_bit, [e; i]), TWord `U1
+
+          | TWord _, `Slice (s,f) ->
+              ECall(get_bits, [e; s; f]),TWord (`UN Big_int.zero)
+
+          | TArray (ty,_), `One _ ->
+              EGet(e, s),ty
+
+          | TArray (_,_), `Slice _ ->
+              EGet(e, s), ty
+
+          | _ -> error ~loc:(loc pe) env (DoNotSupportSlicing `RValue)
+
+        in (e, ty)
   in
 
   Option.may (fun (cty : etype) ->
@@ -803,17 +809,19 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
       (env, []) 
 
   | PSVarDecl ((pi, pity), Some e) ->
-     let e, te = tt_expr env e in 
-     let l, tl =
+     let ity = tt_type env pity in
+     let e, te = tt_expr env ~cty:(`Exact ity) e in 
+     let l, _  =                (* FIXME *)
        (match Env.Vars.get env (unloc pi) with
         | None -> error ~loc:(loc pi) env (UnknownVar ([], unloc pi))
         | Some x -> (LVar x.Env.vname, x.Env.vrawty))
 
      in (env, [IAssign (Some (l, `Plain), (e, te))])
 
-  | PSAssign (pv, pop, e) ->
-     let e, te = tt_expr env e in 
+  | PSAssign (pv, pop, pe) ->
+     let e, te = tt_expr env pe in 
      let l, tl = tt_lvalue env pv in
+     check_ty_compat env ~loc:(loc pe) ~src:te ~dst:tl;
      (env, [IAssign (Some (l, pop), (e, te))])
 
   | PSReturn None ->
