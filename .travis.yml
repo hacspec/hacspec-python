@@ -16,14 +16,23 @@ jobs:
       script:
         - make -C build test
     - stage: test
+      name: run
       script: make run
     -
+      name: checkspec
       script: make check
     -
+      name: test typechecked
       script: make test
     - stage: compilers
+      name: ocaml compiler
       script:
         - docker run -v $PWD:/home/worker/hacspec --rm -ti franziskus/hacspec:0.1 make -C hacspec/spec-checker-ocaml
     - stage: docs
       script:
         - make -C rfc
+
+stages:
+  - compilers
+  - build
+  - docs
