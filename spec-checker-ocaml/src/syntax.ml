@@ -75,11 +75,19 @@ type pinstr_r =
   | PSFor     of (potyident * prange * pstmt) * pstmt option
   | PSDef     of pprocdef
 
+
+and pprocdef = {
+  pf_name  : pident;
+  pf_att   : pexpr list;
+  pf_retty : ptype;
+  pf_args  : ptyident list;
+  pf_body  : pstmt;
+}
+
 and plvalue  = pexpr
 and prange   = pexpr option * pexpr
 and pstmt    = pinstr list
 and pinstr   = pinstr_r located
-and pprocdef = ptyident * ptyident list * pstmt
 
 (* -------------------------------------------------------------------- *)
 type ptopdecl =

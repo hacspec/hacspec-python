@@ -2,10 +2,12 @@
 include BatPervasives
 
 (* -------------------------------------------------------------------- *)
-module Big_int = BatBig_int
-module Hashtbl = BatHashtbl
-module Map     = BatMap
-module IO      = BatIO
+module Interfaces = BatInterfaces
+module Big_int    = BatBig_int
+module Hashtbl    = BatHashtbl
+module Set        = BatSet
+module Map        = BatMap
+module IO         = BatIO
 
 (* -------------------------------------------------------------------- *)
 let fst_map f = function (x, y) -> (f x, y)

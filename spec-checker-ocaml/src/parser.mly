@@ -322,11 +322,15 @@ instr_r:
 
 (* -------------------------------------------------------------------- *)
 procdef:
-| iboption(postfix(annotation, NEWLINE)) DEF f=ident
+| att=postfix(annotation, NEWLINE)* DEF f=ident
     args=parens(plist0(tyident, COMMA)) DASHGT ty=type_
   COLON b=block
 
-    { ((f, ty), args, b) }
+    { { pf_name  = f   ;
+        pf_att   = att ;
+        pf_retty = ty  ;
+        pf_args  = args;
+        pf_body  = b   ; } }
 
 (* -------------------------------------------------------------------- *)
 block:
@@ -338,7 +342,7 @@ block:
 
 (* -------------------------------------------------------------------- *)
 annotation:
-| AT sexpr { () }
+| AT att=sexpr { att }
 
 (* -------------------------------------------------------------------- *)
 ipident:

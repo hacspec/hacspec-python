@@ -1,9 +1,14 @@
 (* -------------------------------------------------------------------- *)
+open Core
+
+(* -------------------------------------------------------------------- *)
 module Ident : sig
   type ident = private string
 
   val make : string -> ident
   val to_string : ident -> string
+
+  module C : Interfaces.OrderedType with type t = ident
 end = struct
   type ident = string
 
@@ -17,9 +22,21 @@ end = struct
 
   let table = H.create 0
 
-  let make (s : string) : ident = H.merge table s
-  let to_string (i:ident) : string = i
+  let make (s : string) : ident =
+    H.merge table s
+
+  let to_string (i:ident) : string =
+    i
+
+  module C : Interfaces.OrderedType with type t = ident = struct
+    type t = ident
+
+    let compare = String.compare
+  end
 end
+
+module IdentMap = Map.Make(Ident.C)
+module IdentSet = Set.Make(Ident.C)
 
 (* -------------------------------------------------------------------- *)
 type symbol  = string
@@ -161,7 +178,7 @@ end = struct
     match ty with
     | TUnit           -> TUnit
     | TBool           -> TBool
-    | TInt x          -> TInt `Int
+    | TInt _          -> TInt `Int
     | TString         -> TString
     | TWord    ws     -> TWord ws
     | TTuple   t      -> TTuple (List.map strip t)
@@ -198,6 +215,7 @@ type vardecl = { vrd_name : ident; vrd_type : type_; vrd_init : expr; }
 
 type 'env procdef = {
   prd_name : ident;
+  prd_att  : (ident * expr list) list;
   prd_args : (ident * type_) list;
   prd_ret  : type_;
   prd_body : 'env * block;
