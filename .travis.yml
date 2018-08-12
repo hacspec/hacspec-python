@@ -9,21 +9,21 @@ install:
   - pip install xml2rfc
   - pip install typeguard
   - gem install --no-doc kramdown-rfc2629
-  - wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s /usr/local/bin
-  - eval `opam config env`
-  - opam switch 4.04.2
-  - opam install -y ocamlfind
 
 jobs:
   include:
     - stage: build
       script:
         - make -C build test
-        - make -C spec-checker-ocaml
-        - make -C rfc
     - stage: test
       script: make run
     -
       script: make check
     -
       script: make test
+    - stage: compilers
+      script:
+        - docker run -v $PWD:/home/worker/hacspec --rm -ti franziskus/hacspec:0.1 make -C hacspec/spec-checker-ocaml
+    - stage: docs
+      script:
+        - make -C rfc
