@@ -16,13 +16,13 @@ type ctype =
 type etype = [`Exact of type_ | `Approx of ctype]
 
 (* -------------------------------------------------------------------- *)
-let byte_t = TWord `U8
-let bytes_t = TArray (TWord `U8, None)
-let get_bit = Ident.make "uintn_get_bit"
+let byte_t   = tword8
+let bytes_t  = TArray (tword8, None)
+let get_bit  = Ident.make "uintn_get_bit"
 let get_bits = Ident.make "uintn_get_bits"
-let int_t = TInt `Int
-let nat_t = TInt `Nat
-let pos_t = TInt `Pos
+let int_t    = TInt `Int
+let nat_t    = TInt `Nat
+let pos_t    = TInt `Pos
           
 let stdlib =
   let fs1 f = function [x      ] -> f x     | _ -> assert false
@@ -47,16 +47,16 @@ let stdlib =
   ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)],
       (fs2 (fun aty _bty -> match aty with TArray(aty,None) -> aty | _ -> assert false)),
       Ident.make "bytes_concat_blocks"));
-  ((["bytes"],"to_uint32_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TWord `U32)), Ident.make "bytes_to_uint32_be"));
-  ((["bytes"],"from_uint32_be"), ([Some (`Exact (TWord `U32))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32_be"));
-  ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (TWord `U32,None))), Ident.make "bytes_to_uint32s_le"));
-  ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (TWord `U32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_le"));
-  ((["bytes"],"to_uint32s_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (TWord `U32,None))), Ident.make "bytes_to_uint32s_be"));
-  ((["bytes"],"from_uint32s_be"), ([Some (`Exact (TArray (TWord `U32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_be"));
+  ((["bytes"],"to_uint32_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword32)), Ident.make "bytes_to_uint32_be"));
+  ((["bytes"],"from_uint32_be"), ([Some (`Exact (tword32))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32_be"));
+  ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (tword32,None))), Ident.make "bytes_to_uint32s_le"));
+  ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (tword32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_le"));
+  ((["bytes"],"to_uint32s_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (tword32,None))), Ident.make "bytes_to_uint32s_be"));
+  ((["bytes"],"from_uint32s_be"), ([Some (`Exact (TArray (tword32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_be"));
   ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> nat_t)), Ident.make "bytes_to_nat_le"));
   ((["bytes"],"from_nat_le"), ([Some (`Approx PInt); Some (`Approx PInt)], (fs2 (fun _aty _bty -> bytes_t)), Ident.make "bytes_from_nat_le"));
-  ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TWord `U128)), Ident.make "bytes_to_uint128_le"));
-  ((["bytes"],"from_uint128_le"), ([Some (`Exact (TWord `U128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_le"));
+  ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword128)), Ident.make "bytes_to_uint128_le"));
+  ((["bytes"],"from_uint128_le"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_le"));
 
   (*  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));*)
   ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fs1 (fun _aty -> nat_t)), Ident.make "natmod_to_nat"));
@@ -65,8 +65,8 @@ let stdlib =
   (*   (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN Big_int.zero)), Ident.make "uintn")); *)
   ((["uintn"],"to_int"), ([Some (`Approx PWord)], (fs1 (fun _aty -> nat_t)), Ident.make "uintn_to_int"));
   ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fs1 (fun _aty -> nat_t)), Ident.make "uintn_to_nat"));
-  ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Approx PInt)], (fs2 (fun _aty _bty -> TWord `U1)), Ident.make "uintn_get_bit"));
-  ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Approx PInt);Some (`Approx PInt)], (fs3 (fun _aty _bty _cty -> TWord (`UN Big_int.zero))), Ident.make "uintn_get_bits"));
+  ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Approx PInt)], (fs2 (fun _aty _bty -> tword1)), Ident.make "uintn_get_bit"));
+  ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Approx PInt);Some (`Approx PInt)], (fs3 (fun _aty _bty _cty -> TWord Big_int.zero)), Ident.make "uintn_get_bits"));
   ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fs2 (fun aty _bty -> aty)), Ident.make "uintn_rotate_left"));
   ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fs2 (fun aty _bty -> aty)), Ident.make "uintn_rotate_right"));
 
@@ -170,30 +170,30 @@ end = struct
   }
 
   let dtypes = [
-    ("bool"     , TBool      );
-    ("int"      , TInt  `Int );
-    ("nat"      , TInt  `Nat );
-    ("string"   , TString    );
-    ("nat_t"    , TInt  `Nat );
-    ("pos_t"    , TInt  `Pos );
-    ("bit_t"    , TWord `U1  );
-    ("uint8_t"  , TWord `U8  );
-    ("uint16_t" , TWord `U16 );
-    ("uint32_t" , TWord `U32 );
-    ("uint64_t" , TWord `U64 );
-    ("uint128_t", TWord `U128);
-    ("vlbytes_t", TArray (TWord `U8, None));
+    ("bool"     , TBool     );
+    ("int"      , TInt `Int );
+    ("nat"      , TInt `Nat );
+    ("string"   , TString   );
+    ("nat_t"    , TInt `Nat );
+    ("pos_t"    , TInt `Pos );
+    ("bit_t"    , tword1    );
+    ("uint8_t"  , tword8    );
+    ("uint16_t" , tword16   );
+    ("uint32_t" , tword32   );
+    ("uint64_t" , tword64   );
+    ("uint128_t", tword128  );
+    ("vlbytes_t", TArray (tword8, None));
   ]
 
   let dprocs = [
-    ("nat"    , [TInt `Int], TInt  `Pos );
-    ("pos"    , [TInt `Int], TInt  `Nat );
-    ("bit"    , [TInt `Int], TWord `U1  );
-    ("uint8"  , [TInt `Int], TWord `U8  );
-    ("uint16" , [TInt `Int], TWord `U16 );
-    ("uint32" , [TInt `Int], TWord `U32 );
-    ("uint64" , [TInt `Int], TWord `U64 );
-    ("uint128", [TInt `Int], TWord `U128);
+    ("nat"    , [TInt `Int], TInt `Pos);
+    ("pos"    , [TInt `Int], TInt `Nat);
+    ("bit"    , [TInt `Int], tword1   );
+    ("uint8"  , [TInt `Int], tword8   );
+    ("uint16" , [TInt `Int], tword16  );
+    ("uint32" , [TInt `Int], tword32  );
+    ("uint64" , [TInt `Int], tword64  );
+    ("uint128", [TInt `Int], tword128 );
   ]
 
   module Mod = struct
@@ -253,11 +253,8 @@ end = struct
         | TInt _ , TInt _
         | TString, TString -> true
 
-        | TWord (`UN n1), TWord (`UN n2)  ->
-            Big_int.compare_big_int n1 n1 = 0
-
-        | TWord sz1, TWord sz2  ->
-            sz1 = sz2
+        | TWord n1, TWord n2  ->
+            Big_int.eq_big_int n1 n2
 
         | TTuple tys1, TTuple tys2
               when List.length tys1 = List.length tys2
@@ -501,7 +498,7 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
 
   | "uintn_t", [sz] ->
       let sz = tt_cint env sz in
-      TWord (`UN sz)
+      TWord sz
 
   | "array_t", [ty; sz] ->
       let sz = tt_cint env sz in
@@ -518,7 +515,7 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       
   | "bytes_t", [sz] ->
       let sz = tt_cint env sz in
-      TArray (TWord `U8, Some sz)
+      TArray (tword8, Some sz)
 
   | ("refine" | "refine_t"), [pty; pe] ->
      (match unloc pe with
@@ -723,7 +720,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
        let xe, _ = tt_expr ~cty:(`Approx PInt) env x in
        let ye, _ = tt_expr ~cty:(`Approx PInt) env y in
        let n = tt_cint env y in
-       (ECall (Ident.make("uintn"), [xe;ye]), TWord (`UN n))
+       (ECall (Ident.make("uintn"), [xe;ye]), TWord n)
 
     | PECall (nmf, [x;y]) when (qunloc nmf) = ([],"natmod") ->
        let xe, _ = tt_expr ~cty:(`Approx PInt) env x in
@@ -763,16 +760,16 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let e, ty =
           match Env.Types.inline env ty, s with
           | TWord _, `One i ->
-              ECall(get_bit, [e; i]), TWord `U1
+              ECall (get_bit, [e; i]), tword1
 
           | TWord _, `Slice (s,f) ->
-              ECall(get_bits, [e; s; f]),TWord (`UN Big_int.zero)
+              ECall (get_bits, [e; s; f]), TWord Big_int.zero
 
           | TArray (ty,_), `One _ ->
-              EGet(e, s),ty
+              EGet (e, s),ty
 
           | TArray (_,_), `Slice _ ->
-              EGet(e, s), ty
+              EGet (e, s), ty
 
           | _ -> error ~loc:(loc pe) env (DoNotSupportSlicing `RValue)
 

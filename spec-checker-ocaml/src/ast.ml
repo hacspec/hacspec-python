@@ -42,7 +42,7 @@ module IdentSet = Set.Make(Ident.C)
 type symbol  = string
 type qsymbol = (string list * string)
 type ident   = Ident.ident
-type wsize   = [`U1 | `U8 | `U16 | `U32 | `U64 | `U128 | `UN of Big_int.big_int]
+type wsize   = Big_int.big_int
 
 (* ------------------------------------------------------------------- *)
 module QSymbol : sig
@@ -102,6 +102,17 @@ and slice = [ `One of expr | `Slice of expr * expr ]
 type tyexpr = expr * type_
 
 (* -------------------------------------------------------------------- *)
+let twordi (i : int) = TWord (Big_int.of_int i)
+
+let tword1   = twordi   1
+let tword8   = twordi   8
+let tword16  = twordi  16
+let tword32  = twordi  32
+let tword64  = twordi  64
+let tword128 = twordi 128
+let tword256 = twordi 256
+
+(* -------------------------------------------------------------------- *)
 let rec string_of_type (ty : type_) =
   match ty with
   | TUnit    -> "unit"
@@ -134,7 +145,6 @@ let rec string_of_type (ty : type_) =
 
   | TNamed name ->
       Format.sprintf "named[%s]" (QSymbol.to_string name)
-
 
 (* -------------------------------------------------------------------- *)
 module Type : sig

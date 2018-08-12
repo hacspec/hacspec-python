@@ -1,3 +1,4 @@
+open Core
 open Location
 open Syntax
 open Ast
@@ -90,13 +91,23 @@ let rec fstar_of_type b ty =
   | TInt `Pos  -> "pos"
   | TInt (`Natm x)  -> "natmod_t "^ (fstar_of_expr true x)
   | TString  -> "string"
-  | TWord `U1  -> "bit_t"
-  | TWord `U8  -> "uint8_t"
-  | TWord `U16 -> "uint16_t"
-  | TWord `U32  -> "uint32_t"
-  | TWord `U64  -> "uint64_t"
-  | TWord `U128  -> "uint128_t"
-  | TWord (`UN x)    -> "uintn_t "^(Big_int.string_of_big_int x)
+  | TWord sz -> begin
+      let sizes = 
+        [(  1, "bit_t"  );
+         (  8, "uint8_t");
+         ( 16, "uint8_t");
+         ( 32, "uint8_t");
+         ( 64, "uint8_t");
+         (128, "uint8_t")] in
+
+      Option.default_delayed
+        (fun () -> Format.sprintf "uintn_t %s" (Big_int.string_of_big_int sz))
+        (List.Exceptionless.find_map
+           (fun (i, name) ->
+             if Big_int.eq_big_int (Big_int.big_int_of_int i) sz then
+               Some name
+             else None) sizes)
+    end
 
   | TTuple tys ->
         "("^(String.concat " * " (List.map (fstar_of_type false) tys))^")"
