@@ -8,6 +8,10 @@ install:
   - pip install xml2rfc
   - pip install typeguard
   - gem install --no-doc kramdown-rfc2629
+  - wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s /usr/local/bin
+  - eval `opam config env`
+  - opam switch 4.04.2
+  - opam install -y ocamlfind
 
 jobs:
   include:
