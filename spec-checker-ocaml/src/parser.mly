@@ -166,38 +166,6 @@ slice:
 | e1=expr COLON e2=expr
     { (`Slice (e1, e2) :> pslice) }
 
-(*
-(* -------------------------------------------------------------------- *)
-slvalue_r:
-| x=qident
-    { PLVar x }
-
-| es=parens(empty)
-    { PLTuple ([]) }
-
-| esb=parens(es=rlist1(slvalue, COMMA) { es })
-    { let es = esb in PLTuple (List.rev es) }
-
-| l=slvalue i=brackets(slice)
-    { PLGet (l, i) }
-
-(* -------------------------------------------------------------------- *)
-%inline lvalue_r:
-| e=slvalue_r
-    { e }
-
-| es=plist2(slvalue, COMMA)
-    { PLTuple (es) }
-
-(* -------------------------------------------------------------------- *)
-%inline slvalue:
-| e=loc(slvalue_r) { e }
-
-(* -------------------------------------------------------------------- *)
-%inline lvalue:
-| e=loc(lvalue_r) { e }
- *)
-
 (* -------------------------------------------------------------------- *)
 sexpr_r:
 | x=qident
@@ -230,7 +198,7 @@ sexpr_r:
 | f=qident args=parens(plist0(sexpr, COMMA))
     { PECall (f, args) }
 
-| es=parens(empty)
+| parens(empty)
     { PETuple ([], false) }
 
 | esb=parens(es=rlist1(sexpr, COMMA) b=iboption(COMMA) { (es, b) })

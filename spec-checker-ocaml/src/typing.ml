@@ -24,45 +24,54 @@ let int_t = TInt `Int
 let nat_t = TInt `Nat
 let pos_t = TInt `Pos
           
-let stdlib = [
-  (([],"array"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array"));
-  ((["array"],"copy"), ([Some (`Approx PArray)], (fun [aty] -> aty), Ident.make "array_copy"));
-  ((["array"],"create"), ([Some (`Approx PInt); None], (fun [aty;bty] -> TArray(bty, None)), Ident.make "array_create"));
-  ((["array"],"length"), ([Some (`Approx PArray)], (fun [aty] -> nat_t), Ident.make "array_length"));
-  ((["array"],"split_blocks"), ([Some (`Approx PArray);Some(`Exact int_t)], (fun [aty;bty] -> TTuple [TArray(aty,None);aty]), Ident.make "array_split_blocks"));
-  ((["array"],"concat_blocks"), ([Some (`Approx PArray);Some(`Approx PArray)], (fun [TArray(aty,None);bty] -> aty), Ident.make "array_concat_blocks"));
+let stdlib =
+  let fs1 f = function [x      ] -> f x     | _ -> assert false
+  and fs2 f = function [x; y   ] -> f x y   | _ -> assert false
+  and fs3 f = function [x; y; z] -> f x y z | _ -> assert false in
 
-  (([],"bytes"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes"));
-  ((["bytes"],"copy"), ([Some (`Exact bytes_t)], (fun [aty] -> aty), Ident.make "bytes_copy"));
-  ((["bytes"],"create"), ([Some (`Approx PInt); Some (`Exact byte_t)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_create"));
-  ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fun [aty] -> nat_t), Ident.make "bytes_length"));
-  ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Approx PInt)], (fun [aty;bty] -> TTuple [TArray(bytes_t,None);bytes_t]), Ident.make "bytes_split_blocks"));
-  ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)], (fun [TArray(aty,None);bty] -> aty), Ident.make "bytes_concat_blocks"));
-  ((["bytes"],"to_uint32_be"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U32), Ident.make "bytes_to_uint32_be"));
-  ((["bytes"],"from_uint32_be"), ([Some (`Exact (TWord `U32))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint32_be"));
-  ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TArray (TWord `U32,None)), Ident.make "bytes_to_uint32s_le"));
-  ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (TWord `U32,None)))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint32s_le"));
-  ((["bytes"],"to_uint32s_be"), ([Some (`Exact bytes_t)], (fun [aty] -> TArray (TWord `U32,None)), Ident.make "bytes_to_uint32s_be"));
-  ((["bytes"],"from_uint32s_be"), ([Some (`Exact (TArray (TWord `U32,None)))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint32s_be"));
-  ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fun [aty] -> nat_t), Ident.make "bytes_to_nat_le"));
-  ((["bytes"],"from_nat_le"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> bytes_t), Ident.make "bytes_from_nat_le"));
-  ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fun [aty] -> TWord `U128), Ident.make "bytes_to_uint128_le"));
-  ((["bytes"],"from_uint128_le"), ([Some (`Exact (TWord `U128))], (fun [aty] -> bytes_t), Ident.make "bytes_from_uint128_le"));
+ [
+  (([],"array"), ([Some (`Approx PArray)], (fs1 (fun aty -> aty)), Ident.make "array"));
+  ((["array"],"copy"), ([Some (`Approx PArray)], (fs1 (fun aty -> aty)), Ident.make "array_copy"));
+  ((["array"],"create"), ([Some (`Approx PInt); None], (fs2 (fun _aty bty -> TArray(bty, None))), Ident.make "array_create"));
+  ((["array"],"length"), ([Some (`Approx PArray)], (fs1 (fun _aty -> nat_t)), Ident.make "array_length"));
+  ((["array"],"split_blocks"), ([Some (`Approx PArray);Some(`Exact int_t)], (fs2 (fun aty _bty -> TTuple [TArray(aty,None);aty])), Ident.make "array_split_blocks"));
+  ((["array"],"concat_blocks"), ([Some (`Approx PArray);Some(`Approx PArray)],
+      (fs2 (fun aty _bty -> match aty with TArray(aty,None) -> aty | _ -> assert false)),
+      Ident.make "array_concat_blocks"));
+
+  (([],"bytes"), ([Some (`Exact bytes_t)], (fs1 (fun aty -> aty)), Ident.make "bytes"));
+  ((["bytes"],"copy"), ([Some (`Exact bytes_t)], (fs1 (fun aty -> aty)), Ident.make "bytes_copy"));
+  ((["bytes"],"create"), ([Some (`Approx PInt); Some (`Exact byte_t)], (fs2 (fun _aty _bty -> bytes_t)), Ident.make "bytes_create"));
+  ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> nat_t)), Ident.make "bytes_length"));
+  ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Approx PInt)], (fs2 (fun _aty _bty -> TTuple [TArray(bytes_t,None);bytes_t])), Ident.make "bytes_split_blocks"));
+  ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)],
+      (fs2 (fun aty _bty -> match aty with TArray(aty,None) -> aty | _ -> assert false)),
+      Ident.make "bytes_concat_blocks"));
+  ((["bytes"],"to_uint32_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TWord `U32)), Ident.make "bytes_to_uint32_be"));
+  ((["bytes"],"from_uint32_be"), ([Some (`Exact (TWord `U32))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32_be"));
+  ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (TWord `U32,None))), Ident.make "bytes_to_uint32s_le"));
+  ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (TWord `U32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_le"));
+  ((["bytes"],"to_uint32s_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (TWord `U32,None))), Ident.make "bytes_to_uint32s_be"));
+  ((["bytes"],"from_uint32s_be"), ([Some (`Exact (TArray (TWord `U32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_be"));
+  ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> nat_t)), Ident.make "bytes_to_nat_le"));
+  ((["bytes"],"from_nat_le"), ([Some (`Approx PInt); Some (`Approx PInt)], (fs2 (fun _aty _bty -> bytes_t)), Ident.make "bytes_from_nat_le"));
+  ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TWord `U128)), Ident.make "bytes_to_uint128_le"));
+  ((["bytes"],"from_uint128_le"), ([Some (`Exact (TWord `U128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_le"));
 
   (*  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));*)
-  ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fun [aty] -> nat_t), Ident.make "natmod_to_nat"));
-  ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fun [aty] -> int_t), Ident.make "natmod_to_int"));
+  ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fs1 (fun _aty -> nat_t)), Ident.make "natmod_to_nat"));
+  ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fs1 (fun _aty -> int_t)), Ident.make "natmod_to_int"));
   
   (*   (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN Big_int.zero)), Ident.make "uintn")); *)
-  ((["uintn"],"to_int"), ([Some (`Approx PWord)], (fun [aty] -> nat_t), Ident.make "uintn_to_int"));
-  ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fun [aty] -> nat_t), Ident.make "uintn_to_nat"));
-  ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Approx PInt)], (fun [aty;bty] -> TWord `U1), Ident.make "uintn_get_bit"));
-  ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Approx PInt);Some (`Approx PInt)], (fun [aty;bty;cty] -> TWord (`UN Big_int.zero)), Ident.make "uintn_get_bits"));
-  ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_left"));
-  ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fun [aty;bty] -> aty), Ident.make "uintn_rotate_right"));
+  ((["uintn"],"to_int"), ([Some (`Approx PWord)], (fs1 (fun _aty -> nat_t)), Ident.make "uintn_to_int"));
+  ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fs1 (fun _aty -> nat_t)), Ident.make "uintn_to_nat"));
+  ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Approx PInt)], (fs2 (fun _aty _bty -> TWord `U1)), Ident.make "uintn_get_bit"));
+  ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Approx PInt);Some (`Approx PInt)], (fs3 (fun _aty _bty _cty -> TWord (`UN Big_int.zero))), Ident.make "uintn_get_bits"));
+  ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fs2 (fun aty _bty -> aty)), Ident.make "uintn_rotate_left"));
+  ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fs2 (fun aty _bty -> aty)), Ident.make "uintn_rotate_right"));
 
-  ((["result"],"retval"), ([None], (fun [aty] -> TResult aty), Ident.make "result_retval"));
-  ((["result"],"error"),  ([Some (`Exact TString)], (fun [aty] -> TResult TString), Ident.make "result_error"));
+  ((["result"],"retval"), ([None], (fs1 (fun aty -> TResult aty)), Ident.make "result_retval"));
+  ((["result"],"error"),  ([Some (`Exact TString)], (fs1 (fun _aty -> TResult TString)), Ident.make "result_error"));
 
   ]
 
