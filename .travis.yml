@@ -26,8 +26,9 @@ jobs:
       script: make test
     - stage: compilers
       name: ocaml compiler
+      install: skip
       script:
-        - docker run -v $PWD:/home/worker/hacspec:Z --rm -ti franziskus/hacspec:0.1 make -C hacspec/spec-checker-ocaml
+        - docker run -v $PWD:/home/worker/_hacspec:Z --rm -ti franziskus/hacspec:0.1 cp -r /home/worker/_hacspec /home/worker/hacspec && make -C hacspec/spec-checker-ocaml
     - stage: docs
       script:
         - make -C rfc
