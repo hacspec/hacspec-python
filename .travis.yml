@@ -33,13 +33,13 @@ jobs:
       name: test typechecked
       script: make test
     -
-      name: wots (slow)
+      name: run wots (slow)
       script: make wots
     -
-      name: kyber (slow)
+      name: run kyber (slow)
       script: make kyber
     -
-      name: frodo (slow)
+      name: run frodo (slow)
       script: make frodo
     -
       name: compiler
