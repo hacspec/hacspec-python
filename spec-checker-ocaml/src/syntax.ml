@@ -54,9 +54,10 @@ type pexpr_r =
   | PEGet    of pexpr * pslice
   | PEFun    of pident list * pexpr
 
-and pexpr  = pexpr_r located
-and ptype  = pexpr
-and pslice = [ `One of pexpr | `Slice of (pexpr * pexpr) ]
+and pexpr   = pexpr_r located
+and ptype   = pexpr
+and photype = ptype list * ptype
+and pslice  = [ `One of pexpr | `Slice of (pexpr * pexpr) ]
 
 and ptyident  = pident * ptype
 and ptyidents = pident list * ptype
@@ -99,4 +100,10 @@ type ptopdecl =
 and pimport = pqident * (pident option) list option
 
 (* -------------------------------------------------------------------- *)
-type pspec = ptopdecl list
+type pitopdecl =
+  | IPTTypeAlias of pident * pexpr
+  | IPTProcDecl  of pqident * (pident * photype option) list * ptype
+
+(* -------------------------------------------------------------------- *)
+type pspec = ptopdecl  list
+type pintf = pitopdecl list

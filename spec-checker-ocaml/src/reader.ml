@@ -20,6 +20,10 @@ let parserfun_spec =
     MenhirLib.Convert.Simplified.traditional2revised P.spec
 
 (* -------------------------------------------------------------------- *)
+let parserfun_intf =
+    MenhirLib.Convert.Simplified.traditional2revised P.intf
+
+(* -------------------------------------------------------------------- *)
 type reader_r = {
   (* - *) r_lexbuf : Lexing.lexbuf;
   (* - *) r_lexstt : Lexer.State.state;
@@ -79,3 +83,7 @@ let lexer = fun reader ->
 (* -------------------------------------------------------------------- *)
 let parse_spec (reader : reader) =
   parserfun_spec (fun () -> lexer (Disposable.get reader))
+
+(* -------------------------------------------------------------------- *)
+let parse_intf (reader : reader) =
+  parserfun_intf (fun () -> lexer (Disposable.get reader))

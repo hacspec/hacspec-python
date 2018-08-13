@@ -128,6 +128,7 @@
 
     ("lambda", LAMBDA);
     ("and"   , AND   );
+    ("decl"  , DECL  );
     ("def"   , DEF   );
     ("else"  , ELSE  );
     ("elif"  , ELIF  );

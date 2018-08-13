@@ -3,6 +3,7 @@ include BatPervasives
 
 (* -------------------------------------------------------------------- *)
 module Interfaces = BatInterfaces
+module Sys        = BatSys
 module Big_int    = BatBig_int
 module Hashtbl    = BatHashtbl
 module Set        = BatSet
@@ -47,6 +48,22 @@ end
 
 (* -------------------------------------------------------------------- *)
 module Mstr = Map.Make(String)
+
+(* -------------------------------------------------------------------- *)
+module Resource : sig
+  val root   : string
+  val get    : string -> string
+  val getlib : string -> string
+end = struct
+  let root : string =
+    Filename.dirname Sys.executable_name
+
+  let get (name : string) =
+    List.fold_left Filename.concat root (String.split_on_char '/' name)
+
+  let getlib (name : string) =
+    get (Format.sprintf "../lib/%s" name)
+end
 
 (* -------------------------------------------------------------------- *)
 module List : sig
