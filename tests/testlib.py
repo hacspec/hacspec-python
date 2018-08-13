@@ -15,6 +15,4 @@ def print_dot():
 
 def exit(r):
     t.cancel()
-    print("")
-    sys.stderr.flush()
     sys.exit(r)
