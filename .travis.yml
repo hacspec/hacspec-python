@@ -31,7 +31,7 @@ jobs:
       name: ocaml compiler
       install: skip
       script:
-        - docker run -v $PWD:/home/worker/hacspec --rm -ti franziskus/hacspec:0.2 /home/worker/hacspec/docker/travis-compiler/run.sh
+        - docker run -v $PWD:/home/worker/_hacspec --rm -ti franziskus/hacspec:0.2 /home/worker/_hacspec/docker/travis-compiler/run.sh
     - stage: docs
       script:
         - make -C rfc

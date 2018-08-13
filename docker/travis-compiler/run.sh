@@ -2,6 +2,9 @@
 
 set -v -x
 
+# Travis is weird.
+cp -r /home/worker/_hacspec /home/worker/hacspec
+
 # Docker doesn't give us a login shell.
 . /home/worker/.opam/opam-init/init.sh > /dev/null 2> /dev/null || true
 
