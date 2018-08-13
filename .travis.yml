@@ -16,9 +16,14 @@ install:
 jobs:
   include:
     - stage: build
+      name: python build
       script:
         - make -C build test
-    - stage: test
+    - stage: docs
+      name: rfc
+      script:
+        - make -C rfc
+    - stage: "test & typecheck"
       name: run
       script: make run
     -
@@ -27,17 +32,8 @@ jobs:
     -
       name: test typechecked
       script: make test
-    - stage: compilers
-      name: ocaml compiler
+    -
+      name: compiler
       install: skip
       script:
         - docker run -v $PWD:/home/worker/_hacspec --rm -ti franziskus/hacspec:0.2 /home/worker/_hacspec/docker/travis-compiler/run.sh
-    - stage: docs
-      script:
-        - make -C rfc
-
-stages:
-  - compilers
-  - build
-  - docs
-  - test
