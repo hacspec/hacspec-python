@@ -1,5 +1,5 @@
 from lib.speclib import *
-from specs.keccak import *
+from specs.sha3 import *
 from math import floor
 from specs.aes import aes128_encrypt_block
 

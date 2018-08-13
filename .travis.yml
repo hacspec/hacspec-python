@@ -1,6 +1,10 @@
 language: python
+sudo: required
 python:
   - "3.6.4"
+
+services:
+  - docker
 
 install:
   - pip install mypy
@@ -12,13 +16,30 @@ install:
 jobs:
   include:
     - stage: build
+      name: python build
       script:
         - make -C build test
-        - make -C spec-compilers
+    - stage: docs
+      name: rfc
+      script:
         - make -C rfc
-    - stage: test
+    - stage: "test & typecheck"
+      name: run
       script: make run
     -
+      name: checkspec
       script: make check
     -
+      name: test typechecked
       script: make test
+    -
+      name: run wots (slow)
+      script: make wots
+    -
+      name: run kyber (slow)
+      script: make kyber
+    -
+      name: compiler
+      install: skip
+      script:
+        - docker run -v $PWD:/home/worker/_hacspec --rm -ti franziskus/hacspec:0.2 /home/worker/_hacspec/docker/travis-compiler/run.sh

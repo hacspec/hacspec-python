@@ -1,10 +1,9 @@
 from lib.speclib import *
 from specs.kyber import Kyber #crypto_kem_keypair, crypto_kem_enc, crypto_kem_dec
-from sys import exit
 import json
-from tests.testlib import print_dot
+from tests.testlib import print_dot, exit
 
-def main (x: int) -> None :
+def main():
     file = open('tests/test_vectors/kyber_test_vectors.json')
     kyber_test_vectors = json.load(file)
     print_dot()
@@ -33,5 +32,6 @@ def main (x: int) -> None :
             print("Computed shared secret 2: " + str(ss2))
             print("Expected shared secret: " + str(ss_expected))            
             exit(1)
+    exit(0)
 
-main(0)
+main()

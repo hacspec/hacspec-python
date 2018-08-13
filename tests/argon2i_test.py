@@ -6,7 +6,7 @@ import json
 def main():
     file = open('tests/test_vectors/argon2i_test_vectors.json')
     argon2i_test_vectors = json.load(file)
-    t = print_dot()
+    print_dot()
     for i, vec in enumerate(argon2i_test_vectors):
         p = bytes.from_hex(vec['p'])
         s = bytes.from_hex(vec['s'])
@@ -21,12 +21,12 @@ def main():
         # computed = array([])
         if computed == expected:
             print("Argon2i Test {} passed.".format(i+1))
-            exit(0, t)
         else:
             print("Argon2i Test {} failed.".format(i+1))
             print("expected hash:",bytes.to_hex(expected))
             print("computed hash:",bytes.to_hex(computed))
-            exit(1, t)
+            exit(1)
+    exit(0)
 
 
 if __name__ == "__main__":

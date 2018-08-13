@@ -1,10 +1,9 @@
 from lib.speclib import *
 from specs.frodo import Frodo
-from sys import exit
 import json
-from tests.testlib import print_dot
+from tests.testlib import print_dot, exit
 
-def main (x: int) -> None :
+def main ():
     file = open('tests/test_vectors/frodo_test_vectors.json')
     frodo_test_vectors = json.load(file)
     print_dot()
@@ -37,5 +36,6 @@ def main (x: int) -> None :
                 print("Computed cipher text: " + str(ct))
                 print("Expected cipher text: " + str(ct_expected))
             exit(1)
+    exit(0)
 
-main(0)
+main()
