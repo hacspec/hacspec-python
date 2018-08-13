@@ -11,7 +11,7 @@ BROKEN_SPECS=vrf rsapss
 
 all: run check test
 
-run: $(SPECS) $(SLOW_SPECS) $(FAILING_SPECS)
+run: $(SPECS) $(FAILING_SPECS)
 test: $(addsuffix -test, $(SPECS))
 check: $(addsuffix -check, $(SPECS)) 
 parse: $(addsuffix -parse, $(SPECS))
