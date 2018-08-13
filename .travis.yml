@@ -39,9 +39,6 @@ jobs:
       name: run kyber (slow)
       script: make kyber
     -
-      name: run frodo (slow)
-      script: make frodo
-    -
       name: compiler
       install: skip
       script:
