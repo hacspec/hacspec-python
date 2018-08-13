@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from lib.speclib import *
-from specs.keccak import *
+from specs.sha3 import *
 from math import floor
 
 variant_k_t   = refine(nat_t, lambda x: x == 2 or x == 3 or x == 4)

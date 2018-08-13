@@ -2,8 +2,7 @@
 
 from specs.wots import *
 from lib.speclib import *
-from sys import exit
-from tests.testlib import print_dot
+from tests.testlib import print_dot, exit
 
 # Generated with https://github.com/joostrijneveld/xmss-reference/
 m1: digest_t = bytes.from_hex("b8cdb147973dea2ec70aa59ce71ec6d88277761d717221580eb847abd0a4e6a9")
@@ -66,6 +65,7 @@ def main():
     test_wots_kat(m2, pk2, sig2, adr2, seed2, adr2p)
     test_wots_self()
     test_wots_self()
+    exit(0)
 
 
 if __name__ == "__main__":
