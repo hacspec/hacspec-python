@@ -3,8 +3,13 @@ from specs.sha3 import *
 from math import floor
 from specs.aes import aes128_encrypt_block
 
+<<<<<<< Updated upstream
 variant_gen_t = refine(str, lambda x: x == 'AES128' or x == 'CSHAKE128')
 variant_frodo_kem_t = refine(str, lambda x: x == 'FrodoKEM-640' or x == 'FrodoKEM-976')
+=======
+variant_gen_a = refine(str, lambda x: x == "AES128" or x == "CSHAKE128")
+variant_frodo_kem = refine(str, lambda x: x == "FrodoKEM-640" or x == "FrodoKEM-976")
+>>>>>>> Stashed changes
 
 @typechecked
 def cshake128_frodo(input_b:bytes_t, cstm:uint16_t, outputByteLen:nat) -> \

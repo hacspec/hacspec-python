@@ -133,7 +133,8 @@ module Env : sig
 
   val empty0 : env
   val empty  : env
-
+  val cast_funs : ((string list * string) * (ctype list * type_ * Ast.Ident.ident)) list
+    
   module Mod : sig
     val get    : env -> symbol -> env option
     val getnm  : env -> symbol list -> env option
@@ -198,6 +199,17 @@ end = struct
     ("vlbytes_t", TArray (tword8, None));
   ]
 
+  let cast_funs = [
+    (([],"nat")  , ([PInt],TInt `Pos, Ident.make "nat"));
+    (([],"pos")  , ([PInt],TInt `Nat, Ident.make "pos"));
+    (([],"bit")  , ([PWord;PInt],tword1, Ident.make "bit"   ));
+    (([],"uint8"), ([PWord;PInt],tword8, Ident.make "uint8" ));
+    (([],"uint16") , ([PWord;PInt],tword16, Ident.make "uint16"  ));
+    (([],"uint32") , ([PWord;PInt],tword32, Ident.make "uint32"  ));
+    (([],"uint64") , ([PWord;PInt], tword64, Ident.make "uint64"  ));
+    (([],"uint128"), ([PWord;PInt], tword128, Ident.make "uint128" ));
+    ]
+          
   let dprocs = [
     ("nat"    , [TInt `Int], TInt `Pos);
     ("pos"    , [TInt `Int], TInt `Nat);
@@ -771,6 +783,13 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
        let ye, _ = tt_expr ~cty:(`Approx PInt) env y in
        (ECall (Ident.make("natmod"), [`Expr xe; `Expr ye]), TInt (`Natm ye))
 
+    | PECall (nmf, [x]) when List.mem_assoc (qunloc nmf) Env.cast_funs ->
+        let exp, rty, name = List.assoc (qunloc nmf) Env.cast_funs in
+
+        let e1, ty1 = tt_expr env x in
+        check_ty ~loc:(loc pe) exp ty1;
+        (ECall (name, [`Expr e1]), rty)
+
     | PECall (nmf, args) when List.mem_assoc (qunloc nmf) stdlib ->
         let exp, rty, name = List.assoc (qunloc nmf) stdlib in
 
@@ -1025,13 +1044,12 @@ and tt_vardecl
 
 (* -------------------------------------------------------------------- *)
 and tt_annotation (env : env) (att : pexpr) : ident * hoexpr list =
-  match fst (tt_expr env att) with
-  | EVar x ->
-      (x, [])
-
-  | ECall (x, args) ->
-      (x, args)
-
+  match unloc att with (* TODO: typecheck annotations properly : (tt_expr env att) *)
+  | PEVar ([],x) when unloc x = "typechecked" -> 
+      (Ident.make "typechecked", [])
+  | PECall (x, args) when qunloc x = ([],"contract3") || qunloc x = ([],"contract") ->
+      let es, tys = List.split (List.map (tt_expr env) args) in
+      (Ident.make "contract3", List.map (fun x -> `Expr x) es)
   | _ ->
       error ~loc:(loc att) env UnsupportedAnnotation
 

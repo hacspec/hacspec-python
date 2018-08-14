@@ -144,12 +144,18 @@ inline_for_extraction let uint8 x : uint8_t = u8 x
 inline_for_extraction let uint32 x : uint32_t = u32 x
 inline_for_extraction let uint128 x : uint128_t = u128 x
 
-inline_for_extraction let uintn_to_nat #t (a:uint_t t) : nat = 
-		      match t with 
-		      | NATm m -> a 
-		      | _ -> Lib.RawIntTypes.uint_to_nat a
-inline_for_extraction let uintn_to_int #t (a:uint_t t) : nat = uintn_to_nat #t a
-inline_for_extraction let uintn_get_bit #b (x:uintn_t b) (i:nat) : bit_t  = bit (((uintn_to_nat #(NATm (pow2 b)) x) / pow2 i) % 2)
+inline_for_extraction let uintn_to_nat #n (a:numeric_t n) : nat =
+  match n with
+  | Word t -> Lib.RawIntTypes.uint_to_nat #t a
+  | Int -> a
+  
+inline_for_extraction let uintn_to_int #n (a:numeric_t n) : nat = uintn_to_nat #n a
+inline_for_extraction let uintn_get_bit #n (x:numeric_t n) (i:nat) : bit_t = 
+  match n with
+  | Word (NATm m) ->  bit (((uintn_to_nat #n x) / pow2 i) % 2)
+  | Word _ -> bit ((uintn_to_nat (x >>. i)) % 2)
+  | Int -> bit ((x % pow2 i) % 2)
+  
 inline_for_extraction let uintn_rotate_left (#t:m_inttype) (a:uint_t t) b = a <<<. (u32 b)
 inline_for_extraction let uintn_rotate_right (#t:m_inttype) (a:uint_t t) b = a >>>. (u32 b)
 
@@ -197,9 +203,11 @@ inline_for_extraction let bytes_length x = length x
 inline_for_extraction let bytes_to_uint32s_le #l (b:lbytes (l `op_Multiply` 4)) = uints_from_bytes_le #U32 #l b
 inline_for_extraction let bytes_from_uint32s_le #l (b:lseq uint32_t l) = uints_to_bytes_le #U32 b 
 inline_for_extraction let bytes_to_nat_le #l (b:lbytes l) = nat_from_bytes_le #l b
-inline_for_extraction let bytes_from_nat_le n l = nat_to_bytes_le l n 
+inline_for_extraction let bytes_from_nat_le (n:nat) l = nat_to_bytes_le l n 
 inline_for_extraction let bytes_to_uint128_le #l (b:lbytes l) = uint_from_bytes_le #U128 b
-inline_for_extraction let bytes_from_uint128_le n = uint_to_bytes_le #U128 n
+inline_for_extraction let bytes_from_uint128_le (n:uint128_t) = uint_to_bytes_le #U128 n
+inline_for_extraction let bytes_to_uint128_be #l (b:lbytes l) = uint_from_bytes_be #U128 b
+inline_for_extraction let bytes_from_uint128_be (n:uint128_t) = uint_to_bytes_be #U128 n
 inline_for_extraction let bytes_to_uint32_be #l (b:lbytes l) = uint_from_bytes_be #U32 b
-inline_for_extraction let bytes_from_uint32_be n = uint_to_bytes_be #U32 n
+inline_for_extraction let bytes_from_uint32_be (n:uint32_t) = uint_to_bytes_be #U32 n
 

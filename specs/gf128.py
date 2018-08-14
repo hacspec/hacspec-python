@@ -2,33 +2,46 @@
 
 from lib.speclib import *
 
+<<<<<<< Updated upstream
 blocksize : int = 16
 block_t = bytes_t(16)
 key_t = bytes_t(16)
 tag_t = bytes_t(16)
 subblock_t,subblock = refine(vlbytes_t, lambda x: bytes.length(x) <= 16)
 elem_t = bitvector_t(128)
+=======
+blocksize : nat_t = 16
+block_t = bytes_t(16)
+key_t = bytes_t(16)
+tag_t = bytes_t(16)
+subblock_t = refine_t(vlbytes_t, lambda x: bytes.length(x) <= 16)
+elem_t = uint128_t
+>>>>>>> Stashed changes
 
 # Define galois field
 @typechecked
 def elem(x:nat_t) -> elem_t:
-    return bitvector(x, 128)
+    return uint128(x)
 
 irred : elem_t = elem(0xE1000000000000000000000000000000)
 
 @typechecked
 def elem_from_bytes(b:bytes_t(16)) -> elem_t:
-    return elem(uintn.to_int(bytes.to_uint128_be(b)))
+    return bytes.to_uint128_be(b)
 @typechecked
 def elem_to_bytes(e:elem_t) -> bytes_t(16):
-    return bytes.from_uint128_be(uint128(uintn.to_int(e)))
+    return bytes.from_uint128_be(e)
 @typechecked
 def fadd(x:elem_t,y:elem_t) -> elem_t:
     return x ^ y
 @typechecked
 def fmul(x:elem_t,y:elem_t) -> elem_t:
     res : elem_t = elem(0)
+<<<<<<< Updated upstream
     sh : elem_t = x
+=======
+    sh  : elem_t = x
+>>>>>>> Stashed changes
     for i in range(128):
         if y[127-i] != bit(0):
             res ^= sh
@@ -41,7 +54,7 @@ def fmul(x:elem_t,y:elem_t) -> elem_t:
 # Define GMAC
 @typechecked
 def encode(block:subblock_t) -> elem_t:
-    b = bytes(array.create(16,uint8(0)))
+    b : block_t = bytes(array.create(16,uint8(0)))
     b[0:array.length(block)] = block
     return elem_from_bytes(b)
 
@@ -51,23 +64,32 @@ def decode(e:elem_t) -> block_t:
 
 @typechecked
 def update(r:elem_t,block:subblock_t,acc:elem_t) -> elem_t:
-    return fmul(fadd(encode(subblock(block)),acc),r)
+    return fmul(fadd(encode(block),acc),r)
 
 @typechecked
 def poly(text:vlbytes_t,r:elem_t) -> elem_t:
+<<<<<<< Updated upstream
     blocks : array(vlbytes_t)
     last : vlbytes_t
+=======
+    blocks: vlarray_t(block_t)
+    last: vlbytes_t
+>>>>>>> Stashed changes
     blocks,last = array.split_blocks(text,blocksize)
     acc : elem_t = elem(0)
     for i in range(array.length(blocks)):
-        acc = update(r,subblock(blocks[i]),acc)
+        acc = update(r,blocks[i],acc)
     if (array.length(last) > 0):
-        acc = update(r,subblock(bytes(last)),acc)
+        acc = update(r,bytes(last),acc)
     return acc
 
 @typechecked
 def gmac(text:vlbytes_t,k:key_t) -> tag_t :
+<<<<<<< Updated upstream
     s : subblock_t = subblock(bytes(array.create(blocksize,uint8(0))))
+=======
+    s : block_t = bytes(array.create(blocksize,uint8(0)))
+>>>>>>> Stashed changes
     r : elem_t = encode(k)
     a : elem_t = poly(text,r)
     m : block_t = decode(fadd(a,encode(s)))

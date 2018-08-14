@@ -2,7 +2,7 @@ FSTAR_HOME?=../../../../FStar
 HACL_HOME?=../../../../hacl-star
 FSTAR=$(FSTAR_HOME)/bin/fstar.exe --include $(HACL_HOME)/lib --include $(HACL_HOME)/lib/fst --expose_interfaces
 
-SPECS=aes.fst chacha20.fst poly1305.fst curve25519.fst
+SPECS=aes.fst chacha20.fst poly1305.fst curve25519.fst blake2.fst
 LIBS = Lib.IntTypes.fst Lib.RawIntTypes.fst Lib.Sequence.fst Lib.ByteSequence.fst
 LIBS_FILES= $(addprefix $(HACL_HOME)/lib/fst/, $(LIBS)) speclib.fst
 LIBS_ML = Lib_IntTypes.ml Lib_RawIntTypes.ml Lib_Sequence.ml Lib_ByteSequence.ml Speclib.ml

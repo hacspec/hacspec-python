@@ -153,7 +153,7 @@ def blake2(v:variant_t) -> FunctionType:
         else:
             h = _F(h, to_words_le(
                 data[block_bytes * (data_blocks - 1):block_bytes * data_blocks]), input_bytes + to_double_word(block_bytes), True)
-        return from_words_le(h)[:nn]
+        return from_words_le(h)[0:nn]
 
 
     @contract3(lambda data, key, nn: True, lambda data, key, nn, res: array.length(res) == nn)
