@@ -3,7 +3,7 @@ from types import FunctionType
 from random import SystemRandom as rand
 from random import choices as random_string
 from string import ascii_uppercase, ascii_lowercase
-from math import ceil, log
+from math import ceil, log, floor
 from importlib import import_module
 import builtins
 from typeguard import typechecked
