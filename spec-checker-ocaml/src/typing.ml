@@ -5,6 +5,10 @@ open Syntax
 open Ast
 
 (* -------------------------------------------------------------------- *)
+let nmunloc (nm : pident list) : symbol list =
+  List.map unloc nm
+
+(* -------------------------------------------------------------------- *)
 let qunloc ((nm, x) : pqident) : qsymbol =
   (List.map unloc nm, unloc x)
 
@@ -125,14 +129,16 @@ module Env : sig
   type env
   type tdecl = { tname : ident; tdef  : type_; }
   type vdecl = { vname : ident; vtype : type_; vrawty : type_; }
-  type pdecl = { pname : ident; psig  : type_ list; pret : type_; }
+  type pdecl = { pname : ident; psig  : hotype list; pret : type_; }
 
-  val empty : env
+  val empty0 : env
+  val empty  : env
 
   module Mod : sig
-    val get   : env -> symbol -> env option
-    val getnm : env -> symbol list -> env option
-    val bind  : env -> symbol -> env -> env
+    val get    : env -> symbol -> env option
+    val getnm  : env -> symbol list -> env option
+    val bind   : env -> symbol -> env -> env
+    val bindnm : env -> symbol list -> env -> env
   end
 
   module Types : sig
@@ -154,19 +160,26 @@ module Env : sig
   end
 
   module Procs : sig
-    val get : env -> symbol -> pdecl option
-    val bind : env -> symbol -> type_ list * type_ -> env * ident
+    val get  : env -> symbol -> pdecl option
+    val bind : env -> symbol -> hotype list * type_ -> env * ident
   end
 end = struct
   type tdecl = { tname : ident; tdef  : type_; }
   type vdecl = { vname : ident; vtype : type_; vrawty : type_; }
-  type pdecl = { pname : ident; psig  : type_ list; pret : type_; }
+  type pdecl = { pname : ident; psig  : hotype list; pret : type_; }
 
   type env = {
     e_types : tdecl Mstr.t;
     e_vars  : vdecl Mstr.t;
     e_procs : pdecl Mstr.t;
     e_mods  : env   Mstr.t;
+  }
+
+  let empty0 = {
+    e_types = Mstr.empty;
+    e_vars  = Mstr.empty;
+    e_procs = Mstr.empty;
+    e_mods  = Mstr.empty;
   }
 
   let dtypes = [
@@ -206,6 +219,16 @@ end = struct
 
     let bind (env : env) (x : symbol) (mod_ : env) =
       { env with e_mods = Mstr.add x mod_ env.e_mods }
+
+    let rec bindnm (env : env) (nm : symbol list) (mod_ : env) =
+      match nm with
+      | []      -> assert false
+      | [x]     -> bind env x mod_
+      | x :: nm ->
+          { env with e_mods =
+              Mstr.modify_opt x (fun senv ->
+                  Some (bindnm (Option.default empty0 senv) nm mod_))
+                env.e_mods }
   end
 
   module Types = struct
@@ -329,7 +352,7 @@ end = struct
     let get (env : env) (x : symbol) =
       Mstr.Exceptionless.find x env.e_procs
 
-    let bind (env : env) (f : symbol) ((sig_, ret) : type_ list * type_) =
+    let bind (env : env) (f : symbol) ((sig_, ret) : hotype list * type_) =
       let decl = { pname = Ident.make f; psig = sig_; pret = ret } in
       let env  = { env with e_procs = Mstr.add f decl env.e_procs } in
       (env, decl.pname)
@@ -350,6 +373,7 @@ end = struct
     let env =
       List.fold_left
         (fun env (f, sg, re) ->
+          let sg = List.map hotype1  sg in
           fst (Procs.bind env f (sg, re))) env dprocs in
 
     env
@@ -381,6 +405,8 @@ type tyerror =
   | InvalidType        of type_ * etype list
   | InvalidLValueExpr
   | UnsupportedAnnotation
+  | ProcNameExpected
+  | InvalidHOApplication
 
 (* -------------------------------------------------------------------- *)
 let pp_tyerror fmt (error : tyerror) =
@@ -455,6 +481,13 @@ let pp_tyerror fmt (error : tyerror) =
 
   | UnsupportedAnnotation ->
       Format.fprintf fmt "unsupported annotation"
+
+  | ProcNameExpected ->
+      Format.fprintf fmt
+        "only procedure names are allowed for second-order argument"
+
+  | InvalidHOApplication ->
+      Format.fprintf fmt "invalid second-order application"
 
 (* -------------------------------------------------------------------- *)
 exception TyError of (Location.t * env * tyerror)
@@ -557,6 +590,12 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
  *)
 
   | _ -> error ~loc:(loc x) env (InvalidTypeCtor (unloc x))
+
+(* -------------------------------------------------------------------- *)
+and tt_hotype (env : env) ((sg, ty) : photype) =
+  let sg = List.map (tt_type env) sg in
+  let ty = tt_type env ty in
+  (sg, ty)
 
 (* -------------------------------------------------------------------- *)
 and tt_cint (env : env) (e : pexpr) =
@@ -725,12 +764,12 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
        let xe, _ = tt_expr ~cty:(`Approx PInt) env x in
        let ye, _ = tt_expr ~cty:(`Approx PInt) env y in
        let n = tt_cint env y in
-       (ECall (Ident.make("uintn"), [xe;ye]), TWord n)
+       (ECall (Ident.make("uintn"), [`Expr xe; `Expr ye]), TWord n)
 
     | PECall (nmf, [x;y]) when (qunloc nmf) = ([],"natmod") ->
        let xe, _ = tt_expr ~cty:(`Approx PInt) env x in
        let ye, _ = tt_expr ~cty:(`Approx PInt) env y in
-       (ECall (Ident.make("natmod"), [xe;ye]), TInt (`Natm ye))
+       (ECall (Ident.make("natmod"), [`Expr xe; `Expr ye]), TInt (`Natm ye))
 
     | PECall (nmf, args) when List.mem_assoc (qunloc nmf) stdlib ->
         let exp, rty, name = List.assoc (qunloc nmf) stdlib in
@@ -741,7 +780,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
              List.combine args exp
           |> List.map (fun (e, ty) -> tt_expr ?cty:ty env e)
           |> List.split in
-        (ECall (name, args), rty tys)
+        (ECall (name, List.map (fun x -> `Expr x) args), rty tys)
         
     | PECall ((nm, f) as nmf, args) ->
         let senv = tt_module env nm in
@@ -755,8 +794,30 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
           error ~loc:(loc pe) env InvalidArgCount;
 
         let args =
-          List.map2 (fun e ty -> fst (tt_expr ~cty:(`Exact ty) env e))
-          args f.Env.psig in
+          let do1 e (sg, ty) =
+            if List.is_empty sg then
+              `Expr (fst (tt_expr ~cty:(`Exact ty) env e))
+            else begin
+              match unloc e with
+              | PEVar ((nm, p) as nmp) -> begin
+                  let senv = tt_module env nm in
+                  match Env.Procs.get senv (unloc p) with
+                  | None ->
+                      error ~loc:(loc pe) env (UnknownProc (qunloc nmp))
+                  | Some proc ->
+                      if List.length proc.Env.psig <> List.length sg then
+                        error ~loc:(loc pe) env InvalidHOApplication;
+                      List.iter2 (fun (sg, ty) aty ->
+                          if not (List.is_empty sg) then
+                            error ~loc:(loc pe) env InvalidHOApplication;
+                          check_ty_compat ~loc:(loc pe) ~src:aty ~dst:ty)
+                        proc.Env.psig sg;
+                      `Proc proc.Env.pname
+                end
+              | _ -> error ~loc:(loc pe) env ProcNameExpected
+            end
+          in List.map2 do1 args f.Env.psig in
+
         (ECall (f.Env.pname, args), Type.strip f.Env.pret)
 
     | PEGet (pe, ps) ->
@@ -765,10 +826,10 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
         let e, ty =
           match Env.Types.inline env ty, s with
           | TWord _, `One i ->
-              ECall (get_bit, [e; i]), tword1
+              ECall (get_bit, [`Expr e; `Expr i]), tword1
 
           | TWord _, `Slice (s,f) ->
-              ECall (get_bits, [e; s; f]), TWord Big_int.zero
+              ECall (get_bits, [`Expr e; `Expr s; `Expr f]), TWord Big_int.zero
 
           | TArray (ty,_), `One _ ->
               EGet (e, s),ty
@@ -939,7 +1000,8 @@ and tt_tydecl (env : env) ((x, ty) : pident * pexpr) : env * tydecl =
   let env = begin
     match Type.strip ty with
     | TArray (aty, _) ->
-        fst (Env.Procs.bind env (unloc x) ([TArray (aty, None)], ty))
+        let sg = ([hotype1 (TArray (aty, None))], ty) in
+        fst (Env.Procs.bind env (unloc x) sg)
 
     | _ -> env
   end
@@ -962,7 +1024,7 @@ and tt_vardecl
   (env, aout)
 
 (* -------------------------------------------------------------------- *)
-and tt_annotation (env : env) (att : pexpr) : ident * expr list =
+and tt_annotation (env : env) (att : pexpr) : ident * hoexpr list =
   match fst (tt_expr env att) with
   | EVar x ->
       (x, [])
@@ -998,7 +1060,8 @@ and tt_procdef (env : env) (pf : pprocdef) : env * env procdef =
   let args = List.map (fun (x, xty) -> (unloc x, tt_type env xty)) args in
   let env1, args =
     List.fold_left_map (fun env (x, ty) ->
-        let env, x = Env.Vars.bind env (x, ty) in (env, (x, ty)))
+        let env, x = Env.Vars.bind env (x, ty) in
+        (env, (x, hotype1 ty)))
       env args in
 
   let subs, body =
@@ -1051,6 +1114,30 @@ let tt_topdecl1 (env : env) = function
       let env, x = tt_vardecl env ((x, ty), e) in (env, [TD_VarDecl x])
 
 (* -------------------------------------------------------------------- *)
-let tt_program (p : pspec) : env program =
-  let env, prgm = List.fold_left_map tt_topdecl1 Env.empty p in
+let tt_intf1 (env : env) = function
+  | IPTTypeAlias (x, ty) ->
+      let env, _ = tt_tydecl env (x, ty) in env
+
+  | IPTProcDecl ((nm, f), sg, rty) ->
+      let sg =
+        List.map (fun (_x, ty) ->
+            match ty with
+            | None     -> hotype1 (TNamed ([], "_")) (* FIXME *)
+            | Some aty -> tt_hotype env aty) sg in
+
+      let rty  = tt_type env rty in
+      let senv = Env.Mod.getnm env (nmunloc nm) |> Option.default Env.empty in
+      let senv = fst (Env.Procs.bind senv (unloc f) (sg, rty)) in
+
+      if   List.is_empty nm
+      then senv
+      else Env.Mod.bindnm env (nmunloc nm) senv
+
+(* -------------------------------------------------------------------- *)
+let tt_interface (env : env) (i : pintf) : env =
+  List.fold_left tt_intf1 env i
+
+(* -------------------------------------------------------------------- *)
+let tt_program (env : env) (p : pspec) : env * env program =
+  let env, prgm = List.fold_left_map tt_topdecl1 env p in
   (env, List.flatten prgm)

@@ -67,7 +67,7 @@ type raw     = private unit
 type type_ =
   | TUnit
   | TBool
-  | TInt     of int_sub
+  | TInt     of [`Int | `Nat | `Pos | `Natm of expr]
   | TString
   | TWord    of wsize
   | TTuple   of type_ list
@@ -77,8 +77,8 @@ type type_ =
   | TResult  of type_
   | TNamed   of qsymbol
 
-and int_sub = [`Int | `Nat | `Pos | `Natm of expr]
-              
+and hotype = type_ list * type_
+
 (* -------------------------------------------------------------------- *)
 and expr =
   | EVar    of ident
@@ -92,11 +92,12 @@ and expr =
   | EEq     of bool * (expr * expr)
   | EUniOp  of uniop * expr
   | EBinOp  of binop * (expr * expr)
-  | ECall   of ident * expr list
+  | ECall   of ident * hoexpr list
   | EGet    of expr * slice
   | EFun    of ident list * expr
 
-and slice = [ `One of expr | `Slice of expr * expr ]
+and slice  = [ `One of expr | `Slice of expr * expr ]
+and hoexpr = [`Expr of expr | `Proc of ident]
 
 (* -------------------------------------------------------------------- *)
 type tyexpr = expr * type_
@@ -111,6 +112,9 @@ let tword32  = twordi  32
 let tword64  = twordi  64
 let tword128 = twordi 128
 let tword256 = twordi 256
+
+(* -------------------------------------------------------------------- *)
+let hotype1 (ty : type_) : hotype = ([], ty)
 
 (* -------------------------------------------------------------------- *)
 let rec string_of_type (ty : type_) =
@@ -224,8 +228,8 @@ type vardecl = { vrd_name : ident; vrd_type : type_; vrd_init : expr; }
 
 type 'env procdef = {
   prd_name : ident;
-  prd_att  : (ident * expr list) list;
-  prd_args : (ident * type_) list;
+  prd_att  : (ident * hoexpr list) list;
+  prd_args : (ident * hotype) list;
   prd_ret  : type_;
   prd_body : 'env * block;
   prd_subs : ('env procdef) list;
@@ -238,4 +242,4 @@ type 'env topdecl1 =
   | TD_ProcDef of 'env procdef
 
 (* -------------------------------------------------------------------- *)
-type 'env program = 'env * (('env topdecl1) list)
+type 'env program = ('env topdecl1) list

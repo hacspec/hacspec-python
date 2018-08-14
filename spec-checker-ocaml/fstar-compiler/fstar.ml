@@ -58,8 +58,8 @@ let rec fstar_of_expr b e =
   | EString s -> "\""^s^"\""
   | ETuple el -> "("^String.concat "," (List.map (fstar_of_expr false) el)^")"
   | EArray el -> paren b ("array_createL ["^String.concat "; " (List.map (fstar_of_expr false) el)^"]")
-  | ECall (i,[e]) when Ident.to_string i = "uint32" -> paren b ("uint32 "^fstar_of_expr true e)
-  | ECall (i,el) -> paren b (Ident.to_string i^" "^(String.concat " " (List.map (fstar_of_expr true) el)))
+  | ECall (i,[e]) when Ident.to_string i = "uint32" -> paren b ("uint32 "^fstar_of_hoexpr true e)
+  | ECall (i,el) -> paren b (Ident.to_string i^" "^(String.concat " " (List.map (fstar_of_hoexpr true) el)))
   | EUniOp (u,e) -> paren b (fstar_of_uniop u ^ " " ^ (fstar_of_expr false e))
   | EBinOp (op,(e1,e2)) -> paren b (fstar_of_expr true e1 ^ " " ^ fstar_of_binop op ^ " " ^ fstar_of_expr true e2)
   | EEq (false,(e1,e2)) -> fstar_of_expr true e1 ^ " = " ^ fstar_of_expr true e2
@@ -68,6 +68,11 @@ let rec fstar_of_expr b e =
   | EGet(e1,`Slice (e2,e3)) -> paren b ("array_slice "^(fstar_of_expr true e1)^" "^(fstar_of_expr true e2)^" "^(fstar_of_expr true e3))
   | EFun(xl,e) -> "(fun "^String.concat " " (List.map Ident.to_string xl)^" -> "^fstar_of_expr false e^")"
   | _ -> ("not an f* expr:")
+
+and fstar_of_hoexpr b e =
+  match e with
+  | `Expr e -> fstar_of_expr b e
+  | `Proc p -> Ident.to_string p
 
 let rec fstar_of_lvalue b e =
   match e with
@@ -140,6 +145,9 @@ let rec fstar_of_type b ty =
       Format.sprintf "result_t %s" (fstar_of_type true ty)
 
   | _ -> "TODO TYPE ******"
+
+and fstar_of_hotype b (sg, ty) =
+  String.concat " -> " (List.map (fstar_of_type b) (sg @ [ty]))
        
 module IdentSet = Set.Make(String)
 let rec lvars il =
@@ -208,8 +216,8 @@ let fstar_of_topdecl d =
     match d with
     | TD_TyDecl td ->  "let "^Ident.to_string td.tyd_name^" : Type0 = "^fstar_of_type false td.tyd_body
     | TD_VarDecl vd -> "let "^Ident.to_string vd.vrd_name^" : "^fstar_of_type false vd.vrd_type^" = "^fstar_of_expr false vd.vrd_init
-    | TD_ProcDef pd -> "let "^Ident.to_string pd.prd_name^" "^(String.concat " " (List.map (fun (v,t) -> "(" ^ Ident.to_string v ^ " : " ^ fstar_of_type false t ^ ")") pd.prd_args)) ^" : " ^(fstar_of_type false pd.prd_ret)^" = \n"^fstar_of_instrs (snd pd.prd_body) ""
-let fstar_of_program (n:string) (p: T.Env.env program) : string =
+    | TD_ProcDef pd -> "let "^Ident.to_string pd.prd_name^" "^(String.concat " " (List.map (fun (v,t) -> "(" ^ Ident.to_string v ^ " : " ^ fstar_of_hotype false t ^ ")") pd.prd_args)) ^" : " ^(fstar_of_type false pd.prd_ret)^" = \n"^fstar_of_instrs (snd pd.prd_body) ""
+let fstar_of_program (n:string) (p: T.Env.env * T.Env.env program) : string =
     let e,dl = p in
     "module " ^(String.capitalize_ascii n)^"\n"^
     "open Speclib\n"^
