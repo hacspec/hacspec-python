@@ -1,26 +1,26 @@
 (* Generated from hacspec module ../../../specs/gf128.py *)
 module Gf128
 open Speclib
-let blocksize: nat_t = 16
+let blocksize: int = 16
 let block_t: Type0 = array_t uint8_t 16
 let key_t: Type0 = array_t uint8_t 16
 let tag_t: Type0 = array_t uint8_t 16
-let subblock_t: Type0 = (x: vlbytes_t{(bytes_length x) <=. 16})
-let elem_t: Type0 = uint128_t
+let subblock_t: Type0 = (x: vlbytes_t{(array_length x) <=. 16})
+let subblock: Type0 = (x: vlbytes_t{(array_length x) <=. 16})
+let elem_t: Type0 = uint8_t
 let elem (x: nat_t) : elem_t = uint128 x
 let irred: elem_t = elem 299076299051606071403356588563077529600
 let elem_from_bytes (b: array_t uint8_t 16) : elem_t = bytes_to_uint128_be b
 let elem_to_bytes (e: elem_t) : array_t uint8_t 16 = bytes_from_uint128_be e
 let fadd (x: elem_t) (y: elem_t) : elem_t = x ^. y
-
 let fmul (x: elem_t) (y: elem_t) : elem_t =
   let res = elem 0 in
-  let sh : uint128_t = x in
+  let sh = x in
   let res, sh =
     repeati 128
       (fun i (res, sh) ->
-          let res = if (uintn_get_bit #(Word Lib.IntTypes.U128) y (127 -. i)) <> (bit 0) then res ^. sh else res in
-          let sh = if (uintn_get_bit #(Word Lib.IntTypes.U128) sh 0) <> (bit 0) then sh else ( >>.) #(Word Lib.IntTypes.U128) sh 1 in (*(sh >>. 1) ^. irred else sh >>. 1 in  *)
+          let res = if (uintn_get_bit y (127 -. i)) <> (bit 0) then res ^. sh else res in
+          let sh = if (uintn_get_bit sh 0) <> (bit 0) then (sh >>. 1) ^. irred else sh >>. 1 in
           (res, sh))
       (res, sh)
   in
