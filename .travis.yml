@@ -33,12 +33,6 @@ jobs:
       name: test typechecked
       script: make test
     -
-      name: run wots (slow)
-      script: make wots
-    -
-      name: run kyber (slow)
-      script: make kyber
-    -
       name: compiler
       install: skip
       script:

@@ -51,7 +51,7 @@ def mgf_sha256(mgfseed: vlbytes_t, maskLen: size_nat_t) -> vlbytes_t:
     mgfseed_counter[0:mgfseedLen] = mgfseed
 
     for i in range(counter_max):
-        c = bytes.from_uint32_be(uint32(i))
+        c : bytes_t = bytes.from_uint32_be(uint32(i))
         mgfseed_counter[mgfseedLen:(mgfseedLen + 4)] = c
         mHash : bytes_t = hash_sha256(mgfseed_counter)
         acc[(hLen * i):(hLen * i + hLen)] = mHash
@@ -179,10 +179,11 @@ def rsapss_sign(modBits: size_nat_t, skey: rsa_privkey_t, salt: vlbytes_t, msg: 
     e : nat_t
     (pkey, d) = skey
     (n, e) = pkey
+    felem_t = natmod_t(n)
     em : vlbytes_t = pss_encode(salt, msg, nat(modBits - 1))
     m : nat_t = os2ip(em)
-    mmod : natmod_t(n) = natmod(m,n)
-    smod : natmod_t(n) = mmod ** d
+    mmod: felem_t = natmod(m,n)
+    smod: felem_t = mmod ** d
     s : nat_t = natmod.to_int(smod)
     sgnt : vlbytes_t = i2osp(s)
     return sgnt
@@ -198,14 +199,15 @@ def rsapss_verify(modBits: size_nat_t, pkey: rsa_pubkey_t, sLen: size_nat_t, msg
     n : nat_t
     e : nat_t
     (n, e) = pkey
+    felem_t = natmod_t(n)
     s : nat_t = os2ip(sgnt)
-    smod : natmod_t(n) = natmod(s,n)
-    mmod: natmod_t(n)
+    smod: felem_t = natmod(s,n)
+    mmod: felem_t
     m: nat_t
     em: vlbytes_t
     res : bool
     if s < n:
-        mmod  = smod ** e
+        mmod = smod ** e
         m = natmod.to_int(mmod)
         em = i2osp(m)
         res = pss_verify(sLen, msg, em, size_nat(nat(modBits - 1)))

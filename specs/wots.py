@@ -34,8 +34,6 @@ seed_t = bytes_t(n)
 chain_t = tuple_t(address_t, vlbytes_t)
 
 # F: SHA2-256(toByte(0, 32) || KEY || M),
-# H: SHA2-256(toByte(1, 32) || KEY || M),
-# H_msg: SHA2-256(toByte(2, 32) || KEY || M),
 # PRF: SHA2-256(toByte(3, 32) || KEY || M).
 
 
@@ -49,16 +47,6 @@ def hash(prefix: key_t, key: key_t, m: vlbytes_t) -> digest_t:
 @typechecked
 def F(key: key_t, m: vlbytes_t) -> digest_t:
     return hash(bytes.from_nat_be(nat(0), nat(32)), key, m)
-
-
-@typechecked
-def H(key: key_t, m: vlbytes_t) -> digest_t:
-    return hash(bytes.from_nat_be(nat(1), nat(32)), key, m)
-
-
-@typechecked
-def H_msg(key: key_t, m: vlbytes_t) -> digest_t:
-    return hash(bytes.from_nat_be(nat(2), nat(32)), key, m)
 
 
 @typechecked
@@ -85,21 +73,21 @@ def PRF(key: key_t, m: address_t) -> digest_t:
 
 @typechecked
 def set_chain_address(adr: address_t, h_adr: uint32_t) -> address_t:
-    result : address_t = adr[:]
+    result : address_t = array.copy(adr)
     result[-3] = h_adr
     return result
 
 
 @typechecked
 def set_hash_address(adr: address_t, h_adr: uint32_t) -> address_t:
-    result : address_t = adr[:]
+    result : address_t = array.copy(adr)
     result[-2] = h_adr
     return result
 
 
 @typechecked
 def set_key_and_mask(adr: address_t, kam: uint32_t) -> address_t:
-    result : address_t = adr[:]
+    result : address_t = array.copy(adr)
     result[-1] = kam
     return result
 
@@ -128,19 +116,30 @@ def wots_chain(x: bytes_t, start: int, steps: int, seed: seed_t, adr: address_t)
 
 
 @typechecked
-def key_gen(adr: address_t, seed: seed_t) -> key_pair_t:
-    # TODO: we need separate functions here for xmss later.
+def key_gen_sk() -> sk_t:
     sk : sk_t = sk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
-    pk : pk_t = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
-    adr : address_t
-    pk_i : vlbytes_t
     for i in range(uint32.to_int(length)):
         sk_i: bytes_t = bytes.create_random_bytes(n)
-        adr = set_chain_address(adr, uint32(i))
-        adr, pk_i = wots_chain(sk_i, 0, uint32.to_int(w)-1, seed, adr)
         sk[i] = sk_i
+    return sk
+
+@typechecked
+def key_gen_pk(adr: address_t, seed: seed_t, sk: sk_t) -> tuple_t(pk_t, address_t):
+    pk : pk_t = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
+    pk_i : vlbytes_t
+    for i in range(uint32.to_int(length)):
+        adr : address_t = set_chain_address(adr, uint32(i))
+        adr, pk_i = wots_chain(sk[i], 0, uint32.to_int(w)-1, seed, adr)
         pk[i] = pk_i
-    return (sk, pk, adr)
+    return (pk, adr)
+
+@typechecked
+def key_gen(adr: address_t, seed: seed_t) -> key_pair_t:
+    sk : sk_t = key_gen_sk()
+    pk : pk_t
+    adr_out : address_t
+    pk, adr_out = key_gen_pk(adr, seed, sk)
+    return (sk, pk, adr_out)
 
 
 @typechecked
