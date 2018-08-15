@@ -54,9 +54,10 @@ type pexpr_r =
   | PEGet    of pexpr * pslice
   | PEFun    of pident list * pexpr
 
-and pexpr  = pexpr_r located
-and ptype  = pexpr
-and pslice = [ `One of pexpr | `Slice of (pexpr * pexpr) ]
+and pexpr   = pexpr_r located
+and ptype   = pexpr
+and photype = ptype list * ptype
+and pslice  = [ `One of pexpr | `Slice of (pexpr * pexpr) ]
 
 and ptyident  = pident * ptype
 and ptyidents = pident list * ptype
@@ -66,20 +67,28 @@ and potyident = pident * ptype option
 type pinstr_r =
   | PSFail    of pexpr
   | PSPass
-  | PSVarDecl of ptyident
+  | PSVarDecl of ptyident * pexpr option
   | PSReturn  of pexpr option
   | PSExpr    of pexpr
-  | PSAssign  of (plvalue * passop * pexpr)
+  | PSAssign  of (pexpr * passop * pexpr)
   | PSIf      of (pexpr * pstmt) * (pexpr * pstmt) list * pstmt option
   | PSWhile   of (pexpr * pstmt) * pstmt option
   | PSFor     of (potyident * prange * pstmt) * pstmt option
   | PSDef     of pprocdef
 
+
+and pprocdef = {
+  pf_name  : pident;
+  pf_att   : pexpr list;
+  pf_retty : ptype;
+  pf_args  : ptyident list;
+  pf_body  : pstmt;
+}
+
+and plvalue  = pexpr
 and prange   = pexpr option * pexpr
 and pstmt    = pinstr list
 and pinstr   = pinstr_r located
-and plvalue  = pexpr
-and pprocdef = ptyident * ptyident list * pstmt
 
 (* -------------------------------------------------------------------- *)
 type ptopdecl =
@@ -91,4 +100,10 @@ type ptopdecl =
 and pimport = pqident * (pident option) list option
 
 (* -------------------------------------------------------------------- *)
-type pspec = ptopdecl list
+type pitopdecl =
+  | IPTTypeAlias of pident * pexpr
+  | IPTProcDecl  of pqident * (pident * photype option) list * ptype
+
+(* -------------------------------------------------------------------- *)
+type pspec = ptopdecl  list
+type pintf = pitopdecl list

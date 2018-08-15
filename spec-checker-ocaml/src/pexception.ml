@@ -7,7 +7,7 @@ let exn_printers = (Stack.create () : exn_printer Stack.t)
 (* -------------------------------------------------------------------- *)
 let core_printer fmt exn =
   Format.fprintf fmt
-    "anomaly: %s, please report: @\n@." (Printexc.to_string exn)
+    "anomaly: %s, please report@." (Printexc.to_string exn)
 
 (* -------------------------------------------------------------------- *)
 let () = Stack.push core_printer exn_printers

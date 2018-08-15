@@ -9,13 +9,13 @@ nonce_t  = bytes_t(12)
 tag_t    = bytes_t(16)
 
 @typechecked
-def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple2(int,vlbytes_t):
-    laad = len(aad)
-    lmsg = len(msg)
-    pad_aad = laad
+def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple_t(int,vlbytes_t):
+    laad : int = len(aad)
+    lmsg : int = len(msg)
+    pad_aad : int = laad
     if laad % 16 > 0:
         pad_aad = laad + (16 - (laad % 16))
-    pad_msg = lmsg
+    pad_msg : int = lmsg
     if lmsg % 16 > 0:
         pad_msg = lmsg + (16 - (lmsg % 16))
     to_mac = bytes(array.create(pad_aad + pad_msg + 16,uint8(0)))
@@ -26,13 +26,14 @@ def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple2(int,vlbytes_t):
     return pad_aad+pad_msg+16, to_mac
 
 @typechecked
-def aead_aes128gcm_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> tuple2(vlbytes_t,tag_t):
+def aead_aes128gcm_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) -> tuple_t(vlbytes_t,tag_t):
     nonce0 = bytes(array.create(12,uint8(0)))
-    mac_key = aes128_ctr_keyblock(key,nonce0,uint32(0))
-    tag_mix = aes128_ctr_keyblock(key,nonce,uint32(1))
-    ciphertext = aes128_encrypt(key,nonce,uint32(2),msg)
-    len, to_mac = padded_aad_msg(aad,ciphertext)
-    mac = gmac(to_mac,mac_key)
+    mac_key : block_t = aes128_ctr_keyblock(key,nonce0,uint32(0))
+    tag_mix : block_t = aes128_ctr_keyblock(key,nonce,uint32(1))
+    ciphertext : vlbytes_t = aes128_encrypt(key,nonce,uint32(2),msg)
+    to_mac : vlbytes_t
+    _, to_mac = padded_aad_msg(aad,ciphertext)
+    mac : tag_t = gmac(to_mac,mac_key)
     mac = xor_block(mac,tag_mix)
     return ciphertext, mac
 
@@ -40,13 +41,14 @@ def aead_aes128gcm_encrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,msg:vlbytes_t) 
 def aead_aes128gcm_decrypt(key:key_t,nonce:nonce_t,aad:vlbytes_t,
                            ciphertext:vlbytes_t,tag:tag_t) -> vlbytes_t:
     nonce0 = bytes(array.create(12,uint8(0)))
-    mac_key = aes128_ctr_keyblock(key,nonce0,uint32(0))
-    tag_mix = aes128_ctr_keyblock(key,nonce,uint32(1))
+    mac_key : block_t = aes128_ctr_keyblock(key,nonce0,uint32(0))
+    tag_mix : block_t = aes128_ctr_keyblock(key,nonce,uint32(1))
+    to_mac : vlbytes_t
     _, to_mac = padded_aad_msg(aad,ciphertext)
-    mac = gmac(to_mac,mac_key)
+    mac : tag_t = gmac(to_mac,mac_key)
     mac = xor_block(mac,tag_mix)
     if mac == tag:
-        msg = aes128_decrypt(key,nonce,uint32(2),ciphertext)
+        msg : vlbytes_t = aes128_decrypt(key,nonce,uint32(2),ciphertext)
         return msg
     else:
         fail("mac failed")

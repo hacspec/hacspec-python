@@ -1,10 +1,14 @@
 from specs.blake2 import *
 
-from test_vectors.blake2b_test_vectors import *
-from test_vectors.blake2s_test_vectors import *
 from sys import exit
+import json
 
 def main(x:int) -> None:
+    file = open('tests/test_vectors/blake2b_test_vectors.json')
+    blake2b_test_vectors = json.load(file)
+    file = open('tests/test_vectors/blake2s_test_vectors.json')
+    blake2s_test_vectors = json.load(file)
+
     for i, vec in enumerate(blake2b_test_vectors):
         data = bytes.from_hex(vec['data'])
         key = bytes.from_hex(vec['key'])

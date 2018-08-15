@@ -14,6 +14,7 @@
 %token FALSE
 
 %token AND
+%token DECL
 %token DEF
 %token ELIF
 %token ELSE
@@ -92,13 +93,22 @@
 %right    LBRACKET
 
 %type <Syntax.pspec> spec
+%type <Syntax.pintf> intf
 
-%start spec
+%start spec intf
 %%
 
 (* -------------------------------------------------------------------- *)
 spec:
 | x=topdecl EOF
+    { x }
+
+| x=loc(error)
+    { parse_error (loc x) None }
+
+(* -------------------------------------------------------------------- *)
+intf:
+| x=itopdecl EOF
     { x }
 
 | x=loc(error)
@@ -118,10 +128,18 @@ tyident:
 | x=ident COLON ty=type_ { (x, ty) }
 
 (* -------------------------------------------------------------------- *)
+%inline otyident:
+| x=ident ty=prefix(COLON, type_)? { (x, ty) }
+
+(* -------------------------------------------------------------------- *)
+%inline ohotyident:
+| x=ident ty=prefix(COLON, hotype_)? { (x, ty) }
+
+(* -------------------------------------------------------------------- *)
 %inline uniop:
-| NOT   { (`Not :> puniop) }
-| TILDE  { (`BNot :> puniop) }
-| MINUS { (`Neg :> puniop) }
+| NOT   { (`Not  :> puniop) }
+| TILDE { (`BNot :> puniop) }
+| MINUS { (`Neg  :> puniop) }
 
 (* -------------------------------------------------------------------- *)
 %inline binop:
@@ -198,11 +216,11 @@ sexpr_r:
 | f=qident args=parens(plist0(sexpr, COMMA))
     { PECall (f, args) }
 
-| es=parens(empty)
+| parens(empty)
     { PETuple ([], false) }
 
 | esb=parens(es=rlist1(sexpr, COMMA) b=iboption(COMMA) { (es, b) })
-    { let (es, b) = esb in PETuple (List.rev es, b) }
+    { let (es, b) = esb in PETuple (es, b) }
 
 | es=brackets(rlist0(sexpr, COMMA))
     { PEArray es }
@@ -234,6 +252,14 @@ sexpr_r:
 | ty=sexpr { ty }
 
 (* -------------------------------------------------------------------- *)
+%inline hotype_:
+| ty=type_
+    { ([], ty) }
+
+| aty=rlist1(type_, DASHGT) DASHGT ty=type_
+    { (List.rev aty, ty) }
+
+(* -------------------------------------------------------------------- *)
 sinstr_r:
 | PASS
     { PSPass }
@@ -244,8 +270,8 @@ sinstr_r:
 | RETURN e=expr?
     { PSReturn e }
 
-| x=ident COLON ty=expr
-    { PSVarDecl (x, ty) }
+| x=ident COLON ty=expr e=option(prefix(EQ, expr))
+    { PSVarDecl ((x, ty), e) }
 
 | lv=expr o=assop e=expr
     { PSAssign (lv, o, e) }
@@ -270,10 +296,9 @@ instr_r:
 | i=sinstr_r NEWLINE
     { i }
 
-| FOR x=ident ty=prefix(COLON, type_)? IN e=prange COLON b=block
-    be=option(ELSE COLON b=block { b })
+| FOR xty=otyident IN e=prange COLON b=block be=option(ELSE COLON b=block { b })
 
-    { PSFor (((x, ty), e, b), be) }
+    { PSFor ((xty, e, b), be) }
 
 | IF e=expr COLON b=block
     bie=list  (ELIF e=expr COLON b=block { (e, b) })
@@ -290,11 +315,15 @@ instr_r:
 
 (* -------------------------------------------------------------------- *)
 procdef:
-| iboption(postfix(annotation, NEWLINE)) DEF f=ident
+| att=postfix(annotation, NEWLINE)* DEF f=ident
     args=parens(plist0(tyident, COMMA)) DASHGT ty=type_
   COLON b=block
 
-    { ((f, ty), args, b) }
+    { { pf_name  = f   ;
+        pf_att   = att ;
+        pf_retty = ty  ;
+        pf_args  = args;
+        pf_body  = b   ; } }
 
 (* -------------------------------------------------------------------- *)
 block:
@@ -306,7 +335,7 @@ block:
 
 (* -------------------------------------------------------------------- *)
 annotation:
-| AT sexpr { () }
+| AT att=sexpr { att }
 
 (* -------------------------------------------------------------------- *)
 ipident:
@@ -325,7 +354,7 @@ topdecl_r:
 | mods=import NEWLINE
     { mods }
 
-| xs=plist1(ident, COMMA) EQ ty=expr NEWLINE
+| xs=plist1(ident, COMMA) EQ ty=type_ NEWLINE
     { List.map (fun x -> PTTypeAlias (x, ty)) xs }
 
 | x=ident COLON ty=expr EQ e=expr NEWLINE
@@ -337,6 +366,20 @@ topdecl_r:
 (* -------------------------------------------------------------------- *)
 topdecl:
 | xs=list(topdecl_r) { List.flatten xs }
+
+(* -------------------------------------------------------------------- *)
+itopdecl_r:
+| x=ident EQ ty=type_ NEWLINE
+   { IPTTypeAlias (x, ty) }
+
+| DECL x=qident args=parens(plist0(ohotyident, COMMA))
+     DASHGT ty=type_ NEWLINE
+
+   { IPTProcDecl (x, args, ty) }
+
+(* -------------------------------------------------------------------- *)
+itopdecl:
+| xs=list(itopdecl_r) { xs }
 
 (* -------------------------------------------------------------------- *)
 %inline loc(X):

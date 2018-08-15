@@ -15,32 +15,38 @@ OCAMLBUILD_OPTS += $(OCAMLBUILD_EXTRA)
 OCAMLBUILD      := $(OCAMLBUILD_BIN) $(OCAMLBUILD_OPTS)
 
 # --------------------------------------------------------------------
-MAIN    := main
+CHECKER := checker
+FSTAR   := to_fstar
 NAME    := hacspec
 INSTALL := scripts/install-sh
 DESTDIR ?= /usr/local
 
 # --------------------------------------------------------------------
-.PHONY: all build native byte install uninstall clean
+.PHONY: all build checker.native checker.byte install uninstall clean to_fstar.native
 .PHONY: %.ml %.mli %.inferred.mli
 
 all: build
 	@true
 
-build: native
+build: checker.native to_fstar.native
 
-byte:
-	$(OCAMLBUILD) $(MAIN).$@
+checker.byte:
+	$(OCAMLBUILD) $@
 
-native:
-	$(OCAMLBUILD) $(MAIN).$@
+checker.native:
+	$(OCAMLBUILD) $@
 
-install: native
-	$(INSTALL) main.native $(DESTDIR)/bin/$(NAME)
+install: checker.native
+	$(INSTALL) checker.native $(DESTDIR)/bin/$(NAME)
 
 uninstall:
 	rm -f $(DESTDIR)/$(NAME)
 
+to_fstar.native:
+	$(OCAMLBUILD) $@
+
+test:
+	make -C fstar-compiler/specs
 clean:
 	$(OCAMLBUILD) -clean
-	rm -f $(MAIN).native $(MAIN).byte
+	rm -f $(MAIN).native $(MAIN).byte *.fst

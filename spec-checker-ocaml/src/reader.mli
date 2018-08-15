@@ -9,3 +9,4 @@ val finalize     : reader -> unit
 
 (* -------------------------------------------------------------------- *)
 val parse_spec : reader -> Syntax.pspec
+val parse_intf : reader -> Syntax.pintf

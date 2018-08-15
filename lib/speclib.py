@@ -3,14 +3,14 @@ from types import FunctionType
 from random import SystemRandom as rand
 from random import choices as random_string
 from string import ascii_uppercase, ascii_lowercase
-from math import ceil, log
+from math import ceil, log, floor
 from importlib import import_module
 import builtins
 from typeguard import typechecked
 from inspect import getfullargspec
 from os import environ
 from inspect import getsource
-from copy import copy,deepcopy
+from copy import copy
 
 DEBUG = environ.get('HACSPEC_DEBUG')
 
@@ -65,7 +65,49 @@ def tuple_t(*args) -> type:
         return Tuple[args[0],args[1],args[2],args[3],args[4],args[5]]
     else:
         fail("only implemented tuples up to size 6")
-        
+
+class _result(Generic[T]):
+    @typechecked
+    def __init__(self, is_valid:bool, value:Union[T,str]) -> None:
+        self.is_valid = True;
+        self.value = value
+
+    @staticmethod
+    @typechecked
+    def retval(v:T) -> '_result[T]':
+        return _result(True,v)    
+
+    @staticmethod
+    @typechecked
+    def error(v:str) -> '_result[T]':
+        return _result(False,v)
+
+    @staticmethod
+    @typechecked
+    def is_valid(a:'_result[T]') -> bool:
+        return a.is_valid
+
+    @staticmethod
+    @typechecked
+    def get_value(a:'_result[T]') -> T:
+        if a.is_valid:
+            return a.value
+        else:
+            fail ("cannot call get_value on error result")
+
+    @staticmethod
+    @typechecked
+    def get_error(a:'_result[T]') -> T:
+        if a.is_valid:
+            fail ("cannot call get_error on valid result")
+        else:
+            return a.value
+
+result = _result
+@typechecked
+def result_t(T: type):
+    return _result
+
 @typechecked
 def option_t(T: type) -> Union[T, None]:
     return Union[T, None]
@@ -118,7 +160,7 @@ def contract3(pre: Callable[..., bool], post: Callable[..., bool]) -> FunctionTy
     return decorator
 
 class _natmod:
-#    __slots__ = ['v', 'modulus']
+    __slots__ = ['v', 'modulus']
     @typechecked
     def __init__(self, x: Union[int,'_natmod'], modulus: int) -> None:
         if modulus < 1:
@@ -147,6 +189,7 @@ class _natmod:
     @typechecked
     def __eq__(self, other) -> bool:
         if not isinstance(other, _natmod):
+            print(type(other))
             fail("You can only compare two natmods.")
         return (self.modulus == other.modulus and
                 self.v == other.v)
@@ -198,15 +241,21 @@ class _natmod:
         if not isinstance(x, _natmod):
             fail("to_int is only valid for _natmod.")
         return x.v
-
+    
     @staticmethod
     @typechecked
     def set_val(x: '_natmod',v:int) -> '_natmod':
-        if not isinstance(x, _natmod):
-            fail("natmod.copy is only valid for _natmod.")
-        res = copy(x)
-        res.v = v
-        return res
+        result = x.__class__.__new__(x.__class__)
+        for s in x.__slots__:
+            setattr(result, s, getattr(x, s))
+        result.v = v
+        return result
+
+    def __copy__(self):
+        result = self.__class__.__new__(self.__class__)
+        for s in self.__slots__:
+            setattr(result, s, getattr(self, s))
+        return result
 
     @staticmethod
     @typechecked
@@ -217,6 +266,7 @@ class _natmod:
 
 
 class _uintn(_natmod):
+    __slots__ = ['v', 'modulus', 'bits']
 #    __slots__ = ['bits']
     @typechecked
     def __init__(self, x: Union[int,'_uintn'], bits: int) -> None:
@@ -886,7 +936,7 @@ class _vector(_array[T]):
         if not (all(v.__class__ == zero.__class__ for v in self.l)):
             for v in self.l:
                 print(str(v.__class__) + " - " + str(zero.__class__))
-            fail("vector must have all values of same type as zero")
+            fail("vector must have all valus of same type as zero")
 
     @staticmethod
     @typechecked
@@ -1025,3 +1075,7 @@ class speclib:
     @typechecked
     def log(x: int, b: int) -> float:
         return log(x, b)
+
+    @typechecked
+    def floor(x: int) -> int:
+        return floor(x)

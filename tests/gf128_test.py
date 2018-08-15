@@ -1,8 +1,10 @@
 from specs.gf128 import *
-from test_vectors.gf128_test_vectors import gf128_test_vectors
 from sys import exit
+import json
 
 def main(x: int) -> None:
+    file = open('tests/test_vectors/gf128_test_vectors.json')
+    gf128_test_vectors = json.load(file)
     for i in range(len(gf128_test_vectors)):
         msg = bytes.from_hex(gf128_test_vectors[i]['input'])
         k   = bytes.from_hex(gf128_test_vectors[i]['key'])

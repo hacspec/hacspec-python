@@ -1,9 +1,10 @@
 from specs.curve448 import *
 import json
-from test_vectors.curve448_test_vectors import curve448_test_vectors
 from sys import exit
 
 def main (x: int) -> None :
+    file = open('tests/test_vectors/curve448_test_vectors.json')
+    curve448_test_vectors = json.load(file)
     for i in range(len(curve448_test_vectors)):
         s = bytes.from_hex(curve448_test_vectors[i]['private'])
         p = bytes.from_hex(curve448_test_vectors[i]['public'])

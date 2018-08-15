@@ -5,15 +5,81 @@ open Syntax
 open Ast
 
 (* -------------------------------------------------------------------- *)
+let nmunloc (nm : pident list) : symbol list =
+  List.map unloc nm
+
+(* -------------------------------------------------------------------- *)
 let qunloc ((nm, x) : pqident) : qsymbol =
   (List.map unloc nm, unloc x)
 
 (* -------------------------------------------------------------------- *)
 type ctype =
-  | PUnit | PBool | PInt   | PString
-  | PBit  | PWord | PTuple | PArray
+  | PUnit | PBool  | PInt   | PString
+  | PWord | PTuple | PArray
 
 type etype = [`Exact of type_ | `Approx of ctype]
+
+(* -------------------------------------------------------------------- *)
+let byte_t   = tword8
+let bytes_t  = TArray (tword8, None)
+let get_bit  = Ident.make "uintn_get_bit"
+let get_bits = Ident.make "uintn_get_bits"
+let int_t    = TInt `Int
+let nat_t    = TInt `Nat
+let pos_t    = TInt `Pos
+          
+let stdlib =
+  let fs1 f = function [x      ] -> f x     | _ -> assert false
+  and fs2 f = function [x; y   ] -> f x y   | _ -> assert false
+  and fs3 f = function [x; y; z] -> f x y z | _ -> assert false in
+
+ [
+  (([],"array"), ([Some (`Approx PArray)], (fs1 (fun aty -> aty)), Ident.make "array"));
+  ((["array"],"copy"), ([Some (`Approx PArray)], (fs1 (fun aty -> aty)), Ident.make "array_copy"));
+  ((["array"],"create"), ([Some (`Approx PInt); None], (fs2 (fun _aty bty -> TArray(bty, None))), Ident.make "array_create"));
+  ((["array"],"length"), ([Some (`Approx PArray)], (fs1 (fun _aty -> nat_t)), Ident.make "array_length"));
+  ((["array"],"split_blocks"), ([Some (`Approx PArray);Some(`Exact int_t)], (fs2 (fun aty _bty -> TTuple [TArray(aty,None);aty])), Ident.make "array_split_blocks"));
+  ((["array"],"concat_blocks"), ([Some (`Approx PArray);Some(`Approx PArray)],
+      (fs2 (fun aty _bty -> match aty with TArray(aty,None) -> aty | _ -> assert false)),
+      Ident.make "array_concat_blocks"));
+
+  (([],"bytes"), ([Some (`Exact bytes_t)], (fs1 (fun aty -> aty)), Ident.make "bytes"));
+  ((["bytes"],"copy"), ([Some (`Exact bytes_t)], (fs1 (fun aty -> aty)), Ident.make "bytes_copy"));
+  ((["bytes"],"create"), ([Some (`Approx PInt); Some (`Exact byte_t)], (fs2 (fun _aty _bty -> bytes_t)), Ident.make "bytes_create"));
+  ((["bytes"],"length"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> nat_t)), Ident.make "bytes_length"));
+  ((["bytes"],"split_blocks"), ([Some (`Exact bytes_t);Some(`Approx PInt)], (fs2 (fun _aty _bty -> TTuple [TArray(bytes_t,None);bytes_t])), Ident.make "bytes_split_blocks"));
+  ((["bytes"],"concat_blocks"), ([Some (`Exact (TArray(bytes_t,None)));Some(`Exact bytes_t)],
+      (fs2 (fun aty _bty -> match aty with TArray(aty,None) -> aty | _ -> assert false)),
+      Ident.make "bytes_concat_blocks"));
+  ((["bytes"],"to_uint32_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword32)), Ident.make "bytes_to_uint32_be"));
+  ((["bytes"],"from_uint32_be"), ([Some (`Exact (tword32))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32_be"));
+  ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (tword32,None))), Ident.make "bytes_to_uint32s_le"));
+  ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (tword32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_le"));
+  ((["bytes"],"to_uint32s_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (tword32,None))), Ident.make "bytes_to_uint32s_be"));
+  ((["bytes"],"from_uint32s_be"), ([Some (`Exact (TArray (tword32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_be"));
+  ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> nat_t)), Ident.make "bytes_to_nat_le"));
+  ((["bytes"],"from_nat_le"), ([Some (`Approx PInt); Some (`Approx PInt)], (fs2 (fun _aty _bty -> bytes_t)), Ident.make "bytes_from_nat_le"));
+  ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword128)), Ident.make "bytes_to_uint128_le"));
+  ((["bytes"],"from_uint128_le"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_le"));
+  ((["bytes"],"to_uint128_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword128)), Ident.make "bytes_to_uint128_be"));
+  ((["bytes"],"from_uint128_be"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_be"));
+
+  (*  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));*)
+  ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fs1 (fun _aty -> nat_t)), Ident.make "natmod_to_nat"));
+  ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fs1 (fun _aty -> int_t)), Ident.make "natmod_to_int"));
+  
+  (*   (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN Big_int.zero)), Ident.make "uintn")); *)
+  ((["uintn"],"to_int"), ([Some (`Approx PWord)], (fs1 (fun _aty -> nat_t)), Ident.make "uintn_to_int"));
+  ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fs1 (fun _aty -> nat_t)), Ident.make "uintn_to_nat"));
+  ((["uintn"],"get_bit"), ([Some (`Approx PWord);Some (`Approx PInt)], (fs2 (fun _aty _bty -> tword1)), Ident.make "uintn_get_bit"));
+  ((["uintn"],"get_bits"), ([Some (`Approx PWord);Some (`Approx PInt);Some (`Approx PInt)], (fs3 (fun _aty _bty _cty -> TWord Big_int.zero)), Ident.make "uintn_get_bits"));
+  ((["uintn"],"rotate_left"), ([Some (`Approx PWord); Some (`Approx PInt)], (fs2 (fun aty _bty -> aty)), Ident.make "uintn_rotate_left"));
+  ((["uintn"],"rotate_right"), ([Some (`Approx PWord); Some (`Approx PInt)], (fs2 (fun aty _bty -> aty)), Ident.make "uintn_rotate_right"));
+
+  ((["result"],"retval"), ([None], (fs1 (fun aty -> TResult aty)), Ident.make "result_retval"));
+  ((["result"],"error"),  ([Some (`Exact TString)], (fs1 (fun _aty -> TResult TString)), Ident.make "result_error"));
+
+  ]
 
 (* -------------------------------------------------------------------- *)
 module StdLib : sig
@@ -34,6 +100,8 @@ module StdLib : sig
     val copy            : ident
     val to_uint32s_le   : ident
     val from_uint32s_le : ident
+    val to_nat_le   : ident
+    val from_nat_le : ident
   end
 end = struct
   module Array = struct
@@ -53,6 +121,8 @@ end = struct
     let copy            = Ident.make "bytes.copy"
     let to_uint32s_le   = Ident.make "bytes.to_uint32s_le"
     let from_uint32s_le = Ident.make "bytes.from_uint32s_le"
+    let to_nat_le   = Ident.make "bytes.to_nat_le"
+    let from_nat_le = Ident.make "bytes.from_nat_le"
   end
 end
 
@@ -61,14 +131,17 @@ module Env : sig
   type env
   type tdecl = { tname : ident; tdef  : type_; }
   type vdecl = { vname : ident; vtype : type_; vrawty : type_; }
-  type pdecl = { pname : ident; psig  : type_ list; pret : type_; }
+  type pdecl = { pname : ident; psig  : hotype list; pret : type_; }
 
-  val empty : env
-
+  val empty0 : env
+  val empty  : env
+  val cast_funs : ((string list * string) * (ctype list * type_ * Ast.Ident.ident)) list
+    
   module Mod : sig
-    val get   : env -> symbol -> env option
-    val getnm : env -> symbol list -> env option
-    val bind  : env -> symbol -> env -> env
+    val get    : env -> symbol -> env option
+    val getnm  : env -> symbol list -> env option
+    val bind   : env -> symbol -> env -> env
+    val bindnm : env -> symbol list -> env -> env
   end
 
   module Types : sig
@@ -80,6 +153,7 @@ module Env : sig
     val bind   : env -> symbol * type_ -> env * ident
     val unfold : env -> qsymbol -> type_ option
     val hred   : env -> type_ -> type_
+    val inline : env -> type_ -> type_
   end
 
   module Vars : sig
@@ -89,13 +163,13 @@ module Env : sig
   end
 
   module Procs : sig
-    val get : env -> symbol -> pdecl option
-    val bind : env -> symbol -> type_ list * type_ -> env * ident
+    val get  : env -> symbol -> pdecl option
+    val bind : env -> symbol -> hotype list * type_ -> env * ident
   end
 end = struct
   type tdecl = { tname : ident; tdef  : type_; }
   type vdecl = { vname : ident; vtype : type_; vrawty : type_; }
-  type pdecl = { pname : ident; psig  : type_ list; pret : type_; }
+  type pdecl = { pname : ident; psig  : hotype list; pret : type_; }
 
   type env = {
     e_types : tdecl Mstr.t;
@@ -104,25 +178,49 @@ end = struct
     e_mods  : env   Mstr.t;
   }
 
+  let empty0 = {
+    e_types = Mstr.empty;
+    e_vars  = Mstr.empty;
+    e_procs = Mstr.empty;
+    e_mods  = Mstr.empty;
+  }
+
   let dtypes = [
-    ("bool"     , TBool      );
-    ("int"      , TInt       );
-    ("nat"      , TInt       );
-    ("string"   , TString    );
-    ("uint8_t"  , TWord `U8  );
-    ("uint16_t" , TWord `U16 );
-    ("uint32_t" , TWord `U32 );
-    ("uint64_t" , TWord `U64 );
-    ("uint128_t", TWord `U128);
-    ("vlbytes_t", TArray (TWord `U8, None));
+    ("bool"     , TBool     );
+    ("int"      , TInt `Int );
+    ("nat"      , TInt `Nat );
+    ("string"   , TString   );
+    ("nat_t"    , TInt `Nat );
+    ("pos_t"    , TInt `Pos );
+    ("bit_t"    , tword1    );
+    ("uint8_t"  , tword8    );
+    ("uint16_t" , tword16   );
+    ("uint32_t" , tword32   );
+    ("uint64_t" , tword64   );
+    ("uint128_t", tword128  );
+    ("vlbytes_t", TArray (tword8, None));
   ]
 
+  let cast_funs = [
+    (([],"nat")  , ([PInt],TInt `Pos, Ident.make "nat"));
+    (([],"pos")  , ([PInt],TInt `Nat, Ident.make "pos"));
+    (([],"bit")  , ([PWord;PInt],tword1, Ident.make "bit"   ));
+    (([],"uint8"), ([PWord;PInt],tword8, Ident.make "uint8" ));
+    (([],"uint16") , ([PWord;PInt],tword16, Ident.make "uint16"  ));
+    (([],"uint32") , ([PWord;PInt],tword32, Ident.make "uint32"  ));
+    (([],"uint64") , ([PWord;PInt], tword64, Ident.make "uint64"  ));
+    (([],"uint128"), ([PWord;PInt], tword128, Ident.make "uint128" ));
+    ]
+          
   let dprocs = [
-    ("uint8"  , [TInt], TWord `U8  );
-    ("uint16" , [TInt], TWord `U16 );
-    ("uint32" , [TInt], TWord `U32 );
-    ("uint64" , [TInt], TWord `U64 );
-    ("uint128", [TInt], TWord `U128);
+    ("nat"    , [TInt `Int], TInt `Pos);
+    ("pos"    , [TInt `Int], TInt `Nat);
+    ("bit"    , [TInt `Int], tword1   );
+    ("uint8"  , [TInt `Int], tword8   );
+    ("uint16" , [TInt `Int], tword16  );
+    ("uint32" , [TInt `Int], tword32  );
+    ("uint64" , [TInt `Int], tword64  );
+    ("uint128", [TInt `Int], tword128 );
   ]
 
   module Mod = struct
@@ -135,6 +233,16 @@ end = struct
 
     let bind (env : env) (x : symbol) (mod_ : env) =
       { env with e_mods = Mstr.add x mod_ env.e_mods }
+
+    let rec bindnm (env : env) (nm : symbol list) (mod_ : env) =
+      match nm with
+      | []      -> assert false
+      | [x]     -> bind env x mod_
+      | x :: nm ->
+          { env with e_mods =
+              Mstr.modify_opt x (fun senv ->
+                  Some (bindnm (Option.default empty0 senv) nm mod_))
+                env.e_mods }
   end
 
   module Types = struct
@@ -162,17 +270,28 @@ end = struct
 
       in fun ty -> hred ty
 
+    let inline (env : env) =
+      let rec inline (ty : type_) =
+        match ty with
+        | TNamed qs       -> inline (Option.get (unfold env qs))
+        | TTuple tl       -> TTuple (List.map inline tl)
+        | TArray (t, s)   -> TArray (inline t,s)
+        | TRefined (t, s) -> TRefined (inline t,s)
+        | TResult t       -> TResult (inline t)
+        | _               -> ty
+
+      in fun ty -> inline ty
+
     let compat (env : env) =
       let rec compat (ty1 : type_) (ty2 : type_) : bool =
         match ty1, ty2 with
         | TUnit  , TUnit
         | TBool  , TBool
-        | TInt   , TInt
-        | TString, TString
-        | TBit   , TBit    -> true
+        | TInt _ , TInt _
+        | TString, TString -> true
 
-        | TWord sz1, TWord sz2  ->
-            sz1 = sz2
+        | TWord n1, TWord n2  ->
+            Big_int.eq_big_int n1 n2
 
         | TTuple tys1, TTuple tys2
               when List.length tys1 = List.length tys2
@@ -181,8 +300,8 @@ end = struct
         | TArray (aty1, _), TArray (aty2, _) -> (* FIXME *)
             compat aty1 aty2
 
-        | TRange _, _ -> compat TInt ty2
-        | _, TRange _ -> compat TInt ty1
+        | TRange _, _ -> compat (TInt `Nat) ty2
+        | _, TRange _ -> compat (TInt `Nat) ty1
 
         | TRefined (ty1, _), _ ->
             compat ty1 ty2
@@ -199,6 +318,8 @@ end = struct
         | _, TNamed q ->
             compat ty1 (Option.get (unfold env q))
 
+        | TResult _, TResult _ ->
+            true
         | _, _ ->
             false
 
@@ -209,9 +330,8 @@ end = struct
         match ty, cty with
         | TUnit     , PUnit    -> true
         | TBool     , PBool    -> true
-        | TInt      , PInt     -> true
+        | TInt _    , PInt     -> true
         | TString   , PString  -> true
-        | TBit      , PBit     -> true
         | TWord    _, PWord    -> true
         | TArray   _, PArray   -> true
         | TTuple   _, PTuple   -> true
@@ -246,7 +366,7 @@ end = struct
     let get (env : env) (x : symbol) =
       Mstr.Exceptionless.find x env.e_procs
 
-    let bind (env : env) (f : symbol) ((sig_, ret) : type_ list * type_) =
+    let bind (env : env) (f : symbol) ((sig_, ret) : hotype list * type_) =
       let decl = { pname = Ident.make f; psig = sig_; pret = ret } in
       let env  = { env with e_procs = Mstr.add f decl env.e_procs } in
       (env, decl.pname)
@@ -267,6 +387,7 @@ end = struct
     let env =
       List.fold_left
         (fun env (f, sg, re) ->
+          let sg = List.map hotype1  sg in
           fst (Procs.bind env f (sg, re))) env dprocs in
 
     env
@@ -286,7 +407,9 @@ type tyerror =
   | DuplicatedTypeName of symbol
   | DuplicatedArgName  of symbol
   | CannotUnpack
+  | DoNotSupportSlicing of [`LValue | `RValue]
   | MisplacedVarDecl
+  | MisplacedProcDef
   | MustReturnAValue
   | UIntConstantExpected
   | ExpectVoidReturn
@@ -294,6 +417,10 @@ type tyerror =
   | InvalidArgCount
   | InvalidTypeCtor    of symbol
   | InvalidType        of type_ * etype list
+  | InvalidLValueExpr
+  | UnsupportedAnnotation
+  | ProcNameExpected
+  | InvalidHOApplication
 
 (* -------------------------------------------------------------------- *)
 let pp_tyerror fmt (error : tyerror) =
@@ -307,9 +434,19 @@ let pp_tyerror fmt (error : tyerror) =
   | CannotUnpack ->
       Format.fprintf fmt "cannot unpack"
 
+  | DoNotSupportSlicing `RValue ->
+      Format.fprintf fmt "this expression cannot be indexed/sliced"
+
+  | DoNotSupportSlicing `LValue ->
+      Format.fprintf fmt "this expression cannot be indexed/sliced (in lvalues)"
+
   | MisplacedVarDecl ->
       Format.fprintf fmt
         "variable declarations can only occur at beginning of procs"
+
+  | MisplacedProcDef ->
+      Format.fprintf fmt
+        "inner procedures definitions can only occur at beginning of procs"
 
   | UnknownVar x ->
       Format.fprintf fmt "unknown variable: `%a'" pp_qsymbol x
@@ -353,6 +490,19 @@ let pp_tyerror fmt (error : tyerror) =
   | InvalidType _ ->
       Format.fprintf fmt "this expression has an invalid type"
 
+  | InvalidLValueExpr ->
+      Format.fprintf fmt "invalid lvalue expression"
+
+  | UnsupportedAnnotation ->
+      Format.fprintf fmt "unsupported annotation"
+
+  | ProcNameExpected ->
+      Format.fprintf fmt
+        "only procedure names are allowed for second-order argument"
+
+  | InvalidHOApplication ->
+      Format.fprintf fmt "invalid second-order application"
+
 (* -------------------------------------------------------------------- *)
 exception TyError of (Location.t * env * tyerror)
 
@@ -374,6 +524,10 @@ let check_ty ~loc env (etys : ctype list) (ty : type_) =
   if not (List.exists (Env.Types.approx env ty) etys) then
     error ~loc env (InvalidType (ty, List.map (fun ty -> `Approx ty) etys))
 
+let check_ty_compat ~loc env ~src ~dst =
+  if not (Env.Types.compat env src dst) then
+    error ~loc env (InvalidType (src, [`Exact dst]))
+
 (* -------------------------------------------------------------------- *)
 let rec tt_type (env : env) (pty : ptype) =
   match unloc pty with
@@ -390,28 +544,40 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let j = tt_cint env j in
       TRange (i, j)
 
-  | ("array_t" | "vlarray"), [ty] ->
-      TArray (tt_type env ty, None)
+  | "natmod_t", [sz] ->
+      let sz,_ = tt_expr ~cty:(`Approx PInt) env sz in
+      TInt (`Natm sz)
 
-  | "natmod_t", [ty] ->
-      TInt
+  | "uintn_t", [sz] ->
+      let sz = tt_cint env sz in
+      TWord sz
 
   | "array_t", [ty; sz] ->
       let sz = tt_cint env sz in
       let ty = tt_type env ty in
       TArray (ty, Some sz)
 
+  | "vlarray_t", [ty] ->
+      let ty = tt_type env ty in
+      TArray (ty, None)
+
+  | "result_t", [ty] ->
+      let ty = tt_type env ty in
+      TResult (ty)
+      
   | "bytes_t", [sz] ->
       let sz = tt_cint env sz in
-      TArray (TWord `U8, Some sz)
+      TArray (tword8, Some sz)
 
-  | "refine", [ty; e] ->
-      let ty = tt_type env ty in
-      TRefined (ty, EUnit)      (* FIXME: refinment *)
+  | ("refine" | "refine_t"), [pty; pe] ->
+     (match unloc pe with
+      | PEFun ([{ pl_data = x }], pr) ->
+        let ty = tt_type env pty in
+        let env1, name = Env.Vars.bind env (x, ty) in
+        let r = fst (tt_expr ~cty:(`Exact TBool) env1 pr) in
+        TRefined (ty, EFun ([name], r))
 
-  | "refine_t", [ty; e] ->
-      let ty = tt_type env ty in
-      TRefined (ty, EUnit)      (* FIXME: refinment *)
+     | _ -> error ~loc:(loc pe) env InvalidTypeExpr)
 
   | "tuple2_t", [ty1; ty2] ->
       let ty1 = tt_type env ty1 in
@@ -424,13 +590,26 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let ty3 = tt_type env ty3 in
       TTuple [ty1; ty2; ty3]
 
-  | _, [] -> begin
+  | "tuple_t", tyl ->
+      let tyl = List.map (fun t -> tt_type env t) tyl in
+      TTuple tyl
+
+  | tn, [] -> TNamed ([],tn)
+(*
+     begin
       match Env.Types.get env (unloc x) with
       | None -> error ~loc:(loc x) env (UnknownTypeName ([], unloc x))
       | Some decl -> decl.Env.tdef
     end
+ *)
 
   | _ -> error ~loc:(loc x) env (InvalidTypeCtor (unloc x))
+
+(* -------------------------------------------------------------------- *)
+and tt_hotype (env : env) ((sg, ty) : photype) =
+  let sg = List.map (tt_type env) sg in
+  let ty = tt_type env ty in
+  (sg, ty)
 
 (* -------------------------------------------------------------------- *)
 and tt_cint (env : env) (e : pexpr) =
@@ -439,13 +618,62 @@ and tt_cint (env : env) (e : pexpr) =
   | _       -> error ~loc:(loc e) env UIntConstantExpected
 
 (* -------------------------------------------------------------------- *)
+and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
+  let e, ety =
+    match unloc pe with
+    | PEVar ((nm, x) as nmx) -> begin
+        let senv = tt_module env nm in
+
+        match Env.Vars.get senv (unloc x) with
+        | None -> error ~loc:(loc pe) env (UnknownVar (qunloc nmx))
+        | Some x -> (LVar x.Env.vname, x.Env.vrawty)
+      end
+
+    | PETuple ([], _) ->
+        (LTuple [], TUnit)
+
+    | PETuple ([pe], _) ->
+        tt_lvalue env pe
+
+    | PETuple (pes, _) ->
+        let es, tys = List.split (List.map (tt_lvalue env) pes) in
+        (LTuple es, TTuple tys) 
+
+    | PEGet (pl, ps) ->
+        let l, lty = tt_lvalue ~cty:(`Approx PArray) env pl in   
+        let s      = tt_slice env ps in
+        let ty     =
+          match Env.Types.inline env lty, s with
+          | TArray (ty, _), `One _   -> ty
+          | TArray _      , `Slice _ -> lty
+
+          | _, _ ->
+              error ~loc:(loc pe) env (DoNotSupportSlicing `LValue)
+
+        in (LGet (l, s), ty)
+
+    | _ ->
+        error ~loc:pe.pl_loc env InvalidLValueExpr
+  in
+
+  Option.may (fun (cty : etype) ->
+    let compat =
+      match cty with
+      | `Approx cty ->
+          Env.Types.approx env ety cty
+      | `Exact  cty ->
+          Env.Types.compat env ety cty
+    in
+      if not compat then
+        error ~loc:(loc pe) env (InvalidType (ety, [cty])))
+    cty;
+
+  (e, ety)
+
+(* -------------------------------------------------------------------- *)
 and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
   let check_ty = check_ty env in
-
-  let check_ty_compat ~loc ~src ~dst =
-    if not (Env.Types.compat env src dst) then
-      error ~loc env (InvalidType (src, [`Exact dst]))
-  in
+  let check_ty_compat = check_ty_compat env in
 
   let e, ety =
     match unloc pe with
@@ -458,7 +686,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
       end
 
     | PEBool   b -> (EBool   b, TBool  )
-    | PEUInt   i -> (EUInt   i, TInt   )
+    | PEUInt   i -> (EUInt   i, TInt `Int )
     | PEString s -> (EString s, TString)
   
     | PETuple ([], _) ->
@@ -484,9 +712,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
     | PEEq (b, (pe1, pe2)) ->
         let e1, ty1 = tt_expr env pe1 in
         let e2, ty2 = tt_expr env pe2 in
-  
-        if not (Type.eq ty1 ty2) then
-          error ~loc:(loc pe) env (InvalidType (ty1, [`Exact ty2]));
+        check_ty_compat ~loc:(loc pe) ~dst:ty1 ~src:ty2;
         (EEq (b, (e1, e2)), TBool)
 
     | PEFun _ ->
@@ -502,7 +728,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
 
         | `Neg as op ->
             check_ty ~loc:(loc pe) [PInt] ty;
-            EUniOp (op, e), TInt
+            EUniOp (op, e), TInt `Int
 
         | `BNot as op ->
             check_ty ~loc:(loc pe) [PWord] ty;
@@ -548,87 +774,35 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
             EBinOp (op, (e1, e2)), TBool
       end
 
-    | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
-        tt_expr ~cty:(`Approx PArray) env a
+    | PECall (nmf, [x;y]) when (qunloc nmf) = ([],"uintn") ->
+       let xe, _ = tt_expr ~cty:(`Approx PInt) env x in
+       let ye, _ = tt_expr ~cty:(`Approx PInt) env y in
+       let n = tt_cint env y in
+       (ECall (Ident.make("uintn"), [`Expr xe; `Expr ye]), TWord n)
 
-    | PECall (nmf, [a;b]) when qunloc nmf = ([], "natmod") ->
-        tt_expr ~cty:(`Approx PInt) env a
+    | PECall (nmf, [x;y]) when (qunloc nmf) = ([],"natmod") ->
+       let xe, _ = tt_expr ~cty:(`Approx PInt) env x in
+       let ye, _ = tt_expr ~cty:(`Approx PInt) env y in
+       (ECall (Ident.make("natmod"), [`Expr xe; `Expr ye]), TInt (`Natm ye))
 
-    | PECall (nmf, [a]) when qunloc nmf = (["array"], "copy") ->
-        let a, aty = tt_expr ~cty:(`Approx PArray) env a in
-        (ECall (StdLib.Array.copy, [a]), aty)
+    | PECall (nmf, [x]) when List.mem_assoc (qunloc nmf) Env.cast_funs ->
+        let exp, rty, name = List.assoc (qunloc nmf) Env.cast_funs in
 
-    | PECall (nmf, [a]) when qunloc nmf = ([], "array") ->
-        let a, aty = tt_expr ~cty:(`Approx PArray) env a in
-        (ECall (StdLib.Array.copy, [a]), aty)
-  
-    | PECall (nmf, [a]) when qunloc nmf = (["array"], "length") ->
-        let a, _ = tt_expr ~cty:(`Approx PArray) env a in
-        (ECall (StdLib.Array.length, [a]), TInt)
-  
-    | PECall (nmf, [sz; e]) when qunloc nmf = (["array"], "create") ->
-        let sz, _  = tt_expr env ~cty:(`Exact TInt) sz in
-        let e, ety = tt_expr env e in
-        (ECall (StdLib.Array.create, [sz; e]), TArray (ety, None))
+        let e1, ty1 = tt_expr env x in
+        check_ty ~loc:(loc pe) exp ty1;
+        (ECall (name, [`Expr e1]), rty)
 
-    | PECall (nmf, [sz; e]) when qunloc nmf = (["array"], "create") ->
-        let sz, _  = tt_expr env ~cty:(`Exact TInt) sz in
-        let e, ety = tt_expr env e in
-        (ECall (StdLib.Array.create, [sz; e]), TArray (ety, None))
+    | PECall (nmf, args) when List.mem_assoc (qunloc nmf) stdlib ->
+        let exp, rty, name = List.assoc (qunloc nmf) stdlib in
 
-    | PECall (nmf, [a; s]) when qunloc nmf = (["array"], "split_blocks") ->
-        let b = TArray (TWord `U8, None) in
-        let a, _ = tt_expr ~cty:(`Exact b) env a in
-        let s, _ = tt_expr ~cty:(`Exact TInt) env s in
-        (ECall (StdLib.Array.split_blocks, [a; s]),
-         TTuple [TArray (b, None); b])
-
-    | PECall (nmf, [a1; a2]) when qunloc nmf = (["array"], "concat_blocks") ->
-        let b = TArray (TWord `U8, None) in
-        let a1, _ = tt_expr ~cty:(`Exact (TArray (b, None))) env a1 in
-        let a2, _ = tt_expr ~cty:(`Exact b) env a2 in
-        (ECall (StdLib.Array.concat_blocks, [a1; a2]), b)
-
-    | PECall (nmf, [a; i]) when qunloc nmf = (["uintn"], "rotate_left") ->
-        let a, aty = tt_expr ~cty:(`Approx PWord) env a in
-        let i = fst (tt_expr ~cty:(`Exact TInt) env i) in
-        (ECall (StdLib.UIntn.rotate_left, [a; i]), aty)
-
-    | PECall (nmf, [a; i]) when qunloc nmf = (["uintn"], "rotate_right") ->
-        let a, aty = tt_expr ~cty:(`Approx PWord) env a in
-        let i = fst (tt_expr ~cty:(`Exact TInt) env i) in
-        (ECall (StdLib.UIntn.rotate_right, [a; i]), aty)
-
-    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "to_uint32s_le") ->
-        let b, bty = tt_expr env pb in
-
-        begin match bty with
-        | TArray (TWord `U8, _) -> ()
-        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
-
-        (ECall (StdLib.Bytes.to_uint32s_le, [b]), TArray (TWord `U32, None))
-
-    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "from_uint32s_le") ->
-        let b, bty = tt_expr env pb in
-
-        begin match bty with
-        | TArray (TWord `U32, _) -> ()
-        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
-
-        (* FIXME *)
-        (ECall (StdLib.Bytes.from_uint32s_le, [b]), TArray (TWord `U8, None))
-
-
-    | PECall (nmf, [pb]) when qunloc nmf = (["bytes"], "copy") ->
-        let b, bty = tt_expr env pb in
-
-        begin match bty with
-        | TArray (TWord `U8, _) -> ()
-        | _ -> error ~loc:(loc pb) env (InvalidType (bty, [])) end;
-
-        (* FIXME *)
-        (ECall (StdLib.Bytes.copy, [b]), TArray (TWord `U8, None))
-
+        if List.length args <> List.length exp then
+          error ~loc:(loc pe) env InvalidArgCount;
+        let args, tys =
+             List.combine args exp
+          |> List.map (fun (e, ty) -> tt_expr ?cty:ty env e)
+          |> List.split in
+        (ECall (name, List.map (fun x -> `Expr x) args), rty tys)
+        
     | PECall ((nm, f) as nmf, args) ->
         let senv = tt_module env nm in
 
@@ -641,21 +815,52 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
           error ~loc:(loc pe) env InvalidArgCount;
 
         let args =
-          List.map2 (fun e ty -> fst (tt_expr ~cty:(`Exact ty) env e))
-          args f.Env.psig in
+          let do1 e (sg, ty) =
+            if List.is_empty sg then
+              `Expr (fst (tt_expr ~cty:(`Exact ty) env e))
+            else begin
+              match unloc e with
+              | PEVar ((nm, p) as nmp) -> begin
+                  let senv = tt_module env nm in
+                  match Env.Procs.get senv (unloc p) with
+                  | None ->
+                      error ~loc:(loc pe) env (UnknownProc (qunloc nmp))
+                  | Some proc ->
+                      if List.length proc.Env.psig <> List.length sg then
+                        error ~loc:(loc pe) env InvalidHOApplication;
+                      List.iter2 (fun (sg, ty) aty ->
+                          if not (List.is_empty sg) then
+                            error ~loc:(loc pe) env InvalidHOApplication;
+                          check_ty_compat ~loc:(loc pe) ~src:aty ~dst:ty)
+                        proc.Env.psig sg;
+                      `Proc proc.Env.pname
+                end
+              | _ -> error ~loc:(loc pe) env ProcNameExpected
+            end
+          in List.map2 do1 args f.Env.psig in
 
         (ECall (f.Env.pname, args), Type.strip f.Env.pret)
 
     | PEGet (pe, ps) ->
-        let e, ety = tt_expr ~cty:(`Approx PArray) env pe in
-        let s = tt_slice env ps in
-        let ty =
-         match s with
-         | `One   _ -> Type.as_array ety
-         | `Slice _ -> ety
+        let e, ty = tt_expr env pe in   
+        let s     = tt_slice env ps in
+        let e, ty =
+          match Env.Types.inline env ty, s with
+          | TWord _, `One i ->
+              ECall (get_bit, [`Expr e; `Expr i]), tword1
 
-        in (EGet (e, s), ty)
+          | TWord _, `Slice (s,f) ->
+              ECall (get_bits, [`Expr e; `Expr s; `Expr f]), TWord Big_int.zero
 
+          | TArray (ty,_), `One _ ->
+              EGet (e, s),ty
+
+          | TArray (_,_), `Slice _ ->
+              EGet (e, s), ty
+
+          | _ -> error ~loc:(loc pe) env (DoNotSupportSlicing `RValue)
+
+        in (e, ty)
   in
 
   Option.may (fun (cty : etype) ->
@@ -693,11 +898,24 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
   | PSPass ->
       (env, [])
 
-  | PSVarDecl _ ->
-      error ~loc:(loc i) env MisplacedVarDecl
+  | PSVarDecl (_, None) ->
+      (env, []) 
 
-  | PSAssign (_, _, e) ->
-      let e = tt_expr env e in (env, [IAssign (None, e)]) (* FIXME *)
+  | PSVarDecl ((pi, pity), Some e) ->
+     let ity = tt_type env pity in
+     let e, te = tt_expr env ~cty:(`Exact ity) e in 
+     let l, _  =                (* FIXME *)
+       (match Env.Vars.get env (unloc pi) with
+        | None -> error ~loc:(loc pi) env (UnknownVar ([], unloc pi))
+        | Some x -> (LVar x.Env.vname, x.Env.vrawty))
+
+     in (env, [IAssign (Some (l, `Plain), (e, te))])
+
+  | PSAssign (pv, pop, pe) ->
+     let e, te = tt_expr env pe in 
+     let l, tl = tt_lvalue env pv in
+     check_ty_compat env ~loc:(loc pe) ~src:te ~dst:tl;
+     (env, [IAssign (Some (l, pop), (e, te))])
 
   | PSReturn None ->
       if Option.is_some rty then
@@ -708,7 +926,7 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
       let ety =
         match rty with
         | None    -> error ~loc:(loc i) env ExpectVoidReturn
-        | Some ty -> tt_expr ~cty:(`Exact ty) env e
+        | Some ty ->   tt_expr ~cty:(`Exact ty) env e
       in (env, [IReturn (Some ety)])
     end
 
@@ -731,15 +949,15 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
       (env, [IIf (cbc, elifs, el)])
 
   | PSFor (((x, xty), (i, j), bc), el) ->
-      let i = Option.map (tt_expr ~cty:(`Exact TInt) env %> fst) i in
-      let j = fst (tt_expr ~cty:(`Exact TInt) env j) in
+      let i = Option.map (tt_expr ~cty:(`Approx PInt) env %> fst) i in
+      let j = fst (tt_expr ~cty:(`Approx PInt) env j) in
 
       Option.may (fun xty ->
         let ty = tt_type env xty in
         check_ty ~loc:(loc x) env [PInt] ty)
       xty;
 
-      let env, x = Env.Vars.bind env (unloc x, TInt) in
+      let env, x = Env.Vars.bind env (unloc x, TInt `Int) in
 
       let env, bc = tt_stmt ?rty env bc in
       let env, el =
@@ -759,9 +977,8 @@ and tt_instr ?(rty : type_ option) (env : env) (i : pinstr) : env * block =
 
       (env, [IWhile ((c, bc), el)])
 
-  | PSDef pf ->
-      (* FIXME *)
-      let env, _ = tt_procdef env pf in (env, [])
+  | PSDef _ ->
+      (env, [])
 
 (* -------------------------------------------------------------------- *)
 and tt_stmt ?(rty : type_ option) (env : env) (s : pstmt) : env * block =
@@ -774,7 +991,9 @@ and tt_module (env : env) (nm : pident list) =
     match nm with
     | [] ->
         env
-
+    | [x] when List.mem (unloc x) ["bytes";"array";"uintn";"natmod"] ->
+        env
+      
     | x :: nm -> begin
         match Env.Mod.get env (unloc x) with
         | None ->
@@ -804,7 +1023,8 @@ and tt_tydecl (env : env) ((x, ty) : pident * pexpr) : env * tydecl =
   let env = begin
     match Type.strip ty with
     | TArray (aty, _) ->
-        fst (Env.Procs.bind env (unloc x) ([TArray (aty, None)], ty))
+        let sg = ([hotype1 (TArray (aty, None))], ty) in
+        fst (Env.Procs.bind env (unloc x) sg)
 
     | _ -> env
   end
@@ -827,23 +1047,60 @@ and tt_vardecl
   (env, aout)
 
 (* -------------------------------------------------------------------- *)
-(* FIXME: check for duplicate argument name *)
-and tt_procdef
-  (env : env) (((f, fty), args, body) : pprocdef) : env * env procdef
-=
-  let lv, body =
-    let rec aux lv body =
-      match body with
-      | { pl_data = PSVarDecl xty } :: body -> aux (xty :: lv) body
-      | _ -> (List.rev lv, body)
-    in aux [] body in
+and tt_annotation (env : env) (att : pexpr) : ident * hoexpr list =
+  match unloc att with (* TODO: typecheck annotations properly : (tt_expr env att) *)
+  | PEVar ([],x) when unloc x = "typechecked" -> 
+      (Ident.make "typechecked", [])
+  | PECall (x, args) when qunloc x = ([],"contract3") || qunloc x = ([],"contract") ->
+      let es, tys = List.split (List.map (tt_expr env) args) in
+      (Ident.make "contract3", List.map (fun x -> `Expr x) es)
+  | _ ->
+      error ~loc:(loc att) env UnsupportedAnnotation
+
+(* -------------------------------------------------------------------- *)
+(* FIXME: check for duplicate argument name / local variables / inner procs *)
+and tt_procdef (env : env) (pf : pprocdef) : env * env procdef =
+  let {
+    pf_name  = f   ;
+    pf_att   = fatt;
+    pf_retty = fty ;
+    pf_args  = args;
+    pf_body  = body;
+  } = pf in
+
+  let fatt = List.map (tt_annotation env) fatt in
+
+  let lv =
+    let rec aux lv instr =
+      match unloc instr with
+      | PSVarDecl (xty, _) -> xty :: lv
+      | PSDef _ -> lv
+      | _ -> AstUtils.pifold aux lv instr
+    in AstUtils.psfold aux [] body in
 
   let fty  = tt_type env fty in
   let args = List.map (fun (x, xty) -> (unloc x, tt_type env xty)) args in
   let env1, args =
     List.fold_left_map (fun env (x, ty) ->
-        let env, x = Env.Vars.bind env (x, ty) in (env, (x, ty)))
+        let env, x = Env.Vars.bind env (x, ty) in
+        (env, (x, hotype1 ty)))
       env args in
+
+  let subs, body =
+    let rec doit acc body =
+      match body with
+      | { pl_data = PSDef pf } :: body -> doit (pf :: acc) body
+      | _ -> List.rev acc, body
+    in doit [] body in
+
+  let () =
+    let rec aux instr =
+      match unloc instr with
+      | PSDef _ -> error ~loc:(loc instr) env MisplacedProcDef
+      | _ -> AstUtils.piiter aux instr
+    in AstUtils.psiter aux body in
+
+  let env1, subs = List.fold_left_map tt_procdef env1 subs in
 
   let env1 = List.fold_left (fun env (x, ty) ->
     let ty = tt_type env ty in
@@ -855,9 +1112,11 @@ and tt_procdef
 
   let aout = {
     prd_name = name;
+    prd_att  = fatt;
     prd_args = args;
     prd_ret  = fty;
     prd_body = (env1, body);
+    prd_subs = subs;
   }
 
   in (env, aout)
@@ -877,6 +1136,30 @@ let tt_topdecl1 (env : env) = function
       let env, x = tt_vardecl env ((x, ty), e) in (env, [TD_VarDecl x])
 
 (* -------------------------------------------------------------------- *)
-let tt_program (p : pspec) : env program =
-  let env, prgm = List.fold_left_map tt_topdecl1 Env.empty p in
+let tt_intf1 (env : env) = function
+  | IPTTypeAlias (x, ty) ->
+      let env, _ = tt_tydecl env (x, ty) in env
+
+  | IPTProcDecl ((nm, f), sg, rty) ->
+      let sg =
+        List.map (fun (_x, ty) ->
+            match ty with
+            | None     -> hotype1 (TNamed ([], "_")) (* FIXME *)
+            | Some aty -> tt_hotype env aty) sg in
+
+      let rty  = tt_type env rty in
+      let senv = Env.Mod.getnm env (nmunloc nm) |> Option.default Env.empty in
+      let senv = fst (Env.Procs.bind senv (unloc f) (sg, rty)) in
+
+      if   List.is_empty nm
+      then senv
+      else Env.Mod.bindnm env (nmunloc nm) senv
+
+(* -------------------------------------------------------------------- *)
+let tt_interface (env : env) (i : pintf) : env =
+  List.fold_left tt_intf1 env i
+
+(* -------------------------------------------------------------------- *)
+let tt_program (env : env) (p : pspec) : env * env program =
+  let env, prgm = List.fold_left_map tt_topdecl1 env p in
   (env, List.flatten prgm)

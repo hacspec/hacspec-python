@@ -1,9 +1,11 @@
 from specs.aead_aes128gcm import *
 
-from test_vectors.aead_aes128gcm_test_vectors import *
 from sys import exit
+import json
 
 def main(x: int) -> None :
+    file = open('tests/test_vectors/aead_aes128gcm_test_vectors.json')
+    aead_aes128gcm_test_vectors = json.load(file)
     for i in range(len(aead_aes128gcm_test_vectors)):
         msg = bytes.from_hex(aead_aes128gcm_test_vectors[i]['input'])
         k   = bytes.from_hex(aead_aes128gcm_test_vectors[i]['key'])

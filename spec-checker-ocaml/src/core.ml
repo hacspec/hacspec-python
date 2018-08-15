@@ -2,10 +2,13 @@
 include BatPervasives
 
 (* -------------------------------------------------------------------- *)
-module Big_int = BatBig_int
-module Hashtbl = BatHashtbl
-module Map     = BatMap
-module IO      = BatIO
+module Interfaces = BatInterfaces
+module Sys        = BatSys
+module Big_int    = BatBig_int
+module Hashtbl    = BatHashtbl
+module Set        = BatSet
+module Map        = BatMap
+module IO         = BatIO
 
 (* -------------------------------------------------------------------- *)
 let fst_map f = function (x, y) -> (f x, y)
@@ -16,6 +19,8 @@ module Option : sig
   include module type of BatOption
 
   val split : ('a * 'b) option -> 'a option * 'b option
+
+  val to_list : 'a option -> 'a list
 end = struct
   include BatOption
 
@@ -23,6 +28,9 @@ end = struct
     match xy with
     | None -> None, None
     | Some (x, y) -> Some x, Some y
+
+  let to_list (x : 'a option) =
+    match x with None -> [] | Some x -> [x]
 end
 
 (* -------------------------------------------------------------------- *)
@@ -40,6 +48,22 @@ end
 
 (* -------------------------------------------------------------------- *)
 module Mstr = Map.Make(String)
+
+(* -------------------------------------------------------------------- *)
+module Resource : sig
+  val root   : string
+  val get    : string -> string
+  val getlib : string -> string
+end = struct
+  let root : string =
+    Filename.dirname Sys.executable_name
+
+  let get (name : string) =
+    List.fold_left Filename.concat root (String.split_on_char '/' name)
+
+  let getlib (name : string) =
+    get (Format.sprintf "../lib/%s" name)
+end
 
 (* -------------------------------------------------------------------- *)
 module List : sig

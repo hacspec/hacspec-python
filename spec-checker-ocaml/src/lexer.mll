@@ -57,7 +57,7 @@
       | Contn (n, st) -> Contn (n + 1, st)
 
     let rleave_contn = function
-      | Indent st -> raise InvalidState
+      | Indent _ -> raise InvalidState
       | Contn (n, st) ->
           if n <= 1 then Indent st else Contn (n-1, st)
 
@@ -128,6 +128,7 @@
 
     ("lambda", LAMBDA);
     ("and"   , AND   );
+    ("decl"  , DECL  );
     ("def"   , DEF   );
     ("else"  , ELSE  );
     ("elif"  , ELIF  );

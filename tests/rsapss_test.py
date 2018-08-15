@@ -1,10 +1,13 @@
 from lib.speclib import *
 from specs.rsapss import rsapss_sign, rsapss_verify, os2ip
-from test_vectors.rsapss_test_vectors import rsapss_test_vectors
 from sys import exit
+from tests.testlib import print_dot, exit
 import json
 
 def main (x: int) -> None :
+    file = open('tests/test_vectors/rsapss_test_vectors.json')
+    rsapss_test_vectors = json.load(file)
+    print_dot()
     for i in range(len(rsapss_test_vectors)):
         modBits = nat(rsapss_test_vectors[i]['modBits'])
         nBytes = bytes.from_hex(rsapss_test_vectors[i]['n'])
@@ -31,5 +34,6 @@ def main (x: int) -> None :
             print("expected: ", sgnt_expected)
             print("computed: ", sgnt_computed)
             exit(1)
+    exit(0)
 
 main(0)
