@@ -181,7 +181,9 @@ def rsapss_sign(modBits: size_nat_t, skey: rsa_privkey_t, salt: vlbytes_t, msg: 
     (n, e) = pkey
     em : vlbytes_t = pss_encode(salt, msg, nat(modBits - 1))
     m : nat_t = os2ip(em)
-    s : nat_t = (m ** d) % n
+    mmod : natmod_t(n) = natmod(m,n)
+    smod : natmod_t(n) = mmod ** d
+    s : nat_t = natmod.to_int(smod)
     sgnt : vlbytes_t = i2osp(s)
     return sgnt
 
@@ -197,10 +199,15 @@ def rsapss_verify(modBits: size_nat_t, pkey: rsa_pubkey_t, sLen: size_nat_t, msg
     e : nat_t
     (n, e) = pkey
     s : nat_t = os2ip(sgnt)
+    smod : natmod_t(n) = natmod(s,n)
+    mmod: natmod_t(n)
+    m: nat_t
+    em: vlbytes_t
     res : bool
     if s < n:
-        m : nat_t = (s ** e) % n
-        em : vlbytes_t = i2osp(m)
+        mmod  = smod ** e
+        m = natmod.to_int(mmod)
+        em = i2osp(m)
         res = pss_verify(sLen, msg, em, size_nat(nat(modBits - 1)))
     else:
         res = False

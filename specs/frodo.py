@@ -3,13 +3,8 @@ from specs.sha3 import *
 from math import floor
 from specs.aes import aes128_encrypt_block
 
-<<<<<<< Updated upstream
 variant_gen_t = refine(str, lambda x: x == 'AES128' or x == 'CSHAKE128')
 variant_frodo_kem_t = refine(str, lambda x: x == 'FrodoKEM-640' or x == 'FrodoKEM-976')
-=======
-variant_gen_a = refine(str, lambda x: x == "AES128" or x == "CSHAKE128")
-variant_frodo_kem = refine(str, lambda x: x == "FrodoKEM-640" or x == "FrodoKEM-976")
->>>>>>> Stashed changes
 
 @typechecked
 def cshake128_frodo(input_b:bytes_t, cstm:uint16_t, outputByteLen:nat) -> \
@@ -58,8 +53,8 @@ def Frodo(frodo_kem:variant_frodo_kem_t, gen_a:variant_gen_t):
     params_nbar = 8
     params_q = 2 ** params_logq
     bytes_mu = (params_extracted_bits * params_nbar * params_nbar) // 8
-    crypro_publickeybytes  = bytes_seed_a + (params_logq * params_n * params_nbar) // 8
-    crypto_secretkeybytes  = crypto_bytes + crypro_publickeybytes  #+2 * params_n * params_nbar
+    crypto_publickeybytes  = bytes_seed_a + (params_logq * params_n * params_nbar) // 8
+    crypto_secretkeybytes  = crypto_bytes + crypto_publickeybytes  #+2 * params_n * params_nbar
     crypto_ciphertextbytes = ((params_nbar * params_n + params_nbar * params_nbar) * params_logq) // 8 + crypto_bytes
 
     zqelem_t = natmod_t(params_q)
@@ -68,9 +63,7 @@ def Frodo(frodo_kem:variant_frodo_kem_t, gen_a:variant_gen_t):
     def zqelem(n:nat):
         return natmod(n, params_q)
 
-    zqmatrix_t = [[zqelem_t]]
-    # def zqmatrix_t(n:nat, m:nat):
-    #return matrix_t(zqelem_t, n, m)
+    zqmatrix_t = matrix_t(zqelem_t, params_n, params_n)
 
 
     @typechecked
@@ -169,7 +162,7 @@ def Frodo(frodo_kem:variant_frodo_kem_t, gen_a:variant_gen_t):
 
     @typechecked
     def crypto_kem_keypair(coins:bytes_t(2*crypto_bytes+bytes_seed_a)) -> \
-        tuple2 (bytes_t(crypro_publickeybytes), tuple2 (bytes_t(crypto_secretkeybytes), matrix_t)):
+        tuple2 (bytes_t(crypto_publickeybytes), tuple2 (bytes_t(crypto_secretkeybytes), zqmatrix_t)):
         s, x = bytes.split(coins, crypto_bytes)
         seed_e, z = bytes.split(x, crypto_bytes)
         seed_a = cshake_frodo(z, uint16(0), bytes_seed_a)
@@ -185,8 +178,8 @@ def Frodo(frodo_kem:variant_frodo_kem_t, gen_a:variant_gen_t):
         return (pk, (sk, s_matrix))
 
     @typechecked
-    def crypto_kem_enc(coins:bytes_t(bytes_mu), pk:bytes_t(crypro_publickeybytes)) -> \
-        (bytes_t(crypto_ciphertextbytes), bytes_t(crypto_bytes)):
+    def crypto_kem_enc(coins:bytes_t(bytes_mu), pk:bytes_t(crypto_publickeybytes)) -> \
+        tuple2 (bytes_t(crypto_ciphertextbytes), bytes_t(crypto_bytes)):
         seed_a, b = bytes.split(pk, bytes_seed_a)
 
         g = cshake_frodo(bytes.concat(pk, coins), uint16(3), 3 * crypto_bytes)
@@ -214,7 +207,7 @@ def Frodo(frodo_kem:variant_frodo_kem_t, gen_a:variant_gen_t):
 
     @typechecked
     def crypto_kem_dec(ct:bytes_t(crypto_ciphertextbytes),
-                       sk:tuple2 (bytes_t(crypto_secretkeybytes), matrix_t)) -> bytes_t(crypto_bytes):
+                       sk:tuple2 (bytes_t(crypto_secretkeybytes), zqmatrix_t)) -> bytes_t(crypto_bytes):
         c1Len = (params_logq * params_n * params_nbar) // 8
         c2Len = (params_logq * params_nbar * params_nbar) // 8
         c1, x = bytes.split(ct, c1Len)

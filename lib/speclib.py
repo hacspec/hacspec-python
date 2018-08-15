@@ -10,7 +10,7 @@ from typeguard import typechecked
 from inspect import getfullargspec
 from os import environ
 from inspect import getsource
-from copy import copy,deepcopy
+from copy import copy
 
 DEBUG = environ.get('HACSPEC_DEBUG')
 
@@ -160,7 +160,7 @@ def contract3(pre: Callable[..., bool], post: Callable[..., bool]) -> FunctionTy
     return decorator
 
 class _natmod:
-#    __slots__ = ['v', 'modulus']
+    __slots__ = ['v', 'modulus']
     @typechecked
     def __init__(self, x: Union[int,'_natmod'], modulus: int) -> None:
         if modulus < 1:
@@ -241,15 +241,21 @@ class _natmod:
         if not isinstance(x, _natmod):
             fail("to_int is only valid for _natmod.")
         return x.v
-
+    
     @staticmethod
     @typechecked
     def set_val(x: '_natmod',v:int) -> '_natmod':
-        if not isinstance(x, _natmod):
-            fail("natmod.copy is only valid for _natmod.")
-        res = copy(x)
-        res.v = v
-        return res
+        result = x.__class__.__new__(x.__class__)
+        for s in x.__slots__:
+            setattr(result, s, getattr(x, s))
+        result.v = v
+        return result
+
+    def __copy__(self):
+        result = self.__class__.__new__(self.__class__)
+        for s in self.__slots__:
+            setattr(result, s, getattr(self, s))
+        return result
 
     @staticmethod
     @typechecked
@@ -260,6 +266,7 @@ class _natmod:
 
 
 class _uintn(_natmod):
+    __slots__ = ['v', 'modulus', 'bits']
 #    __slots__ = ['bits']
     @typechecked
     def __init__(self, x: Union[int,'_uintn'], bits: int) -> None:

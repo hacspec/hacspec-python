@@ -2,10 +2,10 @@
 PYTHON?=python3.6
 
 SPECS=poly1305 chacha20 aead_chacha20poly1305 sha2 sha3 \
-curve25519 ed25519 p256 curve448 aes gf128 aead_aes128gcm
-SLOW_SPECS=wots kyber
-FAILING_SPECS=argon2i blake2
-BROKEN_SPECS=vrf rsapss frodo
+curve25519 ed25519 p256 curve448 aes gf128 aead_aes128gcm rsapss blake2
+SLOW_SPECS=wots kyber argon2i frodo
+FAILING_SPECS=
+BROKEN_SPECS=vrf 
 
 .PHONY: test $(SPECS) all
 
