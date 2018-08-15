@@ -265,8 +265,6 @@ def is_statement(node):
 def is_valid_type(node):
     if isinstance(node, Name):
         node = node.id
-    if isinstance(node, Call):
-        node = node.func.id
     if node is None:
         return True
     if isinstance(node, Call):
@@ -368,7 +366,7 @@ def read(node) -> None:
         if not is_valid_type(node.annotation):
             fail("Invalid ann assignment (annotation) " + str(node.target.id))
         read(node.value)
-        if not is_expression(node.value) and node.value:
+        if not is_expression(node.value):
             fail("Invalid ann assignment. Right side must be expression " + str(node.value))
         check_variable_is_typed(node)
         return
