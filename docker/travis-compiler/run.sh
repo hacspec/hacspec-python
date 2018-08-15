@@ -12,4 +12,5 @@ cp -r /home/worker/_hacspec /home/worker/hacspec
 cd /home/worker/hacspec/spec-checker-ocaml
 make
 make test
-./checker.native ../specs/chacha20.py
+# FIXME: checker.native is currently broken.
+# ./checker.native ../specs/chacha20.py

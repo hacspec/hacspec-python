@@ -9,6 +9,8 @@ let expindex_t : Type0 = range_t 0 48
 let word_t : Type0 = array_t uint8_t 4
 let key_t : Type0 = array_t uint8_t 16
 let nonce_t : Type0 = array_t uint8_t 12
+let bytes_144_t : Type0 = array_t uint8_t 144
+let bytes_176_t : Type0 = array_t uint8_t 176
 let index_t : Type0 = range_t 0 16
 let rotval_t : Type0 = range_t 1 32
 let state_t : Type0 = array_t uint32_t 16
@@ -104,13 +106,13 @@ let aes_enc_last (state:block_t) (round_key:block_t) : block_t =
   let state = shiftRows state in
   let state = addRoundKey state round_key in
   state
-let rounds (state:block_t) (key:array_t uint8_t 144) : block_t =
+let rounds (state:block_t) (key:bytes_144_t) : block_t =
   let out = bytes (array_copy state) in
   let out =
     repeati 9 (fun i out -> aes_enc out (array_slice key (16 *. i) ((16 *. i) +. 16))) out
   in
   out
-let block_cipher (input:block_t) (key:array_t uint8_t 176) : block_t =
+let block_cipher (input:block_t) (key:bytes_176_t) : block_t =
   let state = bytes (array_copy input) in
   let k0 = array_slice key 0 16 in
   let k = array_slice key 16 (10 *. 16) in

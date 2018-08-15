@@ -12,6 +12,8 @@ word_t = bytes_t(4)
 key_t    = bytes_t(16)
 nonce_t  = bytes_t(12)
 
+bytes_144_t = bytes_t(144)
+bytes_176_t = bytes_t(176)
 
 index_t  = range_t(0,16)
 rotval_t = range_t(1,32)
@@ -115,17 +117,17 @@ def aes_enc_last(state:block_t,round_key:block_t) -> block_t:
     return state
 
 @typechecked
-def rounds(state:block_t,key:bytes_t(144)) -> block_t:
+def rounds(state:block_t,key:bytes_144_t) -> block_t:
     out : block_t = bytes(array.copy(state))
     for i in range(9):
         out = aes_enc(out,key[16*i:16*i+16])
     return out
 
 @typechecked
-def block_cipher(input:block_t,key:bytes_t(176)) -> block_t:
+def block_cipher(input:block_t,key:bytes_176_t) -> block_t:
     state : block_t = bytes(array.copy(input))
     k0    : block_t = key[0:16]
-    k     : bytes_t(144) = key[16:10*16]
+    k     : bytes_144_t = key[16:10*16]
     kn    : block_t = key[10*16:11*16]
     state = addRoundKey(state,k0)
     state = rounds(state,k)
@@ -171,7 +173,7 @@ def key_expansion_word(w0:word_t, w1:word_t, i:expindex_t) -> word_t:
 
 @typechecked
 def key_expansion(key:block_t) -> bytes_t(176):
-    key_ex : bytes_t(176) = bytes(array.create(11*16,uint8(0)))
+    key_ex : bytes_176_t = bytes(array.create(11*16,uint8(0)))
     key_ex[0:16] = key
     i : nat_t = 0
     for j in range(40):
@@ -181,7 +183,7 @@ def key_expansion(key:block_t) -> bytes_t(176):
 
 @typechecked
 def aes128_encrypt_block(k:key_t,input:bytes_t(16)) -> block_t:
-    key_ex : bytes_t(176) = key_expansion(k)
+    key_ex : bytes_176_t = key_expansion(k)
     out    : block_t = block_cipher(input,key_ex)
     return out
 
