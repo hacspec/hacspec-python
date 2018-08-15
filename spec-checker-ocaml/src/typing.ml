@@ -61,6 +61,8 @@ let stdlib =
   ((["bytes"],"from_nat_le"), ([Some (`Approx PInt); Some (`Approx PInt)], (fs2 (fun _aty _bty -> bytes_t)), Ident.make "bytes_from_nat_le"));
   ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword128)), Ident.make "bytes_to_uint128_le"));
   ((["bytes"],"from_uint128_le"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_le"));
+  ((["bytes"],"to_uint128_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword128)), Ident.make "bytes_to_uint128_be"));
+  ((["bytes"],"from_uint128_be"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_be"));
 
   (*  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));*)
   ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fs1 (fun _aty -> nat_t)), Ident.make "natmod_to_nat"));
@@ -989,7 +991,9 @@ and tt_module (env : env) (nm : pident list) =
     match nm with
     | [] ->
         env
-
+    | [x] when List.mem (unloc x) ["bytes";"array";"uintn";"natmod"] ->
+        env
+      
     | x :: nm -> begin
         match Env.Mod.get env (unloc x) with
         | None ->

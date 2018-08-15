@@ -6,8 +6,8 @@ blocksize : int = 16
 block_t = bytes_t(16)
 key_t = bytes_t(16)
 tag_t = bytes_t(16)
-subblock_t,subblock = refine(vlbytes_t, lambda x: bytes.length(x) <= 16)
-elem_t = bitvector_t(128)
+subblock_t,subblock = refine(vlbytes_t, lambda x: array.length(x) <= 16)
+elem_t = uintn_t(128)
 
 # Define galois field
 @typechecked
@@ -55,7 +55,7 @@ def update(r:elem_t,block:subblock_t,acc:elem_t) -> elem_t:
 
 @typechecked
 def poly(text:vlbytes_t,r:elem_t) -> elem_t:
-    blocks : array(vlbytes_t)
+    blocks : vlarray_t(vlbytes_t)
     last : vlbytes_t
     blocks,last = array.split_blocks(text,blocksize)
     acc : elem_t = elem(0)
