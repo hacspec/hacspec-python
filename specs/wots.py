@@ -67,9 +67,28 @@ def PRF(key: key_t, m: address_t) -> digest_t:
 # 8-byte: tree address
 # 4-byte: type: 0 for OTS, 1 for L-tree, 2 for hash tree
 # 4-byte: OTS address, L-tree address, padding (0)
-# 4-byte: chain address, tree height, tree height
-# 4-byte: hash address, tree index, tree index
+# 4-byte: chain address, tree height
+# 4-byte: hash address, tree index
 # 4-byte: key and mask
+
+@typechecked
+def set_type(adr: address_t, t: uint32_t) -> address_t:
+    result : address_t = array.copy(adr)
+    result[3] = t
+    return result
+
+
+@typechecked
+def set_ots_address(adr: address_t, ots_adr: uint32_t) -> address_t:
+    result : address_t = array.copy(adr)
+    result[-4] = ots_adr
+    return result
+
+
+@typechecked
+def set_ltree_address(adr: address_t, ltree_adr: uint32_t) -> address_t:
+    return set_ots_address(adr, ltree_adr)
+
 
 @typechecked
 def set_chain_address(adr: address_t, h_adr: uint32_t) -> address_t:
@@ -79,10 +98,30 @@ def set_chain_address(adr: address_t, h_adr: uint32_t) -> address_t:
 
 
 @typechecked
+def set_tree_height(adr: address_t, h: uint32_t) -> address_t:
+    return set_chain_address(adr, h)
+
+
+@typechecked
+def get_tree_height(adr: address_t) -> uint32_t:
+    return adr[-3]
+
+
+@typechecked
 def set_hash_address(adr: address_t, h_adr: uint32_t) -> address_t:
     result : address_t = array.copy(adr)
     result[-2] = h_adr
     return result
+
+
+@typechecked
+def set_tree_index(adr: address_t, i: uint32_t) -> address_t:
+    return set_hash_address(adr, i)
+
+
+@typechecked
+def get_tree_index(adr: address_t) -> uint32_t:
+    return adr[-2]
 
 
 @typechecked
