@@ -32,6 +32,17 @@ jobs:
     -
       name: test typechecked
       script: make test
+    # Typecheck slow specs.
+    -
+      name: test kyber
+      script: make kyber-test
+    -
+      name: test wots
+      script: make wots-test
+    -
+      name: test argon2i
+      script: make argon2i-test
+    # Run OCaml compiler and FStar compilation in docker.
     -
       name: compiler
       install: skip

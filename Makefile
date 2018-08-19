@@ -9,10 +9,10 @@ curve25519 ed25519 p256 curve448 aes gf128 aead_aes128gcm rsapss blake2
 SLOW_SPECS=wots kyber
 
 # Like SLOW_SPECS and they fail the spec checker.
-SLOW_SPECS_FAILING_SPECHECK=frodo
+SLOW_SPECS_FAILING_SPECHECK=frodo argon2i
 
 # These specs run just fine but don't pass the spec checker.
-SPECS_FAILING_SPECHECK=argon2i
+SPECS_FAILING_SPECHECK=
 
 # These specs are broken or work in progress.
 BROKEN_SPECS=vrf xmss
@@ -22,7 +22,7 @@ BROKEN_SPECS=vrf xmss
 all: run check test
 
 run: $(SPECS) $(SPECS_FAILING_SPECHECK) $(SLOW_SPECS)
-test: $(addsuffix -test, $(SPECS))
+test: $(addsuffix -test, $(SPECS) $(SPECS_FAILING_SPECHECK))
 check: $(addsuffix -check, $(SPECS) $(SLOW_SPECS)) 
 parse: $(addsuffix -parse, $(SPECS))
 
