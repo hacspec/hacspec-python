@@ -229,7 +229,7 @@ class _natmod:
         if other == 0:
             return _natmod.set_val(self, 1)
         elif other == 1:
-            return _natmod.set_val(self, self.v)
+            return copy(self)
         if other == 2:
             return self * self
         return _natmod.set_val(self, pow(self.v,other,self.modulus))
@@ -254,7 +254,7 @@ class _natmod:
     def __copy__(self):
         result = self.__class__.__new__(self.__class__)
         for s in self.__slots__:
-            setattr(result, s, getattr(self, s))
+            setattr(result, s, copy(getattr(self, s)))
         return result
 
     @staticmethod
@@ -267,7 +267,6 @@ class _natmod:
 
 class _uintn(_natmod):
     __slots__ = ['v', 'modulus', 'bits']
-#    __slots__ = ['bits']
     @typechecked
     def __init__(self, x: Union[int,'_uintn'], bits: int) -> None:
         modulus = 1 << bits
@@ -474,7 +473,7 @@ uint128_t = uintn_t(128)
 
 
 class _array(Generic[T]):
-#    __slots__ = ['l','len']
+    __slots__ = ['l','len']
     @typechecked
     def __init__(self, x: Union[Sequence[T], List[T], '_array[T]']) -> None:
         if (not isinstance(x, Sequence)) and (not isinstance(x, _array)) and (not isinstance(x,List)):
@@ -541,6 +540,13 @@ class _array(Generic[T]):
         else:
             self.l[key] = v
 
+    @typechecked
+    def __copy__(self) -> '_array[T]':
+        result = self.__class__.__new__(self.__class__)
+        for s in self.__slots__:
+            setattr(result, s, copy(getattr(self, s)))
+        return result
+
     @staticmethod
     @typechecked
     def create(l: int, default:T) -> '_array[T]':
@@ -575,15 +581,13 @@ class _array(Generic[T]):
     @staticmethod
     @typechecked
     def copy(x: '_array[T]') -> '_array[T]':
-        res = copy(x)
-        res.l = list([copy(x) for x in res.l])
-        return res
+        return copy(x)
 
     @staticmethod
     @typechecked
     def concat(x: '_array[T]', y: '_array[T]') -> '_array[T]':
         res1 = copy(x)
-        res1.l = list([copy(n) for n in res1.l+y.l])
+        res1.l = res1.l + list([copy(yi) for yi in y.l])
         res1.len += y.len
         return res1
 
