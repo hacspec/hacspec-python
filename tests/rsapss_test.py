@@ -4,7 +4,7 @@ from sys import exit
 from tests.testlib import print_dot, exit
 import json
 
-def main (x: int) -> None :
+def main():
     file = open('tests/test_vectors/rsapss_test_vectors.json')
     rsapss_test_vectors = json.load(file)
     print_dot()
@@ -36,4 +36,5 @@ def main (x: int) -> None :
             exit(1)
     exit(0)
 
-main(0)
+if __name__ == '__main__':
+    main()

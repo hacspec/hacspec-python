@@ -3,7 +3,7 @@ from lib.speclib import *
 from specs.wots import *
 from specs.sha2 import sha256
 
-h : int = 4 # height -> number of signatures
+h : int = 2 # height -> number of signatures
 n_keys : int = 2**h
 
 key2_t = bytes_t(2*n)
@@ -152,6 +152,7 @@ def ltree(pk: pk_t, adr: address_t, seed: seed_t) -> key_t:
 def tree_hash(sk: SK_t, s: uint32_t, t: uint32_t, adr: address_t) -> key_t:
     x = uint32.to_int(s) % (1 << uintn.to_int(t))
     if x != 0:
+        # TODO: handle this in the caller
         return key_t.create(n, uint8(0))
     offset: int = 0
     stack: array_t = array.create(2**uint32.to_int(t), array.create(n, uint8(0)))
@@ -160,7 +161,8 @@ def tree_hash(sk: SK_t, s: uint32_t, t: uint32_t, adr: address_t) -> key_t:
         adr: address_t = set_type(adr, uint32(0))
         a: uint32_t = s + uint32(i)
         adr = set_ots_address(adr, a)
-        pk: pk_t = key_gen_pk(adr, seed, get_wots_sk(sk, uint32.to_int(a)))
+        pk: pk_t
+        pk, _ = key_gen_pk(adr, seed, get_wots_sk(sk, uint32.to_int(a)))
         adr = set_type(adr, uint32(1))
         adr = set_ltree_address(adr, a)
         node: key_t = ltree(pk, seed, adr)

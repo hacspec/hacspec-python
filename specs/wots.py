@@ -147,9 +147,8 @@ def wots_chain(x: bytes_t, start: int, steps: int, seed: seed_t, adr: address_t)
             adr = set_key_and_mask(adr, uint32(1))
             bm : digest_t = PRF(seed, adr)
             fin = bytes([])
-            for j in range(array.length(bm)):
-                # for (a, b) in zip(hmo, bm):
-                fin = bytes.concat(fin, bytes([hmo[j] ^ bm[j]]))
+            for (a, b) in array.zip(hmo, bm):
+                fin = bytes.concat(fin, bytes([a ^ b]))
             hmo = F(key, fin)
     return adr, hmo
 

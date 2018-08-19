@@ -66,9 +66,10 @@ def shake256_test():
             print("Expected: "+output)
             exit(1)
 
-def main (x: int) -> None :
+def main():
     sha3_test()
     shake128_test()
     shake256_test()
 
-main(0)
+if __name__ == '__main__':
+    main()

@@ -245,9 +245,16 @@ class _natmod:
     @staticmethod
     @typechecked
     def set_val(x: '_natmod',v:int) -> '_natmod':
-        result = x.__class__.__new__(x.__class__)
-        for s in x.__slots__:
-            setattr(result, s, getattr(x, s))
+        _t = x.__class__
+        result = _t.__new__(_t)
+        # Do manual initialisation. This is faster than iterating slots.
+        # for s in result.__slots__:
+        #     setattr(result, s, copy(getattr(x, s)))
+        try:
+            result.bits = x.bits
+        except:
+            pass
+        result.modulus = x.modulus
         result.v = v
         return result
 
