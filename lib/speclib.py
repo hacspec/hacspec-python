@@ -1088,5 +1088,5 @@ class speclib:
         return log(x, b)
 
     @typechecked
-    def floor(x: int) -> int:
+    def floor(x: float) -> int:
         return floor(x)

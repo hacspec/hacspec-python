@@ -36,9 +36,10 @@ jobs:
     -
       name: test kyber
       script: make kyber-test
-    -
-      name: test wots
-      script: make wots-test
+    # WOTS is way too slow for travis :(
+    # -
+    #   name: test wots
+    #   script: make wots-test
     -
       name: test argon2i
       script: make argon2i-test
