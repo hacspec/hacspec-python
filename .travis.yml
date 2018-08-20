@@ -33,10 +33,11 @@ jobs:
       name: test typechecked
       script: make test
     # Typecheck slow specs.
-    -
-      name: test kyber
-      script: make kyber-test
-    # WOTS is way too slow for travis :(
+    # Kyber is too slow for travis :(
+    # -
+    #   name: test kyber
+    #   script: make kyber-test
+    # WOTS is way too slow for travis as well :(
     # -
     #   name: test wots
     #   script: make wots-test
