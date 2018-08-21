@@ -56,7 +56,12 @@ module Resource : sig
   val getlib : string -> string
 end = struct
   let root : string =
-    Filename.dirname Sys.executable_name
+    let mydir = Filename.dirname Sys.executable_name in
+
+    if Filename.basename (Filename.dirname mydir) = "_build" then
+      List.fold_left Filename.concat mydir
+        [Filename.parent_dir_name; Filename.parent_dir_name]
+    else mydir
 
   let get (name : string) =
     List.fold_left Filename.concat root (String.split_on_char '/' name)

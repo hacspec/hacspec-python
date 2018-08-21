@@ -3,6 +3,7 @@ open Hacs.Core
 
 module P = Hacs.Reader
 module T = Hacs.Typing
+module F = Filename
 
 (* -------------------------------------------------------------------- *)
 let main () =
@@ -12,7 +13,7 @@ let main () =
   end;
 
   let filename = Sys.argv.(1) in
-  let modname  = Filename.remove_extension (Filename.basename filename) in
+  let modname  = F.remove_extension (F.basename filename) in
 
   try
     let env =
