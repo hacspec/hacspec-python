@@ -29,42 +29,26 @@ V = TypeVar('V')
 W = TypeVar('W')
 X = TypeVar('X')
 
-
-@typechecked
-def tuple2(T: type, U: type) -> type:
-    return Tuple[T, U]
-
-
-@typechecked
-def tuple3(T: type, U: type, V: type) -> type:
-    return Tuple[T, U, V]
-
-
-@typechecked
-def tuple4(T: type, U: type, V: type, W: type) -> type:
-    return Tuple[T, U, V, W]
-
-
-@typechecked
-def tuple5(T: type, U: type, V: type, W: type, X: type) -> type:
-    return Tuple[T, U, V, W, X]
-
 @typechecked
 def tuple_t(*args) -> type:
-    if len(args) == 1:
-        return Tuple[args[0]]
-    elif len(args) == 2:
-        return Tuple[args[0],args[1]]
-    elif len(args) == 3:
-        return Tuple[args[0],args[1],args[2]]
-    elif len(args) == 4:
-        return Tuple[args[0],args[1],args[2],args[3]]
-    elif len(args) == 5:
-        return Tuple[args[0],args[1],args[2],args[3],args[4]]
-    elif len(args) == 6:
-        return Tuple[args[0],args[1],args[2],args[3],args[4],args[5]]
-    else:
-        fail("only implemented tuples up to size 6")
+    return tuple
+    # TODO: Python 3.7 changes the way generics work, i.e. they are no classes
+    #       anymore and therefore no type. We have to find a way around that.
+    #       https://www.python.org/dev/peps/pep-0560/
+    # if len(args) == 1:
+    #     return Tuple[args[0]]
+    # elif len(args) == 2:
+    #     return Tuple[args[0],args[1]]
+    # elif len(args) == 3:
+    #     return Tuple[args[0],args[1],args[2]]
+    # elif len(args) == 4:
+    #     return Tuple[args[0],args[1],args[2],args[3]]
+    # elif len(args) == 5:
+    #     return Tuple[args[0],args[1],args[2],args[3],args[4]]
+    # elif len(args) == 6:
+    #     return Tuple[args[0],args[1],args[2],args[3],args[4],args[5]]
+    # else:
+    #     fail("only implemented tuples up to size 6")
 
 class _result(Generic[T]):
     @typechecked
