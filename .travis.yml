@@ -49,4 +49,4 @@ jobs:
       name: compiler
       install: skip
       script:
-        - docker run -v $PWD:/home/worker/_hacspec --rm -ti franziskus/hacspec:0.2 /home/worker/_hacspec/docker/travis-compiler/run.sh
+        - docker run -v $PWD:/home/worker/_hacspec --rm -ti franziskus/hacspec:0.3 /home/worker/_hacspec/docker/travis-compiler/run.sh

@@ -8,7 +8,7 @@ export PATH="$PATH:/usr/local/bin"
 opam init --comp ${opamv}
 echo ". /home/worker/.opam/opam-init/init.sh > /dev/null 2> /dev/null || true" >> .bashrc
 # opam switch -v ${opamv}
-opam install ocamlfind batteries sqlite3 fileutils yojson ppx_deriving_yojson zarith pprint menhir ulex process fix wasm stdint
+opam install ocamlfind batteries sqlite3 fileutils yojson ppx_deriving_yojson zarith pprint menhir ulex process fix wasm stdint ocaml-migrate-parsetree
 
 # Get the HACL* code
 git clone ${haclrepo} hacl-star

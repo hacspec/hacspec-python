@@ -43,7 +43,7 @@ uninstall:
 	rm -f $(DESTDIR)/$(NAME)
 
 check:
-	make -C fstar_compiler/specs
+	make -C fstar-compiler/specs
 
 test: check
 	@true
