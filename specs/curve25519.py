@@ -51,7 +51,7 @@ def encodePoint(p: point_t) -> serialized_point_t:
     x:felem_t
     y:felem_t
     (x,y) = p
-    b : nat_t = natmod.to_int(x * finv(y))
+    b : int = natmod.to_int(x * finv(y))
     return bytes.from_nat_le(b, 32)
 
 
