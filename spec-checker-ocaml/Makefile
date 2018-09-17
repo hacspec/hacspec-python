@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 # --------------------------------------------------------------------
-OCAMLBUILD_JOBS  ?= 1
+OCAMLBUILD_JOBS  ?= 2
 OCAMLBUILD_BIN   ?= ocamlbuild
 OCAMLBUILD_EXTRA ?= 
 OCAMLBUILD_OPTS  := -use-ocamlfind -j $(OCAMLBUILD_JOBS)
@@ -15,38 +15,39 @@ OCAMLBUILD_OPTS += $(OCAMLBUILD_EXTRA)
 OCAMLBUILD      := $(OCAMLBUILD_BIN) $(OCAMLBUILD_OPTS)
 
 # --------------------------------------------------------------------
-CHECKER := checker
-FSTAR   := to_fstar
+BINS    := checker to_fstar
 NAME    := hacspec
 INSTALL := scripts/install-sh
 DESTDIR ?= /usr/local
 
 # --------------------------------------------------------------------
-.PHONY: all build checker.native checker.byte install uninstall clean to_fstar.native
-.PHONY: %.ml %.mli %.inferred.mli
+.PHONY: all build install uninstall check test clean __force__
+.PHONY: %.byte %.native %.ml %.mli %.inferred.mli
 
 all: build
 	@true
 
-build: checker.native to_fstar.native
+build: $(BINS:%=%.native)
 
-checker.byte:
-	$(OCAMLBUILD) $@
+checker.%: __force__
+	$(OCAMLBUILD) src/$@
 
-checker.native:
-	$(OCAMLBUILD) $@
+to_fstar.%: __force__
+	$(OCAMLBUILD) fstar-compiler/$@
 
-install: checker.native
-	$(INSTALL) checker.native $(DESTDIR)/bin/$(NAME)
+install: $(BINS:%=%.native)
+	$(INSTALL) checker.native $(DESTDIR)/bin/hacs
+	$(INSTALL) to_fstar.native $(DESTDIR)/bin/to_fstar
 
 uninstall:
 	rm -f $(DESTDIR)/$(NAME)
 
-to_fstar.native:
-	$(OCAMLBUILD) $@
-
-test:
+check:
 	make -C fstar-compiler/specs
+
+test: check
+	@true
+
 clean:
 	$(OCAMLBUILD) -clean
-	rm -f $(MAIN).native $(MAIN).byte *.fst
+	rm -f $(BINS:%=%.native) $(BINS:%=%.byte) *.fst

@@ -7,7 +7,7 @@ block_t = bytes_t(16)
 key_t = bytes_t(16)
 tag_t = bytes_t(16)
 subblock_t,subblock = refine(vlbytes_t, lambda x: array.length(x) <= 16)
-elem_t = uintn_t(128)
+elem_t = uint128_t
 
 # Define galois field
 @typechecked

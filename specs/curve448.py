@@ -32,7 +32,7 @@ serialized_scalar_t = bytes_t(56)
 
 @typechecked
 def decodeScalar(s: serialized_scalar_t) -> scalar_t:
-    k = bytes.copy(s)
+    k: serialized_scalar_t = bytes.copy(s)
     k[0] &= uint8(252)
     k[55] |= uint8(128)
     return to_scalar(bytes.to_nat_le(k))
@@ -46,8 +46,11 @@ def decodePoint(u: serialized_point_t) -> point_t:
 
 @typechecked
 def encodePoint(p: point_t) -> serialized_point_t:
-    b : int = natmod.to_int(p[0] * finv(p[1]))
-    return serialized_point_t(bytes.from_nat_le(b))
+    x:felem_t
+    y:felem_t
+    (x,y) = p
+    b : int = natmod.to_int(x * finv(y))
+    return bytes.from_nat_le(b, 56)
 
 
 @typechecked
@@ -55,9 +58,10 @@ def point_add_and_double(q: point_t, nq: point_t, nqp1: point_t) -> tuple_t(poin
     x_1 : felem_t
     x_2 : felem_t
     x_3 : felem_t
+    z_1 : felem_t
     z_2 : felem_t
     z_3 : felem_t
-    (x_1, _) = q
+    (x_1, z_1) = q
     (x_2, z_2) = nq
     (x_3, z_3) = nqp1
     a : felem_t = x_2 + z_2

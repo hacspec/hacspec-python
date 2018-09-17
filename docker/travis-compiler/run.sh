@@ -12,5 +12,6 @@ cp -r /home/worker/_hacspec /home/worker/hacspec
 cd /home/worker/hacspec/spec-checker-ocaml
 make
 make test
+make -C fstar-compiler/specs poly1305.fst.checked
 # FIXME: checker.native is currently broken.
 # ./checker.native ../specs/chacha20.py

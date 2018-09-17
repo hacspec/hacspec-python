@@ -2,11 +2,11 @@ FROM ubuntu:18.04
 MAINTAINER Franziskus Kiefer <franziskuskiefer@gmail.com>
 
 # Pinned version of HACL* (F* and KreMLin are pinned as submodules)
-ENV haclrepo https://github.com/mitls/hacl-star.git
+ENV haclrepo https://github.com/franziskuskiefer/hacl-star.git
 
 # Define versions of dependencies
 ENV opamv 4.05.0
-ENV haclversion ff810f30ec62051f10ab242dab2bdb5f7c8678e6
+ENV haclversion aa1d94cf2b2fb852cefaadc1b0a5b07f8fe80360
 
 # Create user.
 RUN useradd -ms /bin/bash worker

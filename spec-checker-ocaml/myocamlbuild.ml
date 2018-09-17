@@ -46,5 +46,11 @@ let _ = dispatch begin function
        flag ["ocaml"; "ocamldep";  "bisect"] & S[A"-syntax" ; A"bisect_pp"];
        flag ["ocaml"; "link"    ;  "bisect"] & S[A"-package"; A"bisect"];
 
+
+       (* libs <-> src *)
+       List.iter
+         (fun x -> Pathname.define_context x ["libs"])
+         ["src"; "fstar-compiler"]
+
    | _ -> ()
 end

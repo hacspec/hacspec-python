@@ -1,6 +1,6 @@
 (* -------------------------------------------------------------------- *)
-module P = Reader
-module T = Typing
+module P = Hacs.Reader
+module T = Hacs.Typing
 
 (* -------------------------------------------------------------------- *)
 let main () =
@@ -12,14 +12,16 @@ let main () =
   let filename = Sys.argv.(1) in
   let modulename = Filename.remove_extension (Filename.basename filename) in
   try
-    let (p : T.Env.env * T.Env.env Ast.program) =
+    let (p : T.Env.env * T.Env.env Hacs.Ast.program) =
       let stream = P.from_file filename in
       let past   = P.parse_spec stream in
       T.tt_program T.Env.empty past
-    in Format.printf "(* Generated from hacspec module %s *)\n%s" filename (Fstar.fstar_of_program modulename p)
+    in Format.printf
+         "(* Generated from hacspec module %s *)\n%s%!"
+         filename (Fstar.fstar_of_program modulename p)
   with
   | e ->
-      Format.eprintf "%s%!" (Pexception.tostring e);
+      Format.eprintf "%s%!" (Hacs.Pexception.tostring e);
       exit 1
 
 (* -------------------------------------------------------------------- *)

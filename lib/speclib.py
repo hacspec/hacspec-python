@@ -29,42 +29,26 @@ V = TypeVar('V')
 W = TypeVar('W')
 X = TypeVar('X')
 
-
-@typechecked
-def tuple2(T: type, U: type) -> type:
-    return Tuple[T, U]
-
-
-@typechecked
-def tuple3(T: type, U: type, V: type) -> type:
-    return Tuple[T, U, V]
-
-
-@typechecked
-def tuple4(T: type, U: type, V: type, W: type) -> type:
-    return Tuple[T, U, V, W]
-
-
-@typechecked
-def tuple5(T: type, U: type, V: type, W: type, X: type) -> type:
-    return Tuple[T, U, V, W, X]
-
 @typechecked
 def tuple_t(*args) -> type:
-    if len(args) == 1:
-        return Tuple[args[0]]
-    elif len(args) == 2:
-        return Tuple[args[0],args[1]]
-    elif len(args) == 3:
-        return Tuple[args[0],args[1],args[2]]
-    elif len(args) == 4:
-        return Tuple[args[0],args[1],args[2],args[3]]
-    elif len(args) == 5:
-        return Tuple[args[0],args[1],args[2],args[3],args[4]]
-    elif len(args) == 6:
-        return Tuple[args[0],args[1],args[2],args[3],args[4],args[5]]
-    else:
-        fail("only implemented tuples up to size 6")
+    return tuple
+    # TODO: Python 3.7 changes the way generics work, i.e. they are no classes
+    #       anymore and therefore no type. We have to find a way around that.
+    #       https://www.python.org/dev/peps/pep-0560/
+    # if len(args) == 1:
+    #     return Tuple[args[0]]
+    # elif len(args) == 2:
+    #     return Tuple[args[0],args[1]]
+    # elif len(args) == 3:
+    #     return Tuple[args[0],args[1],args[2]]
+    # elif len(args) == 4:
+    #     return Tuple[args[0],args[1],args[2],args[3]]
+    # elif len(args) == 5:
+    #     return Tuple[args[0],args[1],args[2],args[3],args[4]]
+    # elif len(args) == 6:
+    #     return Tuple[args[0],args[1],args[2],args[3],args[4],args[5]]
+    # else:
+    #     fail("only implemented tuples up to size 6")
 
 class _result(Generic[T]):
     @typechecked
@@ -229,7 +213,7 @@ class _natmod:
         if other == 0:
             return _natmod.set_val(self, 1)
         elif other == 1:
-            return _natmod.set_val(self, self.v)
+            return copy(self)
         if other == 2:
             return self * self
         return _natmod.set_val(self, pow(self.v,other,self.modulus))
@@ -245,16 +229,23 @@ class _natmod:
     @staticmethod
     @typechecked
     def set_val(x: '_natmod',v:int) -> '_natmod':
-        result = x.__class__.__new__(x.__class__)
-        for s in x.__slots__:
-            setattr(result, s, getattr(x, s))
+        _t = x.__class__
+        result = _t.__new__(_t)
+        # Do manual initialisation. This is faster than iterating slots.
+        # for s in result.__slots__:
+        #     setattr(result, s, copy(getattr(x, s)))
+        try:
+            result.bits = x.bits
+        except:
+            pass
+        result.modulus = x.modulus
         result.v = v
         return result
 
     def __copy__(self):
         result = self.__class__.__new__(self.__class__)
         for s in self.__slots__:
-            setattr(result, s, getattr(self, s))
+            setattr(result, s, copy(getattr(self, s)))
         return result
 
     @staticmethod
@@ -267,7 +258,6 @@ class _natmod:
 
 class _uintn(_natmod):
     __slots__ = ['v', 'modulus', 'bits']
-#    __slots__ = ['bits']
     @typechecked
     def __init__(self, x: Union[int,'_uintn'], bits: int) -> None:
         modulus = 1 << bits
@@ -474,7 +464,7 @@ uint128_t = uintn_t(128)
 
 
 class _array(Generic[T]):
-#    __slots__ = ['l','len']
+    __slots__ = ['l','len']
     @typechecked
     def __init__(self, x: Union[Sequence[T], List[T], '_array[T]']) -> None:
         if (not isinstance(x, Sequence)) and (not isinstance(x, _array)) and (not isinstance(x,List)):
@@ -541,6 +531,13 @@ class _array(Generic[T]):
         else:
             self.l[key] = v
 
+    @typechecked
+    def __copy__(self) -> '_array[T]':
+        result = self.__class__.__new__(self.__class__)
+        for s in self.__slots__:
+            setattr(result, s, copy(getattr(self, s)))
+        return result
+
     @staticmethod
     @typechecked
     def create(l: int, default:T) -> '_array[T]':
@@ -575,15 +572,13 @@ class _array(Generic[T]):
     @staticmethod
     @typechecked
     def copy(x: '_array[T]') -> '_array[T]':
-        res = copy(x)
-        res.l = list([copy(x) for x in res.l])
-        return res
+        return copy(x)
 
     @staticmethod
     @typechecked
     def concat(x: '_array[T]', y: '_array[T]') -> '_array[T]':
         res1 = copy(x)
-        res1.l = list([copy(n) for n in res1.l+y.l])
+        res1.l = res1.l + list([copy(yi) for yi in y.l])
         res1.len += y.len
         return res1
 
@@ -1077,5 +1072,5 @@ class speclib:
         return log(x, b)
 
     @typechecked
-    def floor(x: int) -> int:
+    def floor(x: float) -> int:
         return floor(x)

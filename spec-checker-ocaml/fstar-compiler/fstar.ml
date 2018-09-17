@@ -1,8 +1,9 @@
-open Core
-open Location
-open Syntax
-open Ast
-module T = Typing
+ open Hacs.Core
+open Hacs.Location
+open Hacs.Syntax
+open Hacs.Ast
+
+module T = Hacs.Typing
 
 let fstar_of_uniop u = 
   match u with
