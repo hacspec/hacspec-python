@@ -10,7 +10,14 @@ LIBS_ML = Lib_IntTypes.ml Lib_RawIntTypes.ml Lib_Sequence.ml Lib_ByteSequence.ml
 LIBS_EX = --extract_module Speclib --extract_module Lib.IntTypes --extract_module Lib.RawIntTypes  --extract_module Lib.Sequence --extract_module Lib.ByteSequence
 include $(FSTAR_HOME)/ulib/ml/Makefile.include
 
+SHELL:=/bin/bash
+
 all: $(SPECS)
+
+tests: $(SPECS:.fst=.exe)
+
+# Not all specs pass right now.
+check: chacha20.fst.checked poly1305.fst.checked
 
 .SECONDARY: %-ml
 .PRECIOUS: %-ml
@@ -28,10 +35,11 @@ all: $(SPECS)
 	$(FSTAR) --lax --codegen OCaml $(LIBS_EX) --extract_module $* --odir $*-ml $(LIBS_FILES) $^
 	touch $*-ml
 
+%.exe: CAP = $(shell echo "$*" | sed 's/.*/\u&/')
 %.exe: $(LIBS_FILES) %-ml tests/%_test.ml
 	cp tests/testutil.ml $*-ml/
 	cp tests/$*_test.ml $*-ml/
-	$(OCAMLOPT) -w -8 -w -20 -g -I $*-ml $(addprefix $*-ml/, $(LIBS_ML))  $*-ml/$*.ml $*-ml/testutil.ml $*-ml/$*_test.ml -o $*.exe
+	$(OCAMLOPT) -w -8 -w -20 -g -I $*-ml $(addprefix $*-ml/, $(LIBS_ML))  $*-ml/$(CAP).ml $*-ml/testutil.ml $*-ml/$*_test.ml -o $*.exe
 	./$*.exe
 
 %.fst.checked: %.fst

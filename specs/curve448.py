@@ -16,8 +16,8 @@ point_t = tuple_t(felem_t, felem_t)
 
 
 @typechecked
-def point(a: int, b: int) -> point_t:
-    return to_felem(nat(a)), to_felem(nat(b))
+def point(a: nat_t, b: nat_t) -> point_t:
+    return to_felem(a), to_felem(b)
 
 
 scalar_t = uintn_t(448)

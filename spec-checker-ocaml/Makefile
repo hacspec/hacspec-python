@@ -51,3 +51,4 @@ test: check
 clean:
 	$(OCAMLBUILD) -clean
 	rm -f $(BINS:%=%.native) $(BINS:%=%.byte) *.fst
+	make -C fstar-compiler/specs clean
