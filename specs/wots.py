@@ -14,7 +14,7 @@ n : int = 32
 w : uint32_t = w_sixteen
 log_w : int = 4
 
-length1 : uint32_t = uint32(int(speclib.ceil(8*n // log_w)))
+length1 : uint32_t = uint32(int(speclib.ceil(8*n / log_w)))
 tmp : int = uint32.to_int(length1) * (uint32.to_int(w) - 1)
 tmp = speclib.log(tmp, 2)
 length2 : uint32_t = uint32(int(tmp // log_w + 1))

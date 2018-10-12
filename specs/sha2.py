@@ -10,7 +10,7 @@ op_range_t = range_t(0, 1)
 
 @typechecked
 def sha2(v:variant_t) -> FunctionType:
-    # Initializing types and constants for different variants 
+    # Initializing types and constants for different variants
     if v == 224 or v == 256:
         blockSize : int = 64
         block_t = bytes_t(blockSize)
@@ -18,8 +18,8 @@ def sha2(v:variant_t) -> FunctionType:
         len_t = uint64_t
         to_len : FunctionType = uint64
         len_to_bytes : FunctionType = bytes.from_uint64_be
-        word_t = uint32_t  
-        to_word : FunctionType = uint32
+        word_t = ruint32_t
+        to_word : FunctionType = ruint32
         bytes_to_words : FunctionType = bytes.to_uint32s_be
         words_to_bytes : FunctionType = bytes.from_uint32s_be
         kSize : int = 64
@@ -31,22 +31,22 @@ def sha2(v:variant_t) -> FunctionType:
             7, 18, 3,
             17, 19, 10])
         kTable : k_t = k_t([
-            uint32(0x428a2f98), uint32(0x71374491), uint32(0xb5c0fbcf), uint32(0xe9b5dba5),
-            uint32(0x3956c25b), uint32(0x59f111f1), uint32(0x923f82a4), uint32(0xab1c5ed5),
-            uint32(0xd807aa98), uint32(0x12835b01), uint32(0x243185be), uint32(0x550c7dc3),
-            uint32(0x72be5d74), uint32(0x80deb1fe), uint32(0x9bdc06a7), uint32(0xc19bf174),
-            uint32(0xe49b69c1), uint32(0xefbe4786), uint32(0x0fc19dc6), uint32(0x240ca1cc),
-            uint32(0x2de92c6f), uint32(0x4a7484aa), uint32(0x5cb0a9dc), uint32(0x76f988da),
-            uint32(0x983e5152), uint32(0xa831c66d), uint32(0xb00327c8), uint32(0xbf597fc7),
-            uint32(0xc6e00bf3), uint32(0xd5a79147), uint32(0x06ca6351), uint32(0x14292967),
-            uint32(0x27b70a85), uint32(0x2e1b2138), uint32(0x4d2c6dfc), uint32(0x53380d13),
-            uint32(0x650a7354), uint32(0x766a0abb), uint32(0x81c2c92e), uint32(0x92722c85),
-            uint32(0xa2bfe8a1), uint32(0xa81a664b), uint32(0xc24b8b70), uint32(0xc76c51a3),
-            uint32(0xd192e819), uint32(0xd6990624), uint32(0xf40e3585), uint32(0x106aa070),
-            uint32(0x19a4c116), uint32(0x1e376c08), uint32(0x2748774c), uint32(0x34b0bcb5),
-            uint32(0x391c0cb3), uint32(0x4ed8aa4a), uint32(0x5b9cca4f), uint32(0x682e6ff3),
-            uint32(0x748f82ee), uint32(0x78a5636f), uint32(0x84c87814), uint32(0x8cc70208),
-            uint32(0x90befffa), uint32(0xa4506ceb), uint32(0xbef9a3f7), uint32(0xc67178f2)])
+            ruint32(0x428a2f98), ruint32(0x71374491), ruint32(0xb5c0fbcf), ruint32(0xe9b5dba5),
+            ruint32(0x3956c25b), ruint32(0x59f111f1), ruint32(0x923f82a4), ruint32(0xab1c5ed5),
+            ruint32(0xd807aa98), ruint32(0x12835b01), ruint32(0x243185be), ruint32(0x550c7dc3),
+            ruint32(0x72be5d74), ruint32(0x80deb1fe), ruint32(0x9bdc06a7), ruint32(0xc19bf174),
+            ruint32(0xe49b69c1), ruint32(0xefbe4786), ruint32(0x0fc19dc6), ruint32(0x240ca1cc),
+            ruint32(0x2de92c6f), ruint32(0x4a7484aa), ruint32(0x5cb0a9dc), ruint32(0x76f988da),
+            ruint32(0x983e5152), ruint32(0xa831c66d), ruint32(0xb00327c8), ruint32(0xbf597fc7),
+            ruint32(0xc6e00bf3), ruint32(0xd5a79147), ruint32(0x06ca6351), ruint32(0x14292967),
+            ruint32(0x27b70a85), ruint32(0x2e1b2138), ruint32(0x4d2c6dfc), ruint32(0x53380d13),
+            ruint32(0x650a7354), ruint32(0x766a0abb), ruint32(0x81c2c92e), ruint32(0x92722c85),
+            ruint32(0xa2bfe8a1), ruint32(0xa81a664b), ruint32(0xc24b8b70), ruint32(0xc76c51a3),
+            ruint32(0xd192e819), ruint32(0xd6990624), ruint32(0xf40e3585), ruint32(0x106aa070),
+            ruint32(0x19a4c116), ruint32(0x1e376c08), ruint32(0x2748774c), ruint32(0x34b0bcb5),
+            ruint32(0x391c0cb3), ruint32(0x4ed8aa4a), ruint32(0x5b9cca4f), ruint32(0x682e6ff3),
+            ruint32(0x748f82ee), ruint32(0x78a5636f), ruint32(0x84c87814), ruint32(0x8cc70208),
+            ruint32(0x90befffa), ruint32(0xa4506ceb), ruint32(0xbef9a3f7), ruint32(0xc67178f2)])
     else:
         blockSize = 128
         block_t = bytes_t(blockSize)
@@ -94,12 +94,12 @@ def sha2(v:variant_t) -> FunctionType:
     h0 = array.create(8,to_word(0))
     if v == 224:
         h0 = hash_t([
-            uint32(0xc1059ed8), uint32(0x367cd507), uint32(0x3070dd17), uint32(0xf70e5939),
-            uint32(0xffc00b31), uint32(0x68581511), uint32(0x64f98fa7), uint32(0xbefa4fa4)])
+            ruint32(0xc1059ed8), ruint32(0x367cd507), ruint32(0x3070dd17), ruint32(0xf70e5939),
+            ruint32(0xffc00b31), ruint32(0x68581511), ruint32(0x64f98fa7), ruint32(0xbefa4fa4)])
     elif v == 256:
         h0 = hash_t([
-            uint32(0x6a09e667), uint32(0xbb67ae85), uint32(0x3c6ef372), uint32(0xa54ff53a),
-            uint32(0x510e527f), uint32(0x9b05688c), uint32(0x1f83d9ab), uint32(0x5be0cd19)])
+            ruint32(0x6a09e667), ruint32(0xbb67ae85), ruint32(0x3c6ef372), ruint32(0xa54ff53a),
+            ruint32(0x510e527f), ruint32(0x9b05688c), ruint32(0x1f83d9ab), ruint32(0x5be0cd19)])
     elif v == 384:
         h0 = hash_t([
             uint64(0xcbbb9d5dc1059ed8), uint64(0x629a292a367cd507), uint64(0x9159015a3070dd17), uint64(0x152fecd8f70e5939),
@@ -109,7 +109,7 @@ def sha2(v:variant_t) -> FunctionType:
             uint64(0x6a09e667f3bcc908), uint64(0xbb67ae8584caa73b), uint64(0x3c6ef372fe94f82b), uint64(0xa54ff53a5f1d36f1),
             uint64(0x510e527fade682d1), uint64(0x9b05688c2b3e6c1f), uint64(0x1f83d9abfb41bd6b), uint64(0x5be0cd19137e2179)])
 
-    # Initialization complete: SHA-2 spec begins 
+    # Initialization complete: SHA-2 spec begins
 
     @typechecked
     def ch(x:word_t,y:word_t,z:word_t) -> word_t:
@@ -125,9 +125,9 @@ def sha2(v:variant_t) -> FunctionType:
         if op == 0:
             tmp = x >> opTable[3*i+2]
         else:
-            tmp = uintn.rotate_right(x,opTable[3*i+2])
-        return (uintn.rotate_right(x,opTable[3*i]) ^
-                uintn.rotate_right(x,opTable[3*i+1]) ^
+            tmp = ruint32.rotate_right(x,opTable[3*i+2])
+        return (ruint32.rotate_right(x,opTable[3*i]) ^
+                ruint32.rotate_right(x,opTable[3*i+1]) ^
                 tmp)
 
     @typechecked
@@ -183,7 +183,7 @@ def sha2(v:variant_t) -> FunctionType:
 
     @typechecked
     def truncate(b:bytes_t(v)) -> digest_t:
-        result = array.create(hashSize, uint8(0))
+        result = array.create(hashSize, ruint8(0))
         for i in range(hashSize):
             result[i] = b[i]
         return digest_t((result))
@@ -199,9 +199,9 @@ def sha2(v:variant_t) -> FunctionType:
             h = compress(blocks[i],h)
         last_len : int = array.length(last)
         len_bits : int = array.length(msg) * 8
-        pad = array.create(2*blockSize,uint8(0))
+        pad = array.create(2*blockSize,ruint8(0))
         pad[0:last_len] = last
-        pad[last_len] = uint8(0x80)
+        pad[last_len] = ruint8(0x80)
         if last_len < blockSize - lenSize:
             pad[blockSize-lenSize:blockSize] = len_to_bytes(to_len(len_bits))
             h = compress(pad[0:blockSize],h)
@@ -213,7 +213,7 @@ def sha2(v:variant_t) -> FunctionType:
         return truncate(result)
     return hash
 
-# Specific instances of SHA-2 
+# Specific instances of SHA-2
 
 sha224 : FunctionType = sha2(224)
 sha256 : FunctionType = sha2(256)

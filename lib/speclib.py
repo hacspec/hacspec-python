@@ -432,11 +432,11 @@ class bit(_uintn):
         _uintn.__init__(self,x,1)
 bit_t = uintn_t(1)
 
-class uint8(_uintn):
-#    __slots__ = []
-    def __init__(self, x: Union[int,'_uintn']) -> None:
-        _uintn.__init__(self,x,8)
-uint8_t = uintn_t(8)
+# class uint8(_uintn):
+# #    __slots__ = []
+#     def __init__(self, x: Union[int,'_uintn']) -> None:
+#         _uintn.__init__(self,x,8)
+# uint8_t = uintn_t(8)
 
 class uint16(_uintn):
 #    __slots__ = []
@@ -444,11 +444,11 @@ class uint16(_uintn):
         _uintn.__init__(self,x,16)
 uint16_t = uintn_t(16)
 
-class uint32(_uintn):
-#    __slots__ = []
-    def __init__(self, x: Union[int,'_uintn']) -> None:
-        _uintn.__init__(self,x,32)
-uint32_t = uintn_t(32)
+# class uint32(_uintn):
+# #    __slots__ = []
+#     def __init__(self, x: Union[int,'_uintn']) -> None:
+#         _uintn.__init__(self,x,32)
+# uint32_t = uintn_t(32)
 
 class uint64(_uintn):
 #    __slots__ = []
@@ -462,6 +462,263 @@ class uint128(_uintn):
         _uintn.__init__(self,x,128)
 uint128_t = uintn_t(128)
 
+'''
+ ========================= BEGIN RUST INTEGERS ================================
+'''
+
+# Pull in speclib Rust implementation.
+from ctypes import CDLL, c_float, c_uint32, c_uint8
+Rust = CDLL("lib/rust/libspeclib_ffi.so")
+
+# Typed versions of all python functions that can be used in specs.
+class speclib:
+    @typechecked
+    def ceil(x: float) -> nat_t:
+        return nat(Rust.ceil(c_float(x)))
+        # return nat(ceil(x))
+
+    @typechecked
+    def log(x: int, b: int) -> float:
+        return log(x, b)
+
+    @typechecked
+    def floor(x: float) -> int:
+        return floor(x)
+
+class ruintn_t:
+    # Super class for all Rust uint_t implementations.
+    __slots__ = ['v', 'modulus'] # type: c_uint32 etc.
+
+    @typechecked
+    def __str__(self) -> str:
+        return hex(self.v.value)
+
+    @typechecked
+    def __repr__(self) -> str:
+        return hex(self.v)
+
+    @typechecked
+    def __int__(self) -> int:
+        return self.v
+
+    @typechecked
+    def __eq__(self, other) -> bool:
+        if type(other) == type(self):
+            print(type(other))
+            fail("You can only compare two ruintn_t with the same modulus.")
+        return (self.v == other.v)
+
+    @typechecked
+    def __int__(self) -> int:
+        return int(self.v)
+
+    @staticmethod
+    @typechecked
+    def to_int(x: 'ruintn_t') -> nat_t:
+        if not isinstance(x, ruintn_t):
+            fail("to_int is only valid for ruintn_t.")
+        return nat(x.v.value)
+
+    def __copy__(self):
+        result = self.__class__.__new__(self.__class__)
+        for s in self.__slots__:
+            setattr(result, s, copy(getattr(self, s)))
+        return result
+
+    @staticmethod
+    @typechecked
+    def to_nat(x: 'ruintn_t') -> nat_t:
+        if not isinstance(x, ruintn_t):
+            fail("to_nat is only valid for ruintn_t.")
+        return nat(x.v)
+
+
+class ruint32_t(ruintn_t):
+    modulus = 1 << 32
+
+    @typechecked
+    def __init__(self, x: Union[int,'ruint32_t',c_uint32]) -> None:
+        if isinstance(x,ruint32_t):
+            self.v = x.v
+            return
+        elif isinstance(x,c_uint32):
+            self.v = x
+            return
+        else:
+            self.v = c_uint32(x % self.modulus)
+
+    @typechecked
+    def __inv__(self) -> 'ruint32_t':
+        return ruint32_t(~self.v.value)
+
+    @typechecked
+    def __invert__(self) -> 'ruint32_t':
+        return ruint32_t(~self.v.value)
+
+    @typechecked
+    def __add__(self, other: 'ruint32_t') -> 'ruint32_t':
+        if not isinstance(other, ruint32_t) or \
+           other.__class__ != self.__class__:
+            fail("+ is only valid for two ruint32_t.")
+        return ruint32_t(Rust.add32(self.v, other.v))
+
+    @typechecked
+    def __sub__(self, other: 'ruint32_t') -> 'ruint32_t':
+        if not isinstance(other, ruint32_t) or \
+           other.__class__ != self.__class__:
+            fail("- is only valid for two ruint32_t.")
+        return ruint32_t(Rust.sub32(self.v, other.v))
+
+    @typechecked
+    def __mul__(self, other: 'ruint32_t') -> 'ruint32_t':
+        if not isinstance(other, ruint32_t) or \
+           other.__class__ != self.__class__ or \
+           other.modulus != self.modulus:
+            fail("* is only valid for two ruint32_t of same modulus.")
+        return ruint32_t(Rust.mul32(self.v, other.v))
+
+    @typechecked
+    def __pow__(self, other: nat_t) -> 'ruint32_t':
+        if not isinstance(other, nat_t) or other < 0:
+            fail("** is only valid for two positive exponents")
+        if other == 0:
+            return ruint32_t(1)
+        elif other == 1:
+            return copy(self)
+        if other == 2:
+            return self * self
+        return ruint32_t(Rust.pow32(self.v, other.v))
+
+    @typechecked
+    def __or__(self, other: 'ruint32_t') -> 'ruint32_t':
+        if type(other) != ruint32_t or \
+           other.__class__ != self.__class__:
+            fail("| is only valid for two ruint32_t of same bits.")
+        return ruint32_t(self.v.value | other.v.value)
+
+    @typechecked
+    def __and__(self, other: 'ruint32_t') -> 'ruint32_t':
+        if type(other) != ruint32_t or \
+           other.__class__ != self.__class__:
+            fail("& is only valid for two ruint32_t of same bits.")
+        return ruint32_t(self.v.value & other.v.value)
+
+
+    @typechecked
+    def __xor__(self, other: 'ruint32_t') -> 'ruint32_t':
+        if type(other) != ruint32_t or \
+           other.__class__ != self.__class__:
+            fail("^ is only valid for two ruint32_t of same bits.")
+        return ruint32_t(self.v.value ^ other.v.value)
+
+    @typechecked
+    def __lshift__(self, other: int) -> 'ruint32_t':
+        if not isinstance(other, int) or other < 0 or other > 32:
+            fail("lshift value has to be an int between 0 and bits")
+        return ruint32_t(Rust.lshift32(self.v, other))
+
+    @typechecked
+    def __rshift__(self, other: int) -> 'ruint32_t':
+        if not isinstance(other, int) or other < 0 or other > 32:
+            fail("lshift value has to be an int between 0 and bits")
+        return ruint32_t(Rust.rshift32(self.v, other))
+
+    @staticmethod
+    @typechecked
+    def rotate_left(x: 'ruint32_t', other: int) -> 'ruint32_t':
+        if not isinstance(x, ruint32_t) or \
+           not isinstance(other, int) or \
+           other <= 0 or other >= 32:
+            fail("rotate_left value has to be an int strictly between 0 and 32")
+        return ruint32_t(Rust.rotate_left32(x.v, other))
+
+    @staticmethod
+    @typechecked
+    def rotate_right(x: 'ruint32_t', other: int) -> 'ruint32_t':
+        if not isinstance(x, ruint32_t) or \
+           not isinstance(other, int):
+            print("got "+str(type(x))+" and "+str(type(other)))
+            fail("rotate_right requires arguments of type ruint32_t and int")
+        if other <= 0 or other >= 32:
+            fail("rotate_right value has to be an int strictly between 0 and 32")
+        return ruint32_t(Rust.rotate_right32(x.v, other))
+
+ruint32 = ruint32_t
+
+class ruint8_t(ruintn_t):
+    modulus = 1 << 8
+
+    @typechecked
+    def __init__(self, x: Union[int,'ruint8_t',c_uint8]) -> None:
+        xv = 0
+        if isinstance(x,ruint8_t):
+            xv = x.v
+        elif isinstance(x,c_uint8):
+            self.v = x
+            return
+        else:
+            xv = x
+        self.v = c_uint8(xv % self.modulus)
+
+    @typechecked
+    def __add__(self, other: 'ruint8_t') -> 'ruint8_t':
+        if not isinstance(other, ruint8_t) or \
+           other.__class__ != self.__class__:
+            fail("+ is only valid for two ruint8_t.")
+        return ruint8_t(Rust.add32(self.v, other.v))
+
+    @typechecked
+    def __sub__(self, other: 'ruint8_t') -> 'ruint8_t':
+        if not isinstance(other, ruint8_t) or \
+           other.__class__ != self.__class__:
+            fail("- is only valid for two ruint8_t.")
+        return ruint8_t(Rust.sub32(self.v, other.v))
+
+    @typechecked
+    def __mul__(self, other: 'ruint8_t') -> 'ruint8_t':
+        if not isinstance(other, ruint8_t) or \
+           other.__class__ != self.__class__ or \
+           other.modulus != self.modulus:
+            fail("* is only valid for two ruint8_t of same modulus.")
+        return ruint8_t(Rust.mul32(self.v, other.v))
+
+    @typechecked
+    def __pow__(self, other: nat_t) -> 'ruint8_t':
+        if not isinstance(other, nat_t) or other < 0:
+            fail("** is only valid for two positive exponents")
+        if other == 0:
+            return ruint8_t(1)
+        elif other == 1:
+            return copy(self)
+        if other == 2:
+            return self * self
+        return ruint8_t(Rust.pow32(self.v, other.v))
+
+    @staticmethod
+    @typechecked
+    def rotate_left(x: 'ruint8_t', other: int) -> 'ruint8_t':
+        if not isinstance(x, ruint8_t) or \
+           not isinstance(other, int) or \
+           other <= 0 or other >= 32:
+            fail("rotate_left value has to be an int strictly between 0 and 32")
+        return ruint8_t(Rust.rotate_left32(x.v, other))
+
+    @staticmethod
+    @typechecked
+    def rotate_right(x: 'ruint8_t', other: int) -> 'ruint8_t':
+        if not isinstance(x, ruint8_t) or \
+           not isinstance(other, int):
+            print("got "+str(type(x))+" and "+str(type(other)))
+            fail("rotate_right requires arguments of type ruint8_t and int")
+        if other <= 0 or other >= 32:
+            fail("rotate_right value has to be an int strictly between 0 and 32")
+        return ruint8_t(Rust.rotate_right32(x.v, other))
+
+ruint8 = ruint8_t
+
+'''
+ ========================== END RUST INTEGERS =================================
+'''
 
 class _array(Generic[T]):
     __slots__ = ['l','len']
@@ -647,9 +904,9 @@ def array_t(t: type, l:int) -> type:
    return refine_t(vlarray_t(t),lambda x: x.len == l)
 array = _array
 
-vlbytes_t = vlarray_t(uint8_t)
+vlbytes_t = vlarray_t(ruint8_t)
 def bytes_t(l:int) -> type:
-    return array_t(uint8_t,l)
+    return array_t(ruint8_t,l)
 
 
 class bytes(_array):
@@ -657,7 +914,7 @@ class bytes(_array):
     @staticmethod
     @typechecked
     def from_ints(x: List[int]) -> 'vlbytes_t':
-        res = vlbytes_t([uint8(i) for i in x])
+        res = vlbytes_t([ruint8_t(i) for i in x])
         return res
 
     @staticmethod
@@ -669,7 +926,7 @@ class bytes(_array):
     @staticmethod
     @typechecked
     def from_hex(x: str) -> 'vlbytes_t':
-        return vlbytes_t([uint8(int(x[i:i+2], 16)) for i in range(0, len(x), 2)])
+        return vlbytes_t([ruint8_t(int(x[i:i+2], 16)) for i in range(0, len(x), 2)])
 
     @staticmethod
     @typechecked
@@ -682,8 +939,8 @@ class bytes(_array):
         if not isinstance(x, int):
             fail("bytes.from_nat_le's argument has to be of type nat, not "+str(type(x)))
         b = x.to_bytes((x.bit_length() + 7) // 8, 'little') or b'\0'
-        pad = _array([uint8(0) for i in range(0, max(0, l-len(b)))])
-        result = vlbytes_t([uint8(i) for i in b])
+        pad = _array([ruint8_t(0) for i in range(0, max(0, l-len(b)))])
+        result = vlbytes_t([ruint8_t(i) for i in b])
         return vlbytes_t(array.concat(pad, result))
 
 
@@ -701,8 +958,8 @@ class bytes(_array):
         if not isinstance(l, int):
             fail("bytes.from_nat_be's second argument has to be of type nat_t.")
         b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
-        pad = _array([uint8(0) for i in range(0, max(0, l-len(b)))])
-        result = _array([uint8(i) for i in b])
+        pad = _array([ruint8_t(0) for i in range(0, max(0, l-len(b)))])
+        result = _array([ruint8_t(i) for i in b])
         return vlbytes_t(array.concat(pad, result))
 
     @staticmethod
@@ -715,10 +972,10 @@ class bytes(_array):
     @typechecked
     def from_uintn_le(x: uintn_t) -> 'vlbytes_t':
         nbytes = (x.bits - 1) // 8 + 1
-        by = bytes.create(nbytes,uint8(0))
+        by = bytes.create(nbytes,ruint8_t(0))
         xv = uintn.to_nat(x)
         for i in range(nbytes):
-            by[i] = uint8(xv & 255)
+            by[i] = ruint8_t(xv & 255)
             xv = xv >> 8
         return by
 
@@ -733,23 +990,23 @@ class bytes(_array):
 
     @staticmethod
     @typechecked
-    def from_uintn_be(x: uintn_t) -> 'vlbytes_t':
-        nbytes = (x.bits - 1) // 8 + 1
-        by = bytes.create(nbytes,uint8(0))
-        xv = uintn.to_nat(x)
+    def from_uintn_be(x: ruintn_t) -> 'vlbytes_t':
+        nbytes = (32 - 1) // 8 + 1
+        by = bytes.create(nbytes,ruint8_t(0))
+        xv = ruintn.to_nat(x)
         for i in range(nbytes):
-            by[nbytes-i-1] = uint8(xv)
+            by[nbytes-i-1] = ruint8_t(xv)
             xv = xv // 256
         return by
 
     @staticmethod
     @typechecked
-    def to_uintn_be(x: 'vlbytes_t') -> uintn_t:
+    def to_uintn_be(x: 'vlbytes_t') -> ruintn_t:
         nbits = 8 * bytes.length(x)
-        xv = uintn(0,nbits)
+        xv = ruint32_t(0)
         nbytes = bytes.length(x)
         for i in range(nbytes):
-            xv += uintn(x[nbytes - i - 1],nbits) << (i * 8)
+            xv += ruint32_t(ruintn_t.to_int(x[nbytes - i - 1])) << (i * 8)
         return xv
 
     @staticmethod
@@ -774,9 +1031,11 @@ class bytes(_array):
 
     @staticmethod
     @typechecked
-    def to_uintns_be(x: 'vlbytes_t',bits:int) -> vlarray_t(uintn_t):
+    def to_uintns_be(x: 'vlbytes_t',bits:int) -> vlarray_t(ruintn_t):
         if bits % 8 != 0 or len(x) * 8 % bits != 0:
             fail("bytearray length not a multiple of bits/8")
+        if bits != 32:
+            fail("Only ruint32_t is implemented yet.")
         nums, x = array.split_blocks(x, bits//8)
         return(_array([bytes.to_uintn_be(i) for i in nums]))
 
@@ -786,8 +1045,8 @@ class bytes(_array):
         return uint16(bytes.to_uintn_le(x))
     @staticmethod
     @typechecked
-    def to_uint32_le(x: 'vlbytes_t') -> uint32_t:
-        return uint32(bytes.to_uintn_le(x))
+    def to_uint32_le(x: 'vlbytes_t') -> ruint32_t:
+        return ruint32(bytes.to_uintn_le(x))
     @staticmethod
     @typechecked
     def to_uint64_le(x: 'vlbytes_t') -> uint64_t:
@@ -802,8 +1061,8 @@ class bytes(_array):
         return uint16(bytes.to_uintn_be(x))
     @staticmethod
     @typechecked
-    def to_uint32_be(x: 'vlbytes_t') -> uint32_t:
-        return uint32(bytes.to_uintn_be(x))
+    def to_uint32_be(x: 'vlbytes_t') -> ruint32_t:
+        return ruint32_t(bytes.to_uintn_be(x))
     @staticmethod
     @typechecked
     def to_uint64_be(x: 'vlbytes_t') -> uint64_t:
@@ -819,7 +1078,7 @@ class bytes(_array):
         return bytes.from_uintn_le(x)
     @staticmethod
     @typechecked
-    def from_uint32_le(x: 'uint32_t') -> vlbytes_t:
+    def from_uint32_le(x: 'ruint32_t') -> vlbytes_t:
         return bytes.from_uintn_le(x)
     @staticmethod
     @typechecked
@@ -835,7 +1094,7 @@ class bytes(_array):
         return bytes.from_uintn_be(x)
     @staticmethod
     @typechecked
-    def from_uint32_be(x: 'uint32_t') -> vlbytes_t:
+    def from_uint32_be(x: 'ruint32_t') -> vlbytes_t:
         return bytes.from_uintn_be(x)
     @staticmethod
     @typechecked
@@ -852,8 +1111,8 @@ class bytes(_array):
         return array.map(uint16,bytes.to_uintns_le(x,16))
     @staticmethod
     @typechecked
-    def to_uint32s_le(x: 'vlbytes_t') -> _array[uint32_t]:
-        return array.map(uint32,bytes.to_uintns_le(x,32))
+    def to_uint32s_le(x: 'vlbytes_t') -> _array[ruint32_t]:
+        return array.map(ruint32_t,bytes.to_uintns_le(x,32))
     @staticmethod
     @typechecked
     def to_uint64s_le(x: 'vlbytes_t') -> _array[uint64_t]:
@@ -868,8 +1127,8 @@ class bytes(_array):
         return array.map(uint16,bytes.to_uintns_be(x,16))
     @staticmethod
     @typechecked
-    def to_uint32s_be(x: 'vlbytes_t') -> _array[uint32_t]:
-        return array.map(uint32,bytes.to_uintns_be(x,32))
+    def to_uint32s_be(x: 'vlbytes_t') -> _array[ruint32_t]:
+        return array.map(ruint32_t,bytes.to_uintns_be(x,32))
     @staticmethod
     @typechecked
     def to_uint64s_be(x: 'vlbytes_t') -> _array[uint64_t]:
@@ -885,7 +1144,7 @@ class bytes(_array):
         return bytes.from_uintns_le(x)
     @staticmethod
     @typechecked
-    def from_uint32s_le(x: '_array[uint32_t]') -> vlbytes_t:
+    def from_uint32s_le(x: '_array[ruint32_t]') -> vlbytes_t:
         return bytes.from_uintns_le(x)
     @staticmethod
     @typechecked
@@ -901,7 +1160,7 @@ class bytes(_array):
         return bytes.from_uintns_be(x)
     @staticmethod
     @typechecked
-    def from_uint32s_be(x: '_array[uint32_t]') -> vlbytes_t:
+    def from_uint32s_be(x: '_array[ruint32_t]') -> vlbytes_t:
         return bytes.from_uintns_be(x)
     @staticmethod
     @typechecked
@@ -954,7 +1213,7 @@ class _vector(_array[T]):
             fail("+ is only valid for two _vectors of same length")
         res = copy(self)
         res.l = [x + y for (x,y) in zip(self.l,other.l)]
-        return res            
+        return res
 
     @typechecked
     def __sub__(self, other: '_vector[T]') -> '_vector[T]':
@@ -964,7 +1223,7 @@ class _vector(_array[T]):
             fail("/ is only valid for two _vectors of same length")
         res = copy(self)
         res.l = [x - y for (x,y) in zip(self.l,other.l)]
-        return res            
+        return res
 
     @typechecked
     def __mul__(self, other: '_vector[T]') -> '_vector[T]':
@@ -974,7 +1233,7 @@ class _vector(_array[T]):
             fail("* is only valid for two _vectors of same length")
         res = copy(self)
         res.l = [x * y for (x,y) in zip(self.l,other.l)]
-        return res            
+        return res
 
     @staticmethod
     @typechecked
@@ -987,7 +1246,7 @@ class _vector(_array[T]):
         for i in range(x.len):
             for j in range(other.len):
                 res[i+j] += x[i] * other[j]
-        return res            
+        return res
 
     @staticmethod
     @typechecked
@@ -1031,7 +1290,7 @@ class _matrix(_vector[_vector[T]]):
                     tmp += self[i][j] * other[j][k]
                 res[i][k] = tmp
         return res
-        
+
     @staticmethod
     @typechecked
     def create(r: int, c:int, default:T) -> '_matrix[T]':
@@ -1060,17 +1319,3 @@ def matrix_t(t:type,rows:nat,columns:nat) -> type:
     return vector_t(vector_t(t,columns),rows)
 
 matrix = _matrix
-
-# Typed versions of all python functions that can be used in specs.
-class speclib:
-    @typechecked
-    def ceil(x: int) -> nat_t:
-        return nat(ceil(x))
-
-    @typechecked
-    def log(x: int, b: int) -> float:
-        return log(x, b)
-
-    @typechecked
-    def floor(x: float) -> int:
-        return floor(x)
