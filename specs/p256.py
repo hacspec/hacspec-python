@@ -72,16 +72,15 @@ def pointDouble(p: jacobian_t) -> jacobian_t:
 @typechecked
 def isPointAtInfinity(p: jacobian_t) -> bool:
     z : felem_t
-    (_, _, z) = p
+    x_ : felem_t
+    y_ : felem_t
+    (x_, y_, z) = p
     return (z == to_felem(0))
 
 
+
 @typechecked
-def pointAdd(p: jacobian_t, q: jacobian_t) -> jacobian_t:
-    if isPointAtInfinity(p):
-        return q
-    if isPointAtInfinity(q):
-        return p
+def pointAddFinite(p: jacobian_t, q: jacobian_t) -> jacobian_t:
     x1 : felem_t
     y1 : felem_t
     z1 : felem_t
@@ -96,29 +95,42 @@ def pointAdd(p: jacobian_t, q: jacobian_t) -> jacobian_t:
     u2 : felem_t = x2 * z1z1
     s1 : felem_t = (y1 * z2) * z2z2
     s2 : felem_t = (y2 * z1) * z1z1
-    if u1 == u2:
-        if s1 == s2:
-            return pointDouble(p)
-        else:
-            return jacobian(0, 1, 0)
     h : felem_t = u2 - u1
     i : felem_t = (to_felem(2) * h) ** 2
     j : felem_t = h * i
     r : felem_t = to_felem(2) * (s2 - s1)
     v : felem_t = u1 * i
-
+    
     x3_1 : felem_t = to_felem(2) * v
     x3_2 : felem_t = (r ** 2) - j
     x3 : felem_t = x3_2 - x3_1
-
+    
     y3_1 : felem_t = (to_felem(2) * s1) * j
     y3_2 : felem_t = r * (v - x3)
     y3 : felem_t = y3_2 - y3_1
-
+    
     z3_ : felem_t = (z1 + z2) ** 2
     z3 : felem_t = (z3_ - (z1z1 + z2z2)) * h
-    return x3, y3, z3
+    ret : jacobian_t
+    if u1 == u2:
+        if s1 == s2:
+            ret = pointDouble(p)
+        else:
+            ret = jacobian(0, 1, 0)
+    else:
+        ret = x3, y3, z3
+    return ret
 
+@typechecked
+def pointAdd(p: jacobian_t, q: jacobian_t) -> jacobian_t:
+    ret:jacobian_t
+    if isPointAtInfinity(p):
+        ret = q
+    elif isPointAtInfinity(q):
+        ret = p
+    else: 
+        ret = pointAddFinite(p,q)
+    return ret
 
 @typechecked
 def montgomery_ladder(k: scalar_t, init: jacobian_t) -> jacobian_t:

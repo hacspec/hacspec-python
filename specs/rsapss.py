@@ -4,21 +4,19 @@ from lib.speclib import *
 from specs.sha2 import sha256
 
 max_size_t : int = 2 ** 32 - 1
-size_nat_t,size_nat = refine(nat_t, lambda x: x <= max_size_t)
+size_nat_t = refine_t(nat_t, lambda x: x <= max_size_t)
 max_input_len_sha256 : nat_t = nat(2 ** 61)
 hLen : nat_t = nat(32)
 
 
-@contract3(lambda x, m: x > 0 and m > 0,
-           lambda x, m, res: res > 0 and x <= m * res)
 @typechecked
 def blocks(x: size_nat_t, m: size_nat_t) -> size_nat_t:
-    return size_nat(nat((x - 1) // m + 1))
+    return nat((x - 1) // m + 1)
 
 
 @typechecked
 def xor_bytes(b1: vlbytes_t, b2: vlbytes_t) -> vlbytes_t:
-    res = bytes.copy(b1)
+    res : vlbytes_t = bytes.copy(b1)
     for i in range(array.length(b1)):
         res[i] ^= b2[i]
     return res
@@ -29,18 +27,13 @@ def eq_bytes(b1: vlbytes_t, b2: vlbytes_t) -> bool:
     return (b1 == b2)
 
 
-@contract3(lambda msg: array.length(msg) < max_input_len_sha256,
-           lambda msg, res: True)
 @typechecked
-def hash_sha256(msg: vlbytes_t) -> bytes_t(hLen):
+def hash_sha256(msg: vlbytes_t) -> bytes_t(32):
     return sha256(msg)
 
 # Mask Generation Function
 
 
-@contract3(lambda mgfseed, maskLen: maskLen < (2 ** 32) * hLen and maskLen > 0
-           and array.length(mgfseed) + 4 < max_size_t,
-           lambda mgfseed, maskLen, res: array.length(res) == maskLen)
 @typechecked
 def mgf_sha256(mgfseed: vlbytes_t, maskLen: size_nat_t) -> vlbytes_t:
     counter_max : size_nat_t = blocks(maskLen, hLen)

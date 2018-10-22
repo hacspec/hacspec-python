@@ -180,11 +180,12 @@ let rec fstar_of_instrs il fin =
      assign p None op e r fin
   | IAssign (Some(LGet(LVar v,sl) as p,op),(e,t)) :: r ->
      assign p (Some sl) op e r fin
-  | IIf ((e,b),[],bo) as i :: r ->
+  | IIf ((e,b),ebl,bo) as i :: r ->
      let lvs = IdentSet.elements (lvars [i]) in
      let tup = match lvs with [] -> "()" | [x] -> x | tl -> "("^String.concat "," tl^")" in
+     let elif = String.concat " " (List.map (fun (e,b) -> "\n else if "^fstar_of_expr false e^" then "^fstar_of_instrs b tup) ebl) in
      let else_b = match bo with None -> tup | Some b -> fstar_of_instrs b tup in
-     let ife = "if "^fstar_of_expr false e^" then "^fstar_of_instrs b tup^" else " ^ else_b in
+     let ife = "if "^fstar_of_expr false e^" then "^fstar_of_instrs b tup^elif^" else " ^ else_b in
      if r = [] && tup = fin then ife
      else "let "^tup^" = "^ife^" in \n"^fstar_of_instrs r fin
   | IFor ((v,(None,e),b),None) as i :: r ->

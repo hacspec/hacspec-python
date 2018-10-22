@@ -594,14 +594,12 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
       let tyl = List.map (fun t -> tt_type env t) tyl in
       TTuple tyl
 
-  | tn, [] -> TNamed ([],tn)
-(*
+  | tn, [] -> 
      begin
       match Env.Types.get env (unloc x) with
       | None -> error ~loc:(loc x) env (UnknownTypeName ([], unloc x))
-      | Some decl -> decl.Env.tdef
+      | Some decl -> TNamed ([],tn)
     end
- *)
 
   | _ -> error ~loc:(loc x) env (InvalidTypeCtor (unloc x))
 
