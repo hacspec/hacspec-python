@@ -35,7 +35,7 @@ install: build
 	pip install .
 
 publish: build
-	twine upload dist\*
+	twine upload dist/*
 
 docs: copy
 	sphinx-apidoc.exe -o docs hacspec hacspec/check.py -f
