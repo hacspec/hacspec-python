@@ -1,21 +1,21 @@
 (* Generated from hacspec module ../../../specs/aes.py *)
 module Aes
 open Speclib
-let blocksize : int = 16
-let block_t : Type0 = array_t uint8_t 16
-let subblock_t : Type0 = ((x:vlbytes_t{ (array_length x) <=. blocksize }))
-let rowindex_t : Type0 = range_t 0 4
-let expindex_t : Type0 = range_t 0 48
-let word_t : Type0 = array_t uint8_t 4
-let key_t : Type0 = array_t uint8_t 16
-let nonce_t : Type0 = array_t uint8_t 12
-let bytes_144_t : Type0 = array_t uint8_t 144
-let bytes_176_t : Type0 = array_t uint8_t 176
-let index_t : Type0 = range_t 0 16
-let rotval_t : Type0 = range_t 1 32
-let state_t : Type0 = array_t uint32_t 16
-let sbox_t : Type0 = array_t uint8_t 256
-let sbox : sbox_t =
+let blocksize: int = 16
+let block_t: Type0 = array_t uint8_t 16
+let subblock_t: Type0 = (x: vlbytes_t{(array_length x) <=. blocksize})
+let rowindex_t: Type0 = range_t 0 4
+let expindex_t: Type0 = range_t 0 48
+let word_t: Type0 = array_t uint8_t 4
+let key_t: Type0 = array_t uint8_t 16
+let nonce_t: Type0 = array_t uint8_t 12
+let bytes_144_t: Type0 = array_t uint8_t 144
+let bytes_176_t: Type0 = array_t uint8_t 176
+let index_t: Type0 = range_t 0 16
+let rotval_t: Type0 = range_t 1 32
+let state_t: Type0 = array_t uint32_t 16
+let sbox_t: Type0 = array_t uint8_t 256
+let sbox: sbox_t =
   array (array_createL [
           uint8 99; uint8 124; uint8 119; uint8 123; uint8 242; uint8 107; uint8 111; uint8 197;
           uint8 48; uint8 1; uint8 103; uint8 43; uint8 254; uint8 215; uint8 171; uint8 118;
@@ -50,29 +50,29 @@ let sbox : sbox_t =
           uint8 13; uint8 191; uint8 230; uint8 66; uint8 104; uint8 65; uint8 153; uint8 45;
           uint8 15; uint8 176; uint8 84; uint8 187; uint8 22
         ])
-let subBytes (state:block_t) : block_t =
+let subBytes (state: block_t) : block_t =
   let st = bytes (array_copy state) in
   let st = repeati 16 (fun i st -> st.[ i ] <- sbox.[ uintn_to_int state.[ i ] ]) st in
   st
-let shiftRow (i:rowindex_t) (shift:rowindex_t) (state:block_t) : block_t =
+let shiftRow (i: rowindex_t) (shift: rowindex_t) (state: block_t) : block_t =
   let out = bytes (array_copy state) in
   let out = out.[ i ] <- state.[ i +. (4 *. (shift % 4)) ] in
   let out = out.[ i +. 4 ] <- state.[ i +. (4 *. ((shift +. 1) % 4)) ] in
   let out = out.[ i +. 8 ] <- state.[ i +. (4 *. ((shift +. 2) % 4)) ] in
   let out = out.[ i +. 12 ] <- state.[ i +. (4 *. ((shift +. 3) % 4)) ] in
   out
-let shiftRows (state:block_t) : block_t =
+let shiftRows (state: block_t) : block_t =
   let state = shiftRow 1 1 state in
   let state = shiftRow 2 2 state in
   let state = shiftRow 3 3 state in
   state
-let xtime (x:uint8_t) : uint8_t =
+let xtime (x: uint8_t) : uint8_t =
   let x1 = x <<. 1 in
   let x7 = x >>. 7 in
   let x71 = x7 &. (uint8 1) in
   let x711b = x71 *. (uint8 27) in
   x1 ^. x711b
-let mixColumn (c:rowindex_t) (state:block_t) : block_t =
+let mixColumn (c: rowindex_t) (state: block_t) : block_t =
   let i0 = 4 *. c in
   let s0 = state.[ i0 ] in
   let s1 = state.[ i0 +. 1 ] in
@@ -85,34 +85,34 @@ let mixColumn (c:rowindex_t) (state:block_t) : block_t =
   let st = st.[ i0 +. 2 ] <- (s2 ^. tmp) ^. (xtime (s2 ^. s3)) in
   let st = st.[ i0 +. 3 ] <- (s3 ^. tmp) ^. (xtime (s3 ^. s0)) in
   st
-let mixColumns (state:block_t) : block_t =
+let mixColumns (state: block_t) : block_t =
   let state = mixColumn 0 state in
   let state = mixColumn 1 state in
   let state = mixColumn 2 state in
   let state = mixColumn 3 state in
   state
-let addRoundKey (state:block_t) (key:block_t) : block_t =
+let addRoundKey (state: block_t) (key: block_t) : block_t =
   let out = bytes (array_copy state) in
   let out = repeati 16 (fun i out -> out.[ i ] <- out.[ i ] ^. key.[ i ]) out in
   out
-let aes_enc (state:block_t) (round_key:block_t) : block_t =
+let aes_enc (state: block_t) (round_key: block_t) : block_t =
   let state = subBytes state in
   let state = shiftRows state in
   let state = mixColumns state in
   let state = addRoundKey state round_key in
   state
-let aes_enc_last (state:block_t) (round_key:block_t) : block_t =
+let aes_enc_last (state: block_t) (round_key: block_t) : block_t =
   let state = subBytes state in
   let state = shiftRows state in
   let state = addRoundKey state round_key in
   state
-let rounds (state:block_t) (key:bytes_144_t) : block_t =
+let rounds (state: block_t) (key: bytes_144_t) : block_t =
   let out = bytes (array_copy state) in
   let out =
     repeati 9 (fun i out -> aes_enc out (array_slice key (16 *. i) ((16 *. i) +. 16))) out
   in
   out
-let block_cipher (input:block_t) (key:bytes_176_t) : block_t =
+let block_cipher (input: block_t) (key: bytes_176_t) : block_t =
   let state = bytes (array_copy input) in
   let k0 = array_slice key 0 16 in
   let k = array_slice key 16 (10 *. 16) in
@@ -121,37 +121,37 @@ let block_cipher (input:block_t) (key:bytes_176_t) : block_t =
   let state = rounds state k in
   let state = aes_enc_last state kn in
   state
-let rotate_word (w:word_t) : word_t =
+let rotate_word (w: word_t) : word_t =
   let out = bytes (array_copy w) in
   let out = out.[ 0 ] <- w.[ 1 ] in
   let out = out.[ 1 ] <- w.[ 2 ] in
   let out = out.[ 2 ] <- w.[ 3 ] in
   let out = out.[ 3 ] <- w.[ 0 ] in
   out
-let sub_word (w:word_t) : word_t =
+let sub_word (w: word_t) : word_t =
   let out = bytes (array_copy w) in
   let out = out.[ 0 ] <- sbox.[ uintn_to_int w.[ 0 ] ] in
   let out = out.[ 1 ] <- sbox.[ uintn_to_int w.[ 1 ] ] in
   let out = out.[ 2 ] <- sbox.[ uintn_to_int w.[ 2 ] ] in
   let out = out.[ 3 ] <- sbox.[ uintn_to_int w.[ 3 ] ] in
   out
-let rcon_t : Type0 = array_t uint8_t 11
-let rcon : rcon_t =
+let rcon_t: Type0 = array_t uint8_t 11
+let rcon: rcon_t =
   array (array_createL [
           uint8 141; uint8 1; uint8 2; uint8 4; uint8 8; uint8 16; uint8 32; uint8 64; uint8 128;
           uint8 27; uint8 54
         ])
-let aes_keygen_assist (w:word_t) (rcon:uint8_t) : word_t =
+let aes_keygen_assist (w: word_t) (rcon: uint8_t) : word_t =
   let k = rotate_word w in
   let k = sub_word k in
   let k = k.[ 0 ] <- k.[ 0 ] ^. rcon in
   k
-let key_expansion_word (w0:word_t) (w1:word_t) (i:expindex_t) : word_t =
+let key_expansion_word (w0: word_t) (w1: word_t) (i: expindex_t) : word_t =
   let k = bytes (array_copy w1) in
   let k = if (i % 4) = 0 then aes_keygen_assist k rcon.[ i /. 4 ] else k in
   let k = repeati 4 (fun i k -> k.[ i ] <- k.[ i ] ^. w0.[ i ]) k in
   k
-let key_expansion (key:block_t) : array_t uint8_t 176 =
+let key_expansion (key: block_t) : array_t uint8_t 176 =
   let key_ex = bytes (array_create (11 *. 16) (uint8 0)) in
   let key_ex = array_update_slice key_ex 0 16 (key) in
   let i = 0 in
@@ -171,20 +171,21 @@ let key_expansion (key:block_t) : array_t uint8_t 176 =
       (i, key_ex)
   in
   key_ex
-let aes128_encrypt_block (k:key_t) (input:array_t uint8_t 16) : block_t =
+let aes128_encrypt_block (k: key_t) (input: array_t uint8_t 16) : block_t =
   let key_ex = key_expansion k in
   let out = block_cipher input key_ex in
   out
-let aes128_ctr_keyblock (k:key_t) (n:nonce_t) (c:uint32_t) : block_t =
+let aes128_ctr_keyblock (k: key_t) (n: nonce_t) (c: uint32_t) : block_t =
   let input = bytes (array_create 16 (uint8 0)) in
   let input = array_update_slice input 0 12 (n) in
   let input = array_update_slice input 12 16 (bytes_from_uint32_be c) in
   aes128_encrypt_block k input
-let xor_block (block:block_t) (keyblock:block_t) : block_t =
+let xor_block (block: block_t) (keyblock: block_t) : block_t =
   let out = bytes_copy block in
   let out = repeati blocksize (fun i out -> out.[ i ] <- out.[ i ] ^. keyblock.[ i ]) out in
   out
-let aes128_counter_mode (key:key_t) (nonce:nonce_t) (counter:uint32_t) (msg:vlbytes_t) : vlbytes_t =
+let aes128_counter_mode (key: key_t) (nonce: nonce_t) (counter: uint32_t) (msg: vlbytes_t)
+  : vlbytes_t =
   let blocks, last = array_split_blocks msg blocksize in
   let keyblock = array_create blocksize (uint8 0) in
   let last_block = array_create blocksize (uint8 0) in
@@ -203,8 +204,8 @@ let aes128_counter_mode (key:key_t) (nonce:nonce_t) (counter:uint32_t) (msg:vlby
   let last_block = xor_block last_block keyblock in
   let last = array_slice last_block 0 (array_length last) in
   array_concat_blocks blocks last
-let aes128_encrypt (key:key_t) (nonce:nonce_t) (counter:uint32_t) (msg:vlbytes_t) : vlbytes_t =
+let aes128_encrypt (key: key_t) (nonce: nonce_t) (counter: uint32_t) (msg: vlbytes_t) : vlbytes_t =
   aes128_counter_mode key nonce counter msg
-let aes128_decrypt (key:key_t) (nonce:nonce_t) (counter:uint32_t) (msg:vlbytes_t) : vlbytes_t =
+let aes128_decrypt (key: key_t) (nonce: nonce_t) (counter: uint32_t) (msg: vlbytes_t) : vlbytes_t =
   aes128_counter_mode key nonce counter msg
 

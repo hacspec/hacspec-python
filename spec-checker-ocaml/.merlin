@@ -1,5 +1,8 @@
+S libs
+S libs/hacs
 S src
 
+B _build/libs
 B _build/src
 
 PKG batteries

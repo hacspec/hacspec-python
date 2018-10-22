@@ -32,8 +32,21 @@ jobs:
     -
       name: test typechecked
       script: make test
+    # Typecheck slow specs.
+    # Kyber is too slow for travis :(
+    # -
+    #   name: test kyber
+    #   script: make kyber-test
+    # WOTS is way too slow for travis as well :(
+    # -
+    #   name: test wots
+    #   script: make wots-test
+    -
+      name: test argon2i
+      script: make argon2i-test
+    # Run OCaml compiler and FStar compilation in docker.
     -
       name: compiler
       install: skip
       script:
-        - docker run -v $PWD:/home/worker/_hacspec --rm -ti franziskus/hacspec:0.2 /home/worker/_hacspec/docker/travis-compiler/run.sh
+        - docker run -v $PWD:/home/worker/_hacspec --rm -ti franziskus/hacspec:0.3 /home/worker/_hacspec/docker/travis-compiler/run.sh

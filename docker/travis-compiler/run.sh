@@ -11,6 +11,8 @@ cp -r /home/worker/_hacspec /home/worker/hacspec
 # Run compilers and type check.
 cd /home/worker/hacspec/spec-checker-ocaml
 make
-make test
+make -C fstar-compiler/specs
+make -C fstar-compiler/specs check
+make -C fstar-compiler/specs tests
 # FIXME: checker.native is currently broken.
 # ./checker.native ../specs/chacha20.py

@@ -56,7 +56,6 @@ def main (x: int) -> None :
         else:
             print('Ed25519 Test ',i,' verification_expected failed')
             exit(1)
-        
-main(0)
 
-
+if __name__ == '__main__':
+    main(0)
