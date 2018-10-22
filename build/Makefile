@@ -47,3 +47,6 @@ clean:
 	rm -rf hacspec.egg-info
 	rm -rf MANIFEST
 	rm -rf hacspec/__pycache__
+	rm -rf hacspec/tests/__pycache__
+	rm -rf docs/_build
+	rm -rf __pycache__

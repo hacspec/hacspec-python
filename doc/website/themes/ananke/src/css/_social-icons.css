@@ -1,0 +1,30 @@
+.facebook, .twitter, .instagram, .youtube, .github, .gitlab, .linkedin {
+  fill: #BABABA;
+}
+.facebook:hover {
+  fill: #3b5998;
+}
+
+.twitter:hover {
+  fill: #1da1f2;
+}
+
+.instagram:hover {
+  fill: #e1306c;
+}
+
+.youtube:hover {
+  fill: #cd201f;
+}
+
+.github:hover {
+  fill: #6cc644;
+}
+
+.gitlab:hover {
+  fill: #FC6D26;
+}
+
+.linkedin:hover {
+  fill: #0077b5
+}
