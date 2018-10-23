@@ -132,17 +132,18 @@ inline_for_extraction let natmod_to_nat (#m:pos) (a:natmod_t m) : x:nat{x < m}  
 inline_for_extraction let natmod_to_int (#m:pos) (a:natmod_t m) : x:nat{x < m}  = a
 
 inline_for_extraction let uintn_t (n:nat) = numeric_t (Word (NATm (pow2 n)))
-inline_for_extraction let uint32_t = numeric_t (Word U32)
-inline_for_extraction let bit_t = numeric_t (Word (NATm 2))
+inline_for_extraction let bit_t:eqtype = numeric_t (Word (NATm 2))
 inline_for_extraction let uint8_t = numeric_t (Word U8)
-inline_for_extraction let uint128_t = numeric_t (Word U128)
+inline_for_extraction let uint32_t = numeric_t (Word U32)
 inline_for_extraction let uint64_t = numeric_t (Word U64)
+inline_for_extraction let uint128_t = numeric_t (Word U128)
 
 inline_for_extraction let uintn n p : uintn_t p = natmod n (pow2 p)
 inline_for_extraction let bit x : bit_t = modulo x 2
-inline_for_extraction let uint8 x : uint8_t = u8 x
-inline_for_extraction let uint32 x : uint32_t = u32 x
-inline_for_extraction let uint128 x : uint128_t = u128 x
+inline_for_extraction let uint8 x : uint8_t = u8 (x % (pow2 8))
+inline_for_extraction let uint32 x : uint32_t = u32 (x % (pow2 32))
+inline_for_extraction let uint64 x : uint64_t = u64 (x % (pow2 64))
+inline_for_extraction let uint128 x : uint128_t = u128 (x % (pow2 128))
 
 inline_for_extraction let uintn_to_nat #n (a:numeric_t n) : nat =
   match n with

@@ -5,7 +5,7 @@ let blocksize: int = 16
 let block_t: Type0 = array_t uint8_t 16
 let subblock_t: Type0 = (x: vlbytes_t{(array_length x) <=. blocksize})
 let rowindex_t: Type0 = range_t 0 4
-let expindex_t: Type0 = range_t 0 48
+let expindex_t: Type0 = range_t 0 44
 let word_t: Type0 = array_t uint8_t 4
 let key_t: Type0 = array_t uint8_t 16
 let nonce_t: Type0 = array_t uint8_t 12
