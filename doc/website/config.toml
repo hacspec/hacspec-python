@@ -1,0 +1,4 @@
+baseURL = "https://hacs-workshop.github.io/hacspec"
+languageCode = "en-us"
+title = "hacspec"
+theme = "ananke"

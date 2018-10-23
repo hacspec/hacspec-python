@@ -14,7 +14,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../hacspec'))
+sys.path.insert(0, os.path.abspath('../'))
 
 
 # -- Project information -----------------------------------------------------
@@ -24,9 +24,9 @@ copyright = '2018, Franziskus Kiefer et al.'
 author = 'Franziskus Kiefer et al.'
 
 # The short X.Y version
-version = ''
+version = '0.1'
 # The full version, including alpha/beta/rc tags
-release = ''
+release = '0.0.1.dev3'
 
 
 # -- General configuration ---------------------------------------------------
