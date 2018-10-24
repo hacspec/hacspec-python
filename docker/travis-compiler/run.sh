@@ -9,7 +9,7 @@ cp -r /home/worker/_hacspec /home/worker/hacspec
 . /home/worker/.opam/opam-init/init.sh > /dev/null 2> /dev/null || true
 
 # Run compilers and type check.
-cd /home/worker/hacspec/spec-checker-ocaml
+cd /home/worker/hacspec/compiler
 make
 make -C fstar-compiler/specs
 make -C fstar-compiler/specs check

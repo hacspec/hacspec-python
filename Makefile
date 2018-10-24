@@ -23,7 +23,7 @@ all: run check test
 
 run: $(SPECS) $(SPECS_FAILING_SPECHECK) $(SLOW_SPECS)
 test: $(addsuffix -test, $(SPECS) $(SPECS_FAILING_SPECHECK))
-check: $(addsuffix -check, $(SPECS) $(SLOW_SPECS)) 
+check: $(addsuffix -check, $(SPECS) $(SLOW_SPECS))
 parse: $(addsuffix -parse, $(SPECS))
 
 $(SPECS) $(SLOW_SPECS) $(SPECS_FAILING_SPECHECK):
@@ -34,5 +34,22 @@ $(SPECS) $(SLOW_SPECS) $(SPECS_FAILING_SPECHECK):
 
 %-check: specs/%.py
 	PYTHONPATH=. $(PYTHON) lib/check.py $<
-%-test: tests/%_test.py 
+%-test: tests/%_test.py
 	PYTHONPATH=. $(PYTHON) $<
+
+# Compiler targets
+# NOTE that this requires OCAML.
+checker:
+	make -C compiler
+fstar:
+	make -C compiler
+
+# Documentation targets
+# NOTE that this requires hugo (https://gohugo.io)
+website:
+	cd doc/website/ && hugo
+website-dev:
+	cd doc/website/ && hugo serve -D
+
+python-docs:
+	make -C build/ docs

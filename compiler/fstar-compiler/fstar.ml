@@ -222,6 +222,7 @@ let fstar_of_program (n:string) (p: T.Env.env * T.Env.env program) : string =
     let e,dl = p in
     "module " ^(String.capitalize_ascii n)^"\n"^
     "open Speclib\n"^
+    "#reset-options \"--z3rlimit 60\""^
     String.concat "\n" (List.map fstar_of_topdecl dl) ^"\n"
 
 

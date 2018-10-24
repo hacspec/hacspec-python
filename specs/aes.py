@@ -7,7 +7,7 @@ block_t  = bytes_t(16)
 subblock_t  = refine(vlbytes_t, lambda x: array.length(x) <= blocksize)
 
 rowindex_t = range_t(0,4)
-expindex_t = range_t(0,48)
+expindex_t = range_t(0,44)
 word_t = bytes_t(4)
 key_t    = bytes_t(16)
 nonce_t  = bytes_t(12)

@@ -17,7 +17,7 @@ all: $(SPECS)
 tests: $(SPECS:.fst=.exe)
 
 # Not all specs pass right now.
-check: chacha20.fst.checked poly1305.fst.checked
+check: chacha20.fst.checked poly1305.fst.checked gf128.fst.checked
 
 .SECONDARY: %-ml
 .PRECIOUS: %-ml

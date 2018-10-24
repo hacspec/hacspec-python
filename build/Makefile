@@ -38,7 +38,7 @@ publish: build
 	twine upload dist/*
 
 docs: copy
-	sphinx-apidoc.exe -o docs hacspec hacspec/check.py -f
+	sphinx-apidoc -o docs hacspec hacspec/check.py -f
 	$(MAKE) -C docs html
 
 clean:
