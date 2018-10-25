@@ -91,7 +91,8 @@ def sha2(v:variant_t) -> FunctionType:
     hashSize : int = v // 8
     hash_t = array_t(word_t,8)
     digest_t = bytes_t(hashSize)
-    h0 = array.create(8,to_word(0))
+    h0_t = bytes_t(8)
+    h0: h0_t = array.create(8,to_word(0))
     if v == 224:
         h0 = hash_t([
             uint32(0xc1059ed8), uint32(0x367cd507), uint32(0x3070dd17), uint32(0xf70e5939),
@@ -133,7 +134,7 @@ def sha2(v:variant_t) -> FunctionType:
     @typechecked
     def schedule(block:block_t) -> k_t:
         b : bytes_t = bytes_to_words(block)
-        s = array.create(kSize,to_word(0))
+        s : vlbytes_t = array.create(kSize,to_word(0))
         for i in range(kSize):
             if i < 16:
                 s[i] = b[i]
@@ -183,7 +184,7 @@ def sha2(v:variant_t) -> FunctionType:
 
     @typechecked
     def truncate(b:bytes_t(v)) -> digest_t:
-        result = array.create(hashSize, uint8(0))
+        result: vlbytes_t = array.create(hashSize, uint8(0))
         for i in range(hashSize):
             result[i] = b[i]
         return digest_t((result))
@@ -199,7 +200,7 @@ def sha2(v:variant_t) -> FunctionType:
             h = compress(blocks[i],h)
         last_len : int = array.length(last)
         len_bits : int = array.length(msg) * 8
-        pad = array.create(2*blockSize,uint8(0))
+        pad: vlbytes_t = array.create(2*blockSize,uint8(0))
         pad[0:last_len] = last
         pad[last_len] = uint8(0x80)
         if last_len < blockSize - lenSize:

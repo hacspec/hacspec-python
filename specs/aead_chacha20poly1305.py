@@ -10,19 +10,19 @@ tag_t    = bytes_t(16)
 
 @typechecked
 def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple_t(int,vlbytes_t):
-    laad: int = len(aad)
-    lmsg: int = len(msg)
+    laad: int = array.length(aad)
+    lmsg: int = array.length(msg)
     pad_aad: int = 16 * (laad // 16 + 1)
     if laad % 16 == 0:
         pad_aad = laad
     pad_msg: int = 16 * (lmsg // 16 + 1)
     if lmsg % 16 == 0:
         pad_msg = lmsg
-    to_mac = array.create(pad_aad + pad_msg + 16,uint8(0))
+    to_mac: vlbytes_t = array.create(pad_aad + pad_msg + 16,uint8(0))
     to_mac[0:laad] = aad
     to_mac[pad_aad:pad_aad+lmsg] = msg
-    to_mac[pad_aad+pad_msg:pad_aad+pad_msg+8] = bytes.from_uintn_le(uint64(laad))
-    to_mac[pad_aad+pad_msg+8:pad_aad+pad_msg+16] = bytes.from_uintn_le(uint64(lmsg))
+    to_mac[pad_aad+pad_msg:pad_aad+pad_msg+8] = bytes.from_uint64_le(uint64(laad))
+    to_mac[pad_aad+pad_msg+8:pad_aad+pad_msg+16] = bytes.from_uint64_le(uint64(lmsg))
     return pad_aad+pad_msg+16, to_mac
 
 @typechecked
