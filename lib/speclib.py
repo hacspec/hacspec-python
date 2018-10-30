@@ -494,18 +494,23 @@ class ruintn_t:
 
     @typechecked
     def __repr__(self) -> str:
-        return hex(self.v)
+        return hex(self.v.value)
 
     @typechecked
     def __int__(self) -> int:
         return self.v
 
     @typechecked
-    def __eq__(self, other) -> bool:
-        if type(other) == type(self):
-            print(type(other))
+    def __eq__(self, other:'ruintn_t') -> bool:
+        if type(other) != type(self):
             fail("You can only compare two ruintn_t with the same modulus.")
-        return (self.v == other.v)
+        return (self.v.value == other.v.value)
+
+    @typechecked
+    def __ne__(self, other:'ruintn_t') -> bool:
+        if type(other) != type(self):
+            fail("You can only compare two ruintn_t with the same modulus.")
+        return (self.v != other.v)
 
     @typechecked
     def __int__(self) -> int:
@@ -531,6 +536,14 @@ class ruintn_t:
             fail("to_nat is only valid for ruintn_t. Got "+str(type(x)))
         return nat(x.v.value)
 
+    @staticmethod
+    @typechecked
+    def num_bits(x: 'ruintn_t') -> int:
+        if not isinstance(x, ruintn_t):
+            fail("num_bits is only valid for ruintn_t.")
+        return x.bits
+
+ruintn = ruintn_t
 
 class ruint32_t(ruintn_t):
     modulus = 1 << 32
@@ -711,6 +724,14 @@ class ruint8_t(ruintn_t):
         if other == 2:
             return self * self
         return ruint8_t(Rust.pow32(self.v, other.v))
+
+
+    @typechecked
+    def __xor__(self, other: 'ruint8_t') -> 'ruint8_t':
+        if type(other) != ruint8_t or \
+           other.__class__ != self.__class__:
+            fail("^ is only valid for two ruint8_t of same bits.")
+        return ruint8_t(self.v.value ^ other.v.value)
 
     @staticmethod
     @typechecked
@@ -908,11 +929,11 @@ class _array(Generic[T]):
 
     @staticmethod
     @typechecked
-    def create_random(l: nat_t, t: Type[_uintn]) -> '_array[_uintn]':
+    def create_random(l: nat_t, t: Type[ruintn]) -> '_array[ruintn]':
         if not isinstance(l, nat_t):
             fail("array.create_random's first argument has to be of type nat_t.")
         r = rand()
-        return _array(list([t(r.randint(0, 2 << _uintn.num_bits(t(0)))) for _ in range(0, l)]))
+        return _array(list([t(r.randint(0, 2 << ruintn.num_bits(t(0)))) for _ in range(0, l)]))
 
 
 def vlarray_t(t:type) -> type:
@@ -1194,7 +1215,7 @@ class bytes(_array):
     @typechecked
     def create_random_bytes(len: nat) -> 'vlbytes_t':
         r = rand()
-        return vlbytes_t(list([uint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
+        return vlbytes_t(list([ruint8(r.randint(0, 0xFF)) for _ in range(0, len)]))
 
 class _vector(_array[T]):
 #    __slots__ = []

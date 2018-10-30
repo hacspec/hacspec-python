@@ -4,30 +4,30 @@ from lib.speclib import *
 from specs.sha2 import sha256
 
 # Influences signature length, not security
-w_four : uint32_t = uint32(4)
-w_sixteen : uint32_t = uint32(16)
+w_four : ruint32_t = ruint32(4)
+w_sixteen : ruint32_t = ruint32(16)
 
 
 # Parameters
 # n := length (message, signature, key), SHA2 output length
 n : int = 32
-w : uint32_t = w_sixteen
+w : ruint32_t = w_sixteen
 log_w : int = 4
 
-length1 : uint32_t = uint32(int(speclib.ceil(8*n / log_w)))
-tmp : int = uint32.to_int(length1) * (uint32.to_int(w) - 1)
+length1 : ruint32_t = ruint32(int(speclib.ceil(8*n / log_w)))
+tmp : int = ruint32.to_int(length1) * (ruint32.to_int(w) - 1)
 tmp = speclib.log(tmp, 2)
-length2 : uint32_t = uint32(int(tmp // log_w + 1))
-length : uint32_t = length1 + length2
+length2 : ruint32_t = ruint32(int(tmp // log_w + 1))
+length : ruint32_t = length1 + length2
 
 # Types
 
 
 key_t = bytes_t(n)
-sk_t = array_t(key_t, uint32.to_int(length))
-pk_t = array_t(key_t, uint32.to_int(length))
-sig_t = array_t(key_t, uint32.to_int(length))
-address_t = array_t(uint32_t, 8)
+sk_t = array_t(key_t, ruint32.to_int(length))
+pk_t = array_t(key_t, ruint32.to_int(length))
+sig_t = array_t(key_t, ruint32.to_int(length))
+address_t = array_t(ruint32_t, 8)
 key_pair_t = tuple_t(sk_t, pk_t, address_t)
 digest_t = bytes_t(32)
 seed_t = bytes_t(n)
@@ -72,60 +72,60 @@ def PRF(key: key_t, m: address_t) -> digest_t:
 # 4-byte: key and mask
 
 @typechecked
-def set_type(adr: address_t, t: uint32_t) -> address_t:
+def set_type(adr: address_t, t: ruint32_t) -> address_t:
     result : address_t = array.copy(adr)
     result[3] = t
     return result
 
 
 @typechecked
-def set_ots_address(adr: address_t, ots_adr: uint32_t) -> address_t:
+def set_ots_address(adr: address_t, ots_adr: ruint32_t) -> address_t:
     result : address_t = array.copy(adr)
     result[-4] = ots_adr
     return result
 
 
 @typechecked
-def set_ltree_address(adr: address_t, ltree_adr: uint32_t) -> address_t:
+def set_ltree_address(adr: address_t, ltree_adr: ruint32_t) -> address_t:
     return set_ots_address(adr, ltree_adr)
 
 
 @typechecked
-def set_chain_address(adr: address_t, h_adr: uint32_t) -> address_t:
+def set_chain_address(adr: address_t, h_adr: ruint32_t) -> address_t:
     result : address_t = array.copy(adr)
     result[-3] = h_adr
     return result
 
 
 @typechecked
-def set_tree_height(adr: address_t, h: uint32_t) -> address_t:
+def set_tree_height(adr: address_t, h: ruint32_t) -> address_t:
     return set_chain_address(adr, h)
 
 
 @typechecked
-def get_tree_height(adr: address_t) -> uint32_t:
+def get_tree_height(adr: address_t) -> ruint32_t:
     return adr[-3]
 
 
 @typechecked
-def set_hash_address(adr: address_t, h_adr: uint32_t) -> address_t:
+def set_hash_address(adr: address_t, h_adr: ruint32_t) -> address_t:
     result : address_t = array.copy(adr)
     result[-2] = h_adr
     return result
 
 
 @typechecked
-def set_tree_index(adr: address_t, i: uint32_t) -> address_t:
+def set_tree_index(adr: address_t, i: ruint32_t) -> address_t:
     return set_hash_address(adr, i)
 
 
 @typechecked
-def get_tree_index(adr: address_t) -> uint32_t:
+def get_tree_index(adr: address_t) -> ruint32_t:
     return adr[-2]
 
 
 @typechecked
-def set_key_and_mask(adr: address_t, kam: uint32_t) -> address_t:
+def set_key_and_mask(adr: address_t, kam: ruint32_t) -> address_t:
     result : address_t = array.copy(adr)
     result[-1] = kam
     return result
@@ -141,10 +141,10 @@ def wots_chain(x: bytes_t, start: int, steps: int, seed: seed_t, adr: address_t)
     for i in range(start + steps):
         if i >= start:
             # TODO: This is a hack because hacspec currently doesn't allow range(min, max)
-            adr = set_hash_address(adr, uint32(i))
-            adr = set_key_and_mask(adr, uint32(0))
+            adr = set_hash_address(adr, ruint32(i))
+            adr = set_key_and_mask(adr, ruint32(0))
             key : digest_t = PRF(seed, adr)
-            adr = set_key_and_mask(adr, uint32(1))
+            adr = set_key_and_mask(adr, ruint32(1))
             bm : digest_t = PRF(seed, adr)
             fin = bytes([])
             for (a, b) in array.zip(hmo, bm):
@@ -155,19 +155,19 @@ def wots_chain(x: bytes_t, start: int, steps: int, seed: seed_t, adr: address_t)
 
 @typechecked
 def key_gen_sk() -> sk_t:
-    sk : sk_t = sk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
-    for i in range(uint32.to_int(length)):
+    sk : sk_t = sk_t.create(ruintn.to_int(length), key_t.create(n, ruint8(0)))
+    for i in range(ruint32.to_int(length)):
         sk_i: bytes_t = bytes.create_random_bytes(n)
         sk[i] = sk_i
     return sk
 
 @typechecked
 def key_gen_pk(adr: address_t, seed: seed_t, sk: sk_t) -> tuple_t(pk_t, address_t):
-    pk : pk_t = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
+    pk : pk_t = pk_t.create(ruintn.to_int(length), key_t.create(n, ruint8(0)))
     pk_i : vlbytes_t
-    for i in range(uint32.to_int(length)):
-        adr : address_t = set_chain_address(adr, uint32(i))
-        adr, pk_i = wots_chain(sk[i], 0, uint32.to_int(w)-1, seed, adr)
+    for i in range(ruint32.to_int(length)):
+        adr : address_t = set_chain_address(adr, ruint32(i))
+        adr, pk_i = wots_chain(sk[i], 0, ruint32.to_int(w)-1, seed, adr)
         pk[i] = pk_i
     return (pk, adr)
 
@@ -181,20 +181,20 @@ def key_gen(adr: address_t, seed: seed_t) -> key_pair_t:
 
 
 @typechecked
-def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
+def base_w(msg: vlbytes_t, l: ruint32_t) -> vlbytes_t:
     i : int = 0
     out : int = 0
     total : int = 0
     bits : int = 0
     basew : vlbytes_t = bytes([])
-    for consumed in range(uint32.to_int(l)):
+    for consumed in range(ruint32.to_int(l)):
         if bits == 0:
-            total = uint8.to_int(msg[i])
+            total = ruint8.to_int(msg[i])
             i = i + 1
             bits = bits + 8
         bits = bits - int(log_w)
-        bw : int = (total >> bits) & int(uint32.to_int(w) - 1)
-        basew = array.concat(basew, bytes([uint8(bw)]))
+        bw : int = (total >> bits) & int(ruint32.to_int(w) - 1)
+        basew = array.concat(basew, bytes([ruint8(bw)]))
         out = out + 1
     return basew
 
@@ -202,10 +202,10 @@ def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
 def wots_msg(msg: digest_t) -> vlbytes_t:
     csum : int = 0
     m : vlbytes_t = base_w(msg, length1)
-    for i in range(uint32.to_int(length1)):
-        csum = csum + uint32.to_int(w) - 1 - uint32.to_int(m[i])
-    csum = nat(csum << int(8 - ((uint32.to_int(length2) * log_w) % 8)))
-    length2_bytes : nat_t = speclib.ceil((uint32.to_int(length2) * log_w) // 8)
+    for i in range(ruint32.to_int(length1)):
+        csum = csum + ruint32.to_int(w) - 1 - ruint32.to_int(m[i])
+    csum = nat(csum << int(8 - ((ruint32.to_int(length2) * log_w) % 8)))
+    length2_bytes : nat_t = speclib.ceil((ruint32.to_int(length2) * log_w) // 8)
     csum_bytes : bytes_t = bytes.from_nat_be(csum, length2_bytes)
     m : bytes_t = array.concat(m, base_w(csum_bytes, length2))
     return m
@@ -214,11 +214,11 @@ def wots_msg(msg: digest_t) -> vlbytes_t:
 @typechecked
 def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
     m : vlbytes_t = wots_msg(msg)
-    sig : sig_t = sig_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
-    for i in range(uint32.to_int(length)):
-        adr : address_t = set_chain_address(adr, uint32(i))
+    sig : sig_t = sig_t.create(ruintn.to_int(length), key_t.create(n, ruint8(0)))
+    for i in range(ruint32.to_int(length)):
+        adr : address_t = set_chain_address(adr, ruint32(i))
         sig_i : vlbytes_t
-        adr, sig_i = wots_chain(sk[i], 0, uint32.to_int(m[i]), seed, adr)
+        adr, sig_i = wots_chain(sk[i], 0, ruint32.to_int(m[i]), seed, adr)
         sig[i] = sig_i
     return sig
 
@@ -226,11 +226,12 @@ def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
 @typechecked
 def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> tuple_t(pk_t, address_t):
     m : vlbytes_t = wots_msg(msg)
-    pk2 : pk_t = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
-    for i in range(uint32.to_int(length)):
-        adr : address_t = set_chain_address(adr, uint32(i))
-        m_i : int = uint32.to_int(m[i])
+    pk2 : pk_t = pk_t.create(ruintn.to_int(length), key_t.create(n, ruint8(0)))
+    _adr : address_t = array.copy(adr)
+    for i in range(ruint32.to_int(length)):
+        _adr : address_t = set_chain_address(_adr, ruint32(i))
+        m_i : int = ruint32.to_int(m[i])
         pk_i : vlbytes_t
-        adr, pk_i = wots_chain(sig[i], m_i, uint32.to_int(w) - 1 - m_i, seed, adr)
+        _adr, pk_i = wots_chain(sig[i], m_i, ruint32.to_int(w) - 1 - m_i, seed, _adr)
         pk2[i] = pk_i
-    return (pk2, adr)
+    return (pk2, _adr)
