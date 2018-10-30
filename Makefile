@@ -17,9 +17,13 @@ SPECS_FAILING_SPECHECK=
 # These specs are broken or work in progress.
 BROKEN_SPECS=vrf xmss
 
-.PHONY: test $(SPECS) all
+.PHONY: test $(SPECS) all build
 
-all: run check test
+all: build run check test
+
+# Build rust speclib.
+build:
+	cd lib/rust && cargo build
 
 run: $(SPECS) $(SPECS_FAILING_SPECHECK) $(SLOW_SPECS)
 test: $(addsuffix -test, $(SPECS) $(SPECS_FAILING_SPECHECK))

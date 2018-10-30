@@ -59,7 +59,7 @@ class _result(Generic[T]):
     @staticmethod
     @typechecked
     def retval(v:T) -> '_result[T]':
-        return _result(True,v)    
+        return _result(True,v)
 
     @staticmethod
     @typechecked
@@ -444,11 +444,11 @@ class uint16(_uintn):
         _uintn.__init__(self,x,16)
 uint16_t = uintn_t(16)
 
-# class uint32(_uintn):
-# #    __slots__ = []
-#     def __init__(self, x: Union[int,'_uintn']) -> None:
-#         _uintn.__init__(self,x,32)
-# uint32_t = uintn_t(32)
+class uint32(_uintn):
+#    __slots__ = []
+    def __init__(self, x: Union[int,'_uintn']) -> None:
+        _uintn.__init__(self,x,32)
+uint32_t = uintn_t(32)
 
 class uint64(_uintn):
 #    __slots__ = []
@@ -467,15 +467,14 @@ uint128_t = uintn_t(128)
 '''
 
 # Pull in speclib Rust implementation.
-from ctypes import CDLL, c_float, c_uint32, c_uint8
-Rust = CDLL("lib/rust/libspeclib_ffi.so")
+from ctypes import CDLL, c_float, c_uint64, c_uint32, c_uint8
+Rust = CDLL("lib/rust/target/debug/libspeclib_ffi.so")
 
 # Typed versions of all python functions that can be used in specs.
 class speclib:
     @typechecked
     def ceil(x: float) -> nat_t:
         return nat(Rust.ceil(c_float(x)))
-        # return nat(ceil(x))
 
     @typechecked
     def log(x: int, b: int) -> float:
@@ -487,7 +486,7 @@ class speclib:
 
 class ruintn_t:
     # Super class for all Rust uint_t implementations.
-    __slots__ = ['v', 'modulus'] # type: c_uint32 etc.
+    __slots__ = ['v', 'modulus', 'bits'] # type: c_uint32 etc.
 
     @typechecked
     def __str__(self) -> str:
@@ -529,12 +528,13 @@ class ruintn_t:
     @typechecked
     def to_nat(x: 'ruintn_t') -> nat_t:
         if not isinstance(x, ruintn_t):
-            fail("to_nat is only valid for ruintn_t.")
-        return nat(x.v)
+            fail("to_nat is only valid for ruintn_t. Got "+str(type(x)))
+        return nat(x.v.value)
 
 
 class ruint32_t(ruintn_t):
     modulus = 1 << 32
+    bits = 32
 
     @typechecked
     def __init__(self, x: Union[int,'ruint32_t',c_uint32]) -> None:
@@ -645,8 +645,26 @@ class ruint32_t(ruintn_t):
 
 ruint32 = ruint32_t
 
+class ruint64_t(ruintn_t):
+    modulus = 1 << 64
+    bits = 64
+
+    @typechecked
+    def __init__(self, x: Union[int,'ruint64_t',c_uint64]) -> None:
+        if isinstance(x,ruint64_t):
+            self.v = x.v
+            return
+        elif isinstance(x,c_uint64):
+            self.v = x
+            return
+        else:
+            self.v = c_uint64(x % self.modulus)
+
+ruint64 = ruint64_t
+
 class ruint8_t(ruintn_t):
     modulus = 1 << 8
+    bits = 8
 
     @typechecked
     def __init__(self, x: Union[int,'ruint8_t',c_uint8]) -> None:
@@ -740,7 +758,8 @@ class _array(Generic[T]):
 
     @typechecked
     def __str__(self) -> str:
-        return str(self.l)
+        val = "0x"+''.join('{:02x}'.format(ruintn_t.to_int(b)) for b in self.l)
+        return val
 
     @typechecked
     def __repr__(self) -> str:
@@ -931,7 +950,7 @@ class bytes(_array):
     @staticmethod
     @typechecked
     def to_hex(a: 'vlbytes_t') -> str:
-        return "".join(['{:02x}'.format(uintn.to_int(x)) for x in a])
+        return "".join(['{:02x}'.format(ruintn_t.to_int(x)) for x in a])
 
     @staticmethod
     @typechecked
@@ -991,9 +1010,9 @@ class bytes(_array):
     @staticmethod
     @typechecked
     def from_uintn_be(x: ruintn_t) -> 'vlbytes_t':
-        nbytes = (32 - 1) // 8 + 1
+        nbytes = (x.bits - 1) // 8 + 1
         by = bytes.create(nbytes,ruint8_t(0))
-        xv = ruintn.to_nat(x)
+        xv = ruintn_t.to_nat(x)
         for i in range(nbytes):
             by[nbytes-i-1] = ruint8_t(xv)
             xv = xv // 256
@@ -1098,7 +1117,7 @@ class bytes(_array):
         return bytes.from_uintn_be(x)
     @staticmethod
     @typechecked
-    def from_uint64_be(x: 'uint64_t') -> vlbytes_t:
+    def from_uint64_be(x: 'ruint64_t') -> vlbytes_t:
         return bytes.from_uintn_be(x)
     @staticmethod
     @typechecked

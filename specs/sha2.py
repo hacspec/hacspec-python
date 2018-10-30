@@ -16,7 +16,7 @@ def sha2(v:variant_t) -> FunctionType:
         block_t = bytes_t(blockSize)
         lenSize : int = 8
         len_t = uint64_t
-        to_len : FunctionType = uint64
+        to_len : FunctionType = ruint64
         len_to_bytes : FunctionType = bytes.from_uint64_be
         word_t = ruint32_t
         to_word : FunctionType = ruint32
@@ -91,7 +91,8 @@ def sha2(v:variant_t) -> FunctionType:
     hashSize : int = v // 8
     hash_t = array_t(word_t,8)
     digest_t = bytes_t(hashSize)
-    h0 = array.create(8,to_word(0))
+    h0_t = bytes_t(8)
+    h0: h0_t = array.create(8,to_word(0))
     if v == 224:
         h0 = hash_t([
             ruint32(0xc1059ed8), ruint32(0x367cd507), ruint32(0x3070dd17), ruint32(0xf70e5939),
@@ -217,5 +218,5 @@ def sha2(v:variant_t) -> FunctionType:
 
 sha224 : FunctionType = sha2(224)
 sha256 : FunctionType = sha2(256)
-sha384 : FunctionType = sha2(384)
-sha512 : FunctionType = sha2(512)
+# sha384 : FunctionType = sha2(384)
+# sha512 : FunctionType = sha2(512)

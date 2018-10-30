@@ -21,7 +21,7 @@ pub extern fn sub32(x: libc::c_uint, y: libc::c_uint) -> libc::c_uint {
 
 #[no_mangle]
 pub extern fn mul32(x: libc::c_uint, y: libc::c_uint) -> libc::c_uint {
-    x * y
+    x.wrapping_mul(y)
 }
 
 #[no_mangle]
@@ -31,11 +31,17 @@ pub extern fn pow32(x: libc::c_uint, y: libc::c_uint) -> libc::c_uint {
 
 #[no_mangle]
 pub extern fn lshift32(x: libc::c_uint, y: libc::c_int) -> libc::c_uint {
+    if y >= 32 {
+        return 0;
+    }
     x << y
 }
 
 #[no_mangle]
 pub extern fn rshift32(x: libc::c_uint, y: libc::c_int) -> libc::c_uint {
+    if y >= 32 {
+        return 0;
+    }
     x >> y
 }
 
