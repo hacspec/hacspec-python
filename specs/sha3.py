@@ -33,7 +33,7 @@ def writeLane(s: state_t, x: index_t, y: index_t, v: uint64_t) -> state_t:
 
 @typechecked
 def state_permute1(s: state_t, lfsr: uint8_t) -> tuple_t(state_t, uint8_t):
-    _C = array.create(5, uint64(0))
+    _C: array_t = array.create(5, uint64(0))
     for x in range(5):
         _C[x] = readLane(s, x, 0) ^ readLane(s, x, 1) ^ readLane(
             s, x, 2) ^ readLane(s, x, 3) ^ readLane(s, x, 4)
@@ -96,7 +96,7 @@ def state_permute(s: state_t) -> state_t:
             True)
 @typechecked
 def loadState(rateInBytes: size_nat_200_t, input_b: vlbytes_t, s: state_t) -> state_t:
-    block = array.create(200, uint8(0))
+    block: bytes_t = array.create(200, uint8(0))
     block[0:rateInBytes] = input_b
     for j in range(25):
         nj : uint64_t = bytes.to_uint64_le(block[(j * 8):(j * 8 + 8)])
@@ -109,7 +109,7 @@ def loadState(rateInBytes: size_nat_200_t, input_b: vlbytes_t, s: state_t) -> st
             array.length(res) == rateInBytes)
 @typechecked
 def storeState(rateInBytes: size_nat_200_t, s: state_t) -> vlbytes_t:
-    block = bytes(array.create(200, uint8(0)))
+    block: bytes_t = bytes(array.create(200, uint8(0)))
     for j in range(25):
         block[(j * 8):(j * 8 + 8)] = bytes.from_uint64_le(s[j])
     return block[0:rateInBytes]
@@ -133,7 +133,7 @@ def absorb(s: state_t,
 
     rem : int = inputByteLen % rateInBytes
     last : uint8_t = input_b[(inputByteLen - rem):inputByteLen]
-    lastBlock = bytes(array.create(rateInBytes, uint8(0)))
+    lastBlock: bytes_t = array.create(rateInBytes, uint8(0))
     lastBlock[0:rem] = last
     lastBlock[rem] = delimitedSuffix
     s = loadState(rateInBytes, lastBlock, s)
@@ -141,7 +141,7 @@ def absorb(s: state_t,
     if not(delimitedSuffix & uint8(0x80) == uint8(0)) and (rem == rateInBytes - 1):
         s = state_permute(s)
 
-    nextBlock = bytes(array.create(rateInBytes, uint8(0)))
+    nextBlock: bytes_t = array.create(rateInBytes, uint8(0))
     nextBlock[rateInBytes - 1] = uint8(0x80)
     s = loadState(rateInBytes, nextBlock, s)
     s = state_permute(s)
@@ -156,7 +156,7 @@ def absorb(s: state_t,
 def squeeze(s: state_t,
             rateInBytes: nat_t,
             outputByteLen: size_nat_t) -> vlbytes_t:
-    output = bytes(array.create(outputByteLen, uint8(0)))
+    output: bytes_t = array.create(outputByteLen, uint8(0))
     outBlocks : int = outputByteLen // rateInBytes
     for i in range(outBlocks):
         block : vlbytes_t = storeState(rateInBytes, s)
@@ -173,7 +173,7 @@ def squeeze(s: state_t,
 def keccak(rate: size_nat_1600_t, capacity: size_nat_t, inputByteLen: size_nat_t,
            input_b: vlbytes_t, delimitedSuffix: uint8_t, outputByteLen: size_nat_t) -> vlbytes_t:
     rateInBytes : nat_t = nat(rate // 8)
-    s = array.create(25, uint64(0))
+    s: array_t = array.create(25, uint64(0))
     s = absorb(s, rateInBytes, inputByteLen, input_b, delimitedSuffix)
     output : vlbytes_t = squeeze(s, rateInBytes, outputByteLen)
     return output

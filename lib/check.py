@@ -95,7 +95,7 @@ def check_variable_is_typed(line):
     # ii) typed variable declaration
     global variables
     # TODO: add all array and byte speclib functions
-    speclibFunctions = ["array.copy", "array.create", "refine", "bytes", "bytes.copy", "vector.create", "matrix.createi", "vector.createi"]
+    speclibFunctions = ["array.copy", "refine", "bytes", "bytes.copy", "matrix.createi", "vector.createi"]
     if isinstance(line, Assign):
         if len(line.targets) > 0 and isinstance(line.targets[0], Tuple):
             # This is a tuple assignment. The variables have to be declared

@@ -52,7 +52,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     def zqpoly(a:array_t(zqelem_t,kyber_n)) -> zqpoly_t:
         return vector(a,zqelem(0))
     
-    zqpoly0   = vector.create(kyber_n,zqelem(0))
+    zqpoly0: vlarray_t   = vector.create(kyber_n,zqelem(0))
     omega : natmod_t     = zqelem(3844)
     psi : natmod_t       = zqelem(62)
     n_inv : natmod_t     = zqelem(7651)
@@ -70,14 +70,14 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
 
     @typechecked
     def zqpolyvec_dot(p:zqpolyvec_t, q:zqpolyvec_t) -> zqpoly_t:
-        t = vector.create(kyber_n, zqelem(0))
+        t: vector_t = vector.create(kyber_n, zqelem(0))
         for i in range(kyber_k):
             t += zqpoly_mul(p[i], q[i])
         return(t)
 
     @typechecked
     def zqpolymatrix_dot(p:zqpolymatrix_t, q:zqpolyvec_t) -> zqpolyvec_t:
-        t = vector.create(kyber_k, vector.create(kyber_n, zqelem(0)))
+        t: vector_t = vector.create(kyber_k, vector.create(kyber_n, zqelem(0)))
         for i in range(kyber_k):
             t[i] = zqpolyvec_dot(p[i],q)
         return(t)
@@ -87,7 +87,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
         @typechecked
         def _decode(b:bytes_t) -> zqpoly_t:
             beta : uintn_t = bytes.to_uintn_le(b)
-            res = vector.create(kyber_n, zqelem(0))
+            res: vector_t = vector.create(kyber_n, zqelem(0))
             for i in range(kyber_n):
                 res[i] = zqelem(uintn.to_int(beta[i*l:(i+1)*l]))
             return res
@@ -192,7 +192,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     @typechecked
     def cbd(buf:bytes_t(kyber_eta * kyber_n // 4)) -> zqpoly_t:
         beta : uintn_t = bytes.to_uintn_le(buf)
-        res = vector.create(kyber_n, zqelem(0))
+        res : vector_t = vector.create(kyber_n, zqelem(0))
         for i in range(kyber_n):
             a : int = uintn.bit_count(beta[2 * i * kyber_eta: (2 * i + 1) * kyber_eta])
             b : int = uintn.bit_count(beta[(2 * i + 1) * kyber_eta:(2 * i + 2) * kyber_eta])
@@ -212,7 +212,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     @typechecked
     def shake128_absorb(inputByteLen:size_nat_t,
                         input_b:vlbytes_t) -> state_t:
-        s = array.create(25, uint64(0))
+        s: array_t = array.create(25, uint64(0))
         return absorb(s,168, inputByteLen, input_b, uint8(0x1F))
 
     @typechecked
@@ -224,7 +224,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     @typechecked
     def genAij_hat(seed:symbytes_t, a:uint8_t, b:uint8_t) -> zqpoly_t:
         shake128_rate : int = 168
-        res = vector.create(kyber_n, zqelem(0))
+        res: vector_t = vector.create(kyber_n, zqelem(0))
         extseed : vlbytes_t = bytes.concat(bytes.concat(seed, bytes.singleton(a)), bytes.singleton(b))
         maxnblocks : int = 4
         nblocks : int = maxnblocks
@@ -252,7 +252,7 @@ def Kyber(kyber_k:variant_k_t,kyber_eta:variant_eta_t) \
     def genAij(seed:symbytes_t) -> FunctionType: # Callable[[int,int],zqpoly_t]:
         @typechecked
         def zqpoly_invntt(p:zqpoly_t) -> zqpoly_t:
-            np = vector.create(kyber_n, zqelem(0))
+            np: vector_t = vector.create(kyber_n, zqelem(0))
             for i in range(kyber_n):
                 for j in range(kyber_n):
                     np[i] += (p[j] * (omega_inv ** (i * j)))
