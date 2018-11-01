@@ -1,0 +1,20 @@
+#baseURL = "https://hacs-workshop.github.io/hacspec/poly-slides"
+baseURL = "https://franziskuskiefer.de/data/poly-slides"
+languageCode = "en-us"
+title = "hacspec"
+theme = "reveal-hugo"
+SectionPagesMenu = "main"
+
+enableRobotsTXT = true
+
+[outputFormats.Reveal]
+  baseName = "index"
+  mediaType = "text/html"
+  isHTML = true
+
+[params.reveal_hugo]
+  theme = "moon"
+  highlight_theme = "solarized-light"
+  slide_number = false
+  #transition = "zoom"
+  reveal_cdn = "reveal-js"
