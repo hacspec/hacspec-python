@@ -1,0 +1,225 @@
+<!doctype html><html lang="en">
+  <head>
+	<meta name="generator" content="Hugo 0.47.1" />
+    <meta charset="utf-8">
+    <title>poly1305</title>
+    <meta name="description" content="how to write and use hacspec">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="reveal-js/css/reveal.css">
+    <link rel="stylesheet" href="reveal-js/css/theme/moon.css" id="theme"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/solarized-light.min.css">
+    
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? 'reveal-js/css/print/pdf.css' : 'reveal-js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+    
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+  
+<section>
+
+<p><a href="https://tools.ietf.org/html/rfc7539">RFC 7539</a> Section 2.5.1: Poly1305</p>
+
+<pre><code>clamp(r): r &amp;= 0x0ffffffc0ffffffc0ffffffc0fffffff
+poly1305_mac(msg, key):
+   r = (le_bytes_to_num(key[0..15])
+   clamp(r)
+   s = le_num(key[16..31])
+   accumulator = 0
+   p = (1&lt;&lt;130)-5
+   for i=1 upto ceil(msg length in bytes / 16)
+      n = le_bytes_to_num(msg[((i-1)*16)..(i*16)] | [0x01])
+      a += n
+      a = (r * a) % p
+      end
+   a += s
+   return num_to_16_le_bytes(a)
+   end
+</code></pre>
+
+</section><section>
+
+<h2 id="translating-rfc-specification-to-hacpsec">Translating RFC specification to hacpsec</h2>
+
+<p>The algorithm can be directly translated into hacspec.</p>
+
+</section><section>
+
+<h2 id="setup">setup</h2>
+
+<ul>
+<li>A 256-bit one-time key</li>
+<li>The output is a 128-bit tag.</li>
+<li>set the constant prime &ldquo;P&rdquo; be <code>2^130-5: 3fffffffffffffffffffffffffffffffb</code>.</li>
+<li>divide the message into 16-byte blocks</li>
+</ul>
+
+<p>This is translated into the following hacspec definition.</p>
+
+</section><section>
+
+<h2 id="setup-1">setup</h2>
+
+<pre><code class="language-python">blocksize:int = 16
+block_t = bytes_t(16)
+key_t = bytes_t(32)
+tag_t = bytes_t(16)
+subblock_t = refine_t(vlbytes_t, lambda x: bytes.length(x) &lt;= 16)
+p130m5 : nat_t = (2 ** 130) - 5
+felem_t = natmod_t(p130m5)
+
+def felem(n:nat_t) -&gt; felem_t:
+    return natmod(n,p130m5)
+</code></pre>
+
+</section><section>
+
+<h2 id="bytes-to-int-rfc">bytes to int rfc</h2>
+
+<pre><code>le_bytes_to_num(msg[((i-1)*16)..(i*16)] | [0x01])
+</code></pre>
+
+</section><section>
+
+<h2 id="bytes-to-int-hacspec">bytes to int hacspec</h2>
+
+<pre><code class="language-python">def encode(block: subblock_t) -&gt; felem_t:
+    b : block_t = array.create(16, uint8(0))
+    b[0:bytes.length(block)] = block
+    welem : felem_t = felem(bytes.to_nat_le(b))
+    lelem : felem_t = felem(2 ** (8 * array.length(block)))
+    return lelem + welem
+</code></pre>
+
+</section><section>
+
+<h2 id="clamp-rfc">clamp rfc</h2>
+
+<pre><code>clamp(r): r &amp;= 0x0ffffffc0ffffffc0ffffffc0fffffff
+</code></pre>
+
+</section><section>
+
+<h2 id="clamp-hacspec">clamp hacspec</h2>
+
+<pre><code class="language-python">def encode_r(r: block_t) -&gt; felem_t:
+    ruint : uint128_t = bytes.to_uint128_le(r)
+    ruint = ruint &amp; uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
+    r_nat : nat_t = uintn.to_nat(ruint)
+    return felem(r_nat)
+</code></pre>
+
+</section><section>
+
+<h2 id="poly-rfc">poly rfc</h2>
+
+<pre><code>a = 0
+for i=1 upto ceil(msg length in bytes / 16)
+   n = le_bytes_to_num(msg[((i-1)*16)..(i*16)] | [0x01])
+   a += n
+   a = (r * a) % p
+   end
+</code></pre>
+
+</section><section>
+
+<h2 id="poly-hacspec">poly hacspec</h2>
+
+<pre><code class="language-python">def poly(text: vlbytes_t, r: felem_t) -&gt; felem_t:
+    blocks : vlarray_t(block_t)
+    last : subblock_t
+    blocks, last = array.split_blocks(text, blocksize)
+    acc : felem_t = felem(0)
+    for i in range(array.length(blocks)):
+        acc = (acc + encode(blocks[i])) * r
+    if (array.length(last) &gt; 0):
+        acc = (acc + encode(last)) * r
+    return acc
+</code></pre>
+
+</section><section>
+
+<h2 id="poly-mac-rfc">poly mac rfc</h2>
+
+<pre><code>poly1305_mac(msg, key):
+   r = (le_bytes_to_num(key[0..15])
+   clamp(r)
+   s = le_num(key[16..31])
+   p = (1&lt;&lt;130)-5
+   a = poly(msg, r)
+   a += s
+   return num_to_16_le_bytes(a)
+   end
+</code></pre>
+
+</section><section>
+
+<h2 id="poly-mac-hacspec">poly mac hacspec</h2>
+
+<pre><code class="language-python">def poly1305_mac(text: vlbytes_t, k: key_t) -&gt; tag_t:
+    r : block_t = k[0:blocksize]
+    s : block_t = k[blocksize:2*blocksize]
+    relem : felem_t = encode_r(r) # clamp
+    selem : uint128_t = bytes.to_uint128_le(s)
+    a : felem_t   = poly(text, relem)
+    n : uint128_t = uint128(natmod.to_nat(a)) + selem
+    return bytes.from_uint128_le(n)
+</code></pre>
+</section>
+
+</div>
+      
+
+    </div>
+    <script type="application/json" id="reveal-hugo-site-params">{"highlight_theme":"solarized-light","reveal_cdn":"reveal-js","slide_number":false,"theme":"moon"}</script>
+    <script type="application/json" id="reveal-hugo-page-params">null</script>
+    <script type="text/javascript"> window.revealHugoDependencies = { dependencies: [ { src: 'reveal-js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'reveal-js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'reveal-js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'reveal-js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: 'reveal-js/plugin/zoom-js/zoom.js', async: true },
+          
+          { src: '\/hacspec\/poly-slides\/reveal-js\/plugin\/notes\/notes.js', async: true }
+      ]};
+    </script>
+    <script src="reveal-js/lib/js/head.min.js"></script>
+    <script src="reveal-js/js/reveal.js"></script>
+    <script type="text/javascript">
+      
+      
+      function camelize(map) {
+        if (map) {
+          Object.keys(map).forEach(function(k) {
+            newK = k.replace(/(\_\w)/g, function(m) { return m[1].toUpperCase() });
+            if (newK != k) {
+              map[newK] = map[k];
+              delete map[k];
+            }
+          });
+        }
+        return map;
+      }
+      
+      var revealHugoDefaults = { center: true, controls: true, history: true, progress: true, transition: "slide" };
+      var revealHugoSiteParams = JSON.parse(document.getElementById('reveal-hugo-site-params').innerHTML);
+      var revealHugoPageParams = JSON.parse(document.getElementById('reveal-hugo-page-params').innerHTML);
+      
+      var options = Object.assign({},
+        camelize(revealHugoDefaults),
+        camelize(revealHugoSiteParams),
+        camelize(revealHugoPageParams),
+        revealHugoDependencies);
+      Reveal.initialize(options);
+    </script>
+    
+    
+  </body>
+</html>
