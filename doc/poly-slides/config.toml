@@ -1,5 +1,4 @@
-#baseURL = "https://hacs-workshop.github.io/hacspec/poly-slides"
-baseURL = "https://franziskuskiefer.de/data/poly-slides"
+baseURL = "https://hacs-workshop.github.io/hacspec/poly-slides"
 languageCode = "en-us"
 title = "hacspec"
 theme = "reveal-hugo"
