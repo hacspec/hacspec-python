@@ -48,8 +48,11 @@ fstar:
 # NOTE that this requires hugo (https://gohugo.io)
 website:
 	cd doc/website/ && hugo
+	cd doc/poly-slides && hugo
 website-dev:
 	cd doc/website/ && hugo serve -D
+website-slides-dev:
+	cd doc/poly-slides && hugo serve -D
 
 python-docs:
 	make -C build/ docs
