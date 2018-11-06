@@ -53,7 +53,7 @@ poly1305_mac(msg, key):
 
 </section><section>
 
-<h2 id="setup">setup</h2>
+<h3 id="setup">setup</h3>
 
 <ul>
 <li>A 256-bit one-time key</li>
@@ -66,7 +66,7 @@ poly1305_mac(msg, key):
 
 </section><section>
 
-<h2 id="setup-1">setup</h2>
+<h3 id="setup-hacspec-f">setup hacspec &amp; F*</h3>
 
 <pre><code class="language-python">blocksize:int = 16
 block_t = bytes_t(16)
@@ -74,10 +74,21 @@ key_t = bytes_t(32)
 tag_t = bytes_t(16)
 subblock_t = refine_t(vlbytes_t, lambda x: bytes.length(x) &lt;= 16)
 p130m5 : nat_t = (2 ** 130) - 5
-felem_t = natmod_t(p130m5)
 
+felem_t = natmod_t(p130m5)
 def felem(n:nat_t) -&gt; felem_t:
     return natmod(n,p130m5)
+</code></pre>
+
+<pre><code class="language-ocaml">let blocksize: int = 16
+let block_t: Type0 = array_t uint8_t 16
+let key_t: Type0 = array_t uint8_t 32
+let tag_t: Type0 = array_t uint8_t 16
+let subblock_t: Type0 = (x: vlbytes_t{(bytes_length x) &lt;=. 16})
+let p130m5: nat_t = (2 **. 130) -. 5
+
+let felem_t: Type0 = natmod_t p130m5
+let felem (n: nat_t) : felem_t = natmod n p130m5
 </code></pre>
 
 </section><section>
@@ -89,7 +100,7 @@ def felem(n:nat_t) -&gt; felem_t:
 
 </section><section>
 
-<h2 id="bytes-to-int-hacspec">bytes to int hacspec</h2>
+<h3 id="bytes-to-int-hacspec-f">bytes to int hacspec &amp; F*</h3>
 
 <pre><code class="language-python">def encode(block: subblock_t) -&gt; felem_t:
     b : block_t = array.create(16, uint8(0))
@@ -97,6 +108,14 @@ def felem(n:nat_t) -&gt; felem_t:
     welem : felem_t = felem(bytes.to_nat_le(b))
     lelem : felem_t = felem(2 ** (8 * array.length(block)))
     return lelem + welem
+</code></pre>
+
+<pre><code class="language-ocaml">let encode (block: subblock_t) : felem_t =
+  let b = array_create 16 (uint8 0) in
+  let b = array_update_slice b 0 (bytes_length block) (block) in
+  let welem = felem (bytes_to_nat_le b) in
+  let lelem = felem (2 **. (8 *. (array_length block))) in
+  lelem +. welem
 </code></pre>
 
 </section><section>
@@ -108,13 +127,20 @@ def felem(n:nat_t) -&gt; felem_t:
 
 </section><section>
 
-<h2 id="clamp-hacspec">clamp hacspec</h2>
+<h3 id="clamp-hacspec-f">clamp hacspec &amp; F*</h3>
 
 <pre><code class="language-python">def encode_r(r: block_t) -&gt; felem_t:
     ruint : uint128_t = bytes.to_uint128_le(r)
     ruint = ruint &amp; uint128(0x0ffffffc0ffffffc0ffffffc0fffffff)
     r_nat : nat_t = uintn.to_nat(ruint)
     return felem(r_nat)
+</code></pre>
+
+<pre><code class="language-ocaml">let encode_r (r: block_t) : felem_t =
+  let ruint = bytes_to_uint128_le r in
+  let ruint = ruint &amp;. (uint128 21267647620597763993911028882763415551) in
+  let r_nat = uintn_to_nat ruint in
+  felem r_nat
 </code></pre>
 
 </section><section>
@@ -131,7 +157,7 @@ for i=1 upto ceil(msg length in bytes / 16)
 
 </section><section>
 
-<h2 id="poly-hacspec">poly hacspec</h2>
+<h3 id="poly-hacspec-f">poly hacspec &amp; F*</h3>
 
 <pre><code class="language-python">def poly(text: vlbytes_t, r: felem_t) -&gt; felem_t:
     blocks : vlarray_t(block_t)
@@ -143,6 +169,16 @@ for i=1 upto ceil(msg length in bytes / 16)
     if (array.length(last) &gt; 0):
         acc = (acc + encode(last)) * r
     return acc
+</code></pre>
+
+<pre><code class="language-ocaml">let poly (text: vlbytes_t) (r: felem_t) : felem_t =
+  let blocks, last = array_split_blocks text blocksize in
+  let acc = felem 0 in
+  let acc = repeati (array_length blocks)
+    (fun i acc -&gt; (acc +. (encode blocks.[ i ])) *. r) acc in
+  let acc = if (array_length last) &gt;. 0 then
+    (acc +. (encode last)) *. r else acc in
+  acc
 </code></pre>
 
 </section><section>
@@ -162,7 +198,7 @@ for i=1 upto ceil(msg length in bytes / 16)
 
 </section><section>
 
-<h2 id="poly-mac-hacspec">poly mac hacspec</h2>
+<h2 id="poly-mac-hacspec-f">poly mac hacspec &amp; F*</h2>
 
 <pre><code class="language-python">def poly1305_mac(text: vlbytes_t, k: key_t) -&gt; tag_t:
     r : block_t = k[0:blocksize]
@@ -172,6 +208,92 @@ for i=1 upto ceil(msg length in bytes / 16)
     a : felem_t   = poly(text, relem)
     n : uint128_t = uint128(natmod.to_nat(a)) + selem
     return bytes.from_uint128_le(n)
+</code></pre>
+
+<pre><code class="language-ocaml">let poly1305_mac (text: vlbytes_t) (k: key_t) : tag_t =
+  let r = array_slice k 0 blocksize in
+  let s = array_slice k blocksize (2 *. blocksize) in
+  let relem = encode_r r in
+  let selem = bytes_to_uint128_le s in
+  let a = poly text relem in
+  let n = (uint128 ((natmod_to_nat a) % (2 **. 128))) +. selem in
+  bytes_from_uint128_le n
+</code></pre>
+
+</section><section>
+
+<h2 id="test-and-check-hacspec">Test and check hacspec</h2>
+
+<pre><code>λ make poly1305-test
+PYTHONPATH=. python tests/poly1305_test.py
+Poly1305 Test  0 passed.
+Poly1305 Test  1  passed.
+...
+</code></pre>
+
+<pre><code>λ make poly1305-check
+PYTHONPATH=. python lib/check.py specs/poly1305.py
+specs/poly1305.py is a valid hacspec.
+</code></pre>
+
+</section><section>
+
+<h2 id="compile-to-f">Compile to F*</h2>
+
+<p>Assume <code>HACL_HOME</code> and <code>FSTAR_HOME</code> are set.</p>
+
+</section><section>
+
+<h2 id="compile-to-f-1">Compile to F*</h2>
+
+<pre><code>make -C fstar-compiler/specs/ poly1305.fst
+</code></pre>
+
+<pre><code>../../to_fstar.native ../../../specs/poly1305.py &gt; poly1305_pre.fst
+/home/franziskus/Code/hacl-star/dependencies/FStar//bin/fstar.exe --include /home/franziskus/Code/hacl-star//lib --include /home/franziskus/Code/hacl-star//lib/fst --expose_interfaces --indent poly1305_pre.fst &gt; poly1305.fst
+rm poly1305_pre.fst
+</code></pre>
+
+</section><section>
+
+<h2 id="run-tests-in-ocaml">Run tests in ocaml</h2>
+
+<pre><code>make -C fstar-compiler/specs/ poly1305.exe
+</code></pre>
+
+<pre><code>mkdir -p poly1305-ml
+/home/franziskus/Code/hacl-star/dependencies/FStar//bin/fstar.exe --include /home/franziskus/Code/hacl-star//lib --include /home/franziskus/Code/hacl-star//lib/fst --expose_interfaces --lax --codegen OCaml --extract_module Speclib --extract_module Lib.IntTypes --extract_module Lib.RawIntTypes  --extract_module Lib.Sequence --extract_module Lib.ByteSequence --extract_module poly1305 --odir poly1305-ml /home/franziskus/Code/hacl-star//lib/fst/Lib.IntTypes.fst /home/franziskus/Code/hacl-star//lib/fst/Lib.RawIntTypes.fst /home/franziskus/Code/hacl-star//lib/fst/Lib.Sequence.fst /home/franziskus/Code/hacl-star//lib/fst/Lib.ByteSequence.fst speclib.fst /home/franziskus/Code/hacl-star//lib/fst/Lib.IntTypes.fst /home/franziskus/Code/hacl-star//lib/fst/Lib.RawIntTypes.fst /home/franziskus/Code/hacl-star//lib/fst/Lib.Sequence.fst /home/franziskus/Code/hacl-star//lib/fst/Lib.ByteSequence.fst speclib.fst poly1305.fst
+Extracted module IntTypes
+Extracted module RawIntTypes
+Extracted module Sequence
+Extracted module ByteSequence
+Extracted module Speclib
+Extracted module Poly1305
+All verification conditions discharged successfully
+touch poly1305-ml
+cp tests/testutil.ml poly1305-ml/
+cp tests/poly1305_test.ml poly1305-ml/
+OCAMLPATH=&quot;/home/franziskus/Code/hacl-star/dependencies/FStar//bin&quot; ocamlfind opt -package fstarlib -linkpkg -g
+  -w -8 -w -20 -g -I poly1305-ml poly1305-ml/Lib_IntTypes.ml poly1305-ml/Lib_RawIntTypes.ml poly1305-ml/Lib_Sequence.ml poly1305-ml/Lib_ByteSequence.ml poly1305-ml/Speclib.ml  poly1305-ml/Poly1305.ml poly1305-ml/testutil.ml poly1305-ml/poly1305_test.ml -o poly1305.exe
+File &quot;poly1305-ml/Lib_Sequence.ml&quot;, line 356, characters 16-19:
+Warning 26: unused variable len.
+./poly1305.exe
+Poly1305 Test 0 passed.
+Poly1305 Test 1 passed.
+</code></pre>
+
+</section><section>
+
+<h2 id="typecheck">Typecheck</h2>
+
+<pre><code>make -C fstar-compiler/specs/ poly1305.fst.checked
+</code></pre>
+
+<pre><code>make: Entering directory '/mnt/c/Users/Franziskus/Code/hacspec/compiler/fstar-compiler/specs'
+/home/franziskus/Code/hacl-star/dependencies/FStar//bin/fstar.exe --include /home/franziskus/Code/hacl-star//lib --include /home/franziskus/Code/hacl-star//lib/fst --expose_interfaces poly1305.fst
+Verified module: Poly1305 (10932 milliseconds)
+All verification conditions discharged successfully
+make: Leaving directory '/mnt/c/Users/Franziskus/Code/hacspec/compiler/fstar-compiler/specs'
 </code></pre>
 </section>
 
