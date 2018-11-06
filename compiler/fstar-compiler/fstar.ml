@@ -1,4 +1,4 @@
- open Hacs.Core
+open Hacs.Core
 open Hacs.Location
 open Hacs.Syntax
 open Hacs.Ast
