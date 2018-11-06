@@ -18,8 +18,11 @@ let main () =
   try
     let env =
       with_dispose ~dispose:P.finalize
-        (P.parse_intf %> T.tt_interface T.Env.empty0)
+        (P.parse_intf %> T.tt_interface T.Env.empty)
         (P.from_file (Resource.getlib "speclib.pyi")) in
+    (* match T.Env.Types.get env "int" with
+      | None -> Format.eprintf "speclib.pyi: Unknown type int\n%!";
+      | Some x -> Format.eprintf "speclib.pyi:\n%s\n%!" (Hacs.Ast.Ident.to_string x.tname); *)
 
     let (_ : T.Env.env * T.Env.env Hacs.Ast.program) =
       with_dispose ~dispose:P.finalize

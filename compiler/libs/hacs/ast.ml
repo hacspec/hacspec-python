@@ -63,7 +63,7 @@ type assop = Syntax.passop
 (* -------------------------------------------------------------------- *)
 type refined = private unit
 type raw     = private unit
-                   
+
 type type_ =
   | TUnit
   | TBool
@@ -131,7 +131,7 @@ let rec string_of_type (ty : type_) =
 
   | TArray (ty, None) ->
       Format.sprintf "array[%s]" (string_of_type ty)
-      
+
   | TArray (ty, Some i) ->
       Format.sprintf "array[%s, %s]"
         (string_of_type ty) (Big_int.string_of_big_int i)

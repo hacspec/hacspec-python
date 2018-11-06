@@ -27,7 +27,7 @@ let get_bits = Ident.make "uintn_get_bits"
 let int_t    = TInt `Int
 let nat_t    = TInt `Nat
 let pos_t    = TInt `Pos
-          
+
 let stdlib =
   let fs1 f = function [x      ] -> f x     | _ -> assert false
   and fs2 f = function [x; y   ] -> f x y   | _ -> assert false
@@ -69,7 +69,7 @@ let stdlib =
   (*  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));*)
   ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fs1 (fun _aty -> nat_t)), Ident.make "natmod_to_nat"));
   ((["natmod"],"to_int"), ([Some (`Approx PInt)], (fs1 (fun _aty -> int_t)), Ident.make "natmod_to_int"));
-  
+
   (*   (([],"uintn"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TWord (`UN Big_int.zero)), Ident.make "uintn")); *)
   ((["uintn"],"to_int"), ([Some (`Approx PWord)], (fs1 (fun _aty -> nat_t)), Ident.make "uintn_to_int"));
   ((["uintn"],"to_nat"), ([Some (`Approx PWord)], (fs1 (fun _aty -> nat_t)), Ident.make "uintn_to_nat"));
@@ -138,7 +138,7 @@ module Env : sig
   val empty0 : env
   val empty  : env
   val cast_funs : ((string list * string) * (ctype list * type_ * Ast.Ident.ident)) list
-    
+
   module Mod : sig
     val get    : env -> symbol -> env option
     val getnm  : env -> symbol list -> env option
@@ -192,7 +192,7 @@ end = struct
     ("int"      , TInt `Int );
     ("nat"      , TInt `Nat );
     ("string"   , TString   );
-    ("nat_t"    , TInt `Nat );
+    (* ("nat_t"    , TInt `Nat );
     ("pos_t"    , TInt `Pos );
     ("bit_t"    , tword1    );
     ("uint8_t"  , tword8    );
@@ -200,7 +200,7 @@ end = struct
     ("uint32_t" , tword32   );
     ("uint64_t" , tword64   );
     ("uint128_t", tword128  );
-    ("vlbytes_t", TArray (tword8, None));
+    ("vlbytes_t", TArray (tword8, None)); *)
   ]
 
   let cast_funs = [
@@ -213,7 +213,7 @@ end = struct
     (([],"uint64") , ([PWord;PInt], tword64, Ident.make "uint64"  ));
     (([],"uint128"), ([PWord;PInt], tword128, Ident.make "uint128" ));
     ]
-          
+
   let dprocs = [
     ("nat"    , [TInt `Int], TInt `Pos);
     ("pos"    , [TInt `Int], TInt `Nat);
@@ -338,13 +338,13 @@ end = struct
         | TArray   _, PArray   -> true
         | TTuple   _, PTuple   -> true
         | TRange   _, PInt     -> true
-  
+
         | TRefined (ty, _), _ ->
             approx ty cty
 
         | TNamed q, _ ->
             approx (Option.get (unfold env q)) cty
-  
+
         | _, _ -> false
 
       in fun ty cty -> approx ty cty
@@ -386,11 +386,11 @@ end = struct
       List.fold_left
         (fun env xty -> fst (Types.bind env xty)) env dtypes in
 
-    let env =
+    (* let env =
       List.fold_left
         (fun env (f, sg, re) ->
           let sg = List.map hotype1  sg in
-          fst (Procs.bind env f (sg, re))) env dprocs in
+          fst (Procs.bind env f (sg, re))) env dprocs in *)
 
     env
 end
@@ -566,7 +566,7 @@ and tt_type_app (env : env) ((x, args) : pident * pexpr list) =
   | "result_t", [ty] ->
       let ty = tt_type env ty in
       TResult (ty)
-      
+
   | "bytes_t", [sz] ->
       let sz = tt_cint env sz in
       TArray (tword8, Some sz)
@@ -639,10 +639,10 @@ and tt_lvalue ?(cty : etype option) (env : env) (pe : plvalue) =
 
     | PETuple (pes, _) ->
         let es, tys = List.split (List.map (tt_lvalue env) pes) in
-        (LTuple es, TTuple tys) 
+        (LTuple es, TTuple tys)
 
     | PEGet (pl, ps) ->
-        let l, lty = tt_lvalue ~cty:(`Approx PArray) env pl in   
+        let l, lty = tt_lvalue ~cty:(`Approx PArray) env pl in
         let s      = tt_slice env ps in
         let ty     =
           match Env.Types.inline env lty, s with
@@ -804,7 +804,7 @@ and tt_expr ?(cty : etype option) (env : env) (pe : pexpr) =
           |> List.map (fun (e, ty) -> tt_expr ?cty:ty env e)
           |> List.split in
         (ECall (name, List.map (fun x -> `Expr x) args), rty tys)
-        
+
     | PECall ((nm, f) as nmf, args) ->
         let senv = tt_module env nm in
 
@@ -995,7 +995,7 @@ and tt_module (env : env) (nm : pident list) =
         env
     | [x] when List.mem (unloc x) ["bytes";"array";"uintn";"natmod"] ->
         env
-      
+
     | x :: nm -> begin
         match Env.Mod.get env (unloc x) with
         | None ->
@@ -1051,7 +1051,7 @@ and tt_vardecl
 (* -------------------------------------------------------------------- *)
 and tt_annotation (env : env) (att : pexpr) : ident * hoexpr list =
   match unloc att with (* TODO: typecheck annotations properly : (tt_expr env att) *)
-  | PEVar ([],x) when unloc x = "typechecked" -> 
+  | PEVar ([],x) when unloc x = "typechecked" ->
       (Ident.make "typechecked", [])
   | PECall (x, args) when qunloc x = ([],"contract3") || qunloc x = ([],"contract") ->
       let es, tys = List.split (List.map (tt_expr env) args) in
