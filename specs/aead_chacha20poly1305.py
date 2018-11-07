@@ -7,6 +7,7 @@ from specs.poly1305 import poly1305_mac
 key_t    = bytes_t(32)
 nonce_t  = bytes_t(12)
 tag_t    = bytes_t(16)
+block_t  = bytes_t(64)
 
 @typechecked
 def padded_aad_msg(aad:vlbytes_t,msg:vlbytes_t) -> tuple_t(int,vlbytes_t):
@@ -44,7 +45,8 @@ def aead_chacha20poly1305_decrypt(key:key_t,nonce:nonce_t,
     keyblock0: block_t = chacha20_block(key, uint32(0), nonce)
     mac_key: bytes_t = keyblock0[0:32]
     to_mac: vlbytes_t
-    _, to_mac = padded_aad_msg(aad,ciphertext)
+    l: int # TODO: unused variable but _ is not supported by the compiler yet.
+    l, to_mac = padded_aad_msg(aad,ciphertext)
     mac: tag_t = poly1305_mac(to_mac,mac_key)
     if mac == tag:
         msg: vlbytes_t = chacha20_decrypt(key, uint32(1), nonce, ciphertext)

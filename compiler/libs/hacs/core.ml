@@ -54,6 +54,7 @@ module Resource : sig
   val root   : string
   val get    : string -> string
   val getlib : string -> string
+  val getspec: string -> string
 end = struct
   let root : string =
     let mydir = Filename.dirname Sys.executable_name in
@@ -68,6 +69,9 @@ end = struct
 
   let getlib (name : string) =
     get (Format.sprintf "../lib/%s" name)
+
+  let getspec (name : string) =
+    get (Format.sprintf "../specs/%s" name)
 end
 
 (* -------------------------------------------------------------------- *)

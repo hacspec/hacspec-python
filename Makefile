@@ -2,11 +2,11 @@
 PYTHON?=python3.6
 
 # hacspecs passing compiler checks
-FINISHED_SPECS=poly1305 chacha20 curve25519 curve448 aes
+FINISHED_SPECS=poly1305 chacha20 aead_chacha20poly1305 curve25519 curve448 \
+               aes gf128 aead_aes128gcm
 
 # hacspecs that pass all python checks and can be used in any make target.
-SPECS=$(FINISHED_SPECS) aead_chacha20poly1305 sha2 sha3 \
-      ed25519 p256 gf128 aead_aes128gcm rsapss blake2
+SPECS=$(FINISHED_SPECS) sha2 sha3 ed25519 p256 rsapss blake2
 
 # Don't use these in test. They take too long.
 SLOW_SPECS=wots kyber

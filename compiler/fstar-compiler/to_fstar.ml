@@ -14,7 +14,6 @@ let main () =
   let modulename = Filename.remove_extension (Filename.basename filename) in
   try
     let env =
-        (* T.tt_interface T.Env.empty  *)
         let stream = P.from_file (C.Resource.getlib "speclib.pyi") in
         let speclib = P.parse_intf stream in
         T.tt_interface T.Env.empty speclib

@@ -65,6 +65,7 @@ let stdlib =
   ((["bytes"],"from_uint128_be"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_be"));
   ((["bytes"],"to_uint64_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword64)), Ident.make "bytes_to_uint64_le"));
   ((["bytes"],"from_uint64_le"), ([Some (`Exact (tword64))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint64_le"));
+  ((["bytes"],"from_uint64_be"), ([Some (`Exact (tword64))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint64_be"));
 
   (*  (([],"natmod"), ([Some (`Approx PInt); Some (`Approx PInt)], (fun [aty;bty] -> TInt (`Natm (EUInt Big_int.zero))), Ident.make "natmod"));*)
   ((["natmod"],"to_nat"), ([Some (`Approx PInt)], (fs1 (fun _aty -> nat_t)), Ident.make "natmod_to_nat"));
@@ -167,6 +168,7 @@ module Env : sig
   module Procs : sig
     val get  : env -> symbol -> pdecl option
     val bind : env -> symbol -> hotype list * type_ -> env * ident
+    val add  : env -> pdecl -> env
   end
 end = struct
   type tdecl = { tname : ident; tdef  : type_; }
@@ -372,6 +374,8 @@ end = struct
       let decl = { pname = Ident.make f; psig = sig_; pret = ret } in
       let env  = { env with e_procs = Mstr.add f decl env.e_procs } in
       (env, decl.pname)
+    let add (env : env) (p : pdecl) =
+      { env with e_procs = Mstr.add (Ast.Ident.to_string p.pname) p env.e_procs }
   end
 
   let empty =
@@ -1009,8 +1013,27 @@ and tt_module (env : env) (nm : pident list) =
   in resolve (env, []) nm
 
 (* -------------------------------------------------------------------- *)
-and tt_import (env : env) (_ : pimport) =
-  env
+and tt_import (e : env) (imp : pimport) =
+  let impmod, impdec = imp in
+  let impmodpath, impmod2 = impmod in
+  if (unloc impmod2) = "speclib" then
+    e
+  else (
+    (* TODO: use path to read import *)
+    let _ = (String.concat " " (List.map unloc impmodpath)) in
+    let importeddeclarations = (List.map (fun x ->
+      match x with | None -> "" | Some y -> unloc y) (Option.get impdec)) in
+    let (pi : Env.env * Env.env Ast.program) =
+      let stream = Reader.from_file (Resource.getspec (unloc impmod2 ^ ".py")) in
+      let past   = Reader.parse_spec stream in
+      tt_program e past
+    in
+    let new_env, _ = pi in
+    let newdecls = List.map (fun d ->
+      Env.Procs.get new_env d) importeddeclarations in
+    let newdecls = List.map Option.get newdecls in
+    List.fold_left Env.Procs.add e newdecls
+  )
 
 (* -------------------------------------------------------------------- *)
 and tt_tydecl (env : env) ((x, ty) : pident * pexpr) : env * tydecl =
@@ -1054,7 +1077,7 @@ and tt_annotation (env : env) (att : pexpr) : ident * hoexpr list =
   | PEVar ([],x) when unloc x = "typechecked" ->
       (Ident.make "typechecked", [])
   | PECall (x, args) when qunloc x = ([],"contract3") || qunloc x = ([],"contract") ->
-      let es, tys = List.split (List.map (tt_expr env) args) in
+      let es, _ = List.split (List.map (tt_expr env) args) in
       (Ident.make "contract3", List.map (fun x -> `Expr x) es)
   | _ ->
       error ~loc:(loc att) env UnsupportedAnnotation
@@ -1124,7 +1147,7 @@ and tt_procdef (env : env) (pf : pprocdef) : env * env procdef =
   in (env, aout)
 
 (* -------------------------------------------------------------------- *)
-let tt_topdecl1 (env : env) = function
+and tt_topdecl1 (env : env) = function
   | PTImport info ->
       (tt_import  env info, [])
 
@@ -1138,7 +1161,7 @@ let tt_topdecl1 (env : env) = function
       let env, x = tt_vardecl env ((x, ty), e) in (env, [TD_VarDecl x])
 
 (* -------------------------------------------------------------------- *)
-let tt_intf1 (env : env) = function
+and tt_intf1 (env : env) = function
   | IPTTypeAlias (x, ty) ->
       let env, _ = tt_tydecl env (x, ty) in env
 
@@ -1158,10 +1181,10 @@ let tt_intf1 (env : env) = function
       else Env.Mod.bindnm env (nmunloc nm) senv
 
 (* -------------------------------------------------------------------- *)
-let tt_interface (env : env) (i : pintf) : env =
+and tt_interface (env : env) (i : pintf) : env =
   List.fold_left tt_intf1 env i
 
 (* -------------------------------------------------------------------- *)
-let tt_program (env : env) (p : pspec) : env * env program =
+and tt_program (env : env) (p : pspec) : env * env program =
   let env, prgm = List.fold_left_map tt_topdecl1 env p in
   (env, List.flatten prgm)
