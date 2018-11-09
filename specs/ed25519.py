@@ -9,6 +9,7 @@ from specs.sha2 import sha512
 d25519: felem_t = (to_felem(
     37095705934669439343138083508754565189542113879843219016388785533085940283555))
 
+# TODO: << isn't supported by the compiler yet.
 q25519 : nat_t = nat((1 << 252) + 27742317777372353535851937790883648493)
 qelem_t = natmod_t(q25519)
 @typechecked
@@ -116,6 +117,7 @@ def point_compress(p: extended_point_t) -> serialized_point_t:
     x : felem_t = px * zinv
     y : felem_t = py * zinv
     r : int = (2**255 * (natmod.to_int(x) % 2)) + natmod.to_int(y)
+    # TODO: default arguments aren't supported by the compiler yet.
     return bytes.from_nat_le(r)
 
 fsqrt_m1: felem_t = (to_felem(pow(2, ((p25519 - 1) // 4), p25519)))

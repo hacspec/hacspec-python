@@ -157,15 +157,18 @@ module Env : sig
     val unfold : env -> qsymbol -> type_ option
     val hred   : env -> type_ -> type_
     val inline : env -> type_ -> type_
+    val add    : env -> tdecl -> env
   end
 
   module Vars : sig
     val exists : env -> symbol -> bool
     val get    : env -> symbol -> vdecl option
     val bind   : env -> symbol * type_ -> env * ident
+    val add    : env -> vdecl -> env
   end
 
   module Procs : sig
+    val exists : env -> symbol -> bool
     val get  : env -> symbol -> pdecl option
     val bind : env -> symbol -> hotype list * type_ -> env * ident
     val add  : env -> pdecl -> env
@@ -252,6 +255,9 @@ end = struct
   module Types = struct
     let get (env : env) (x : symbol) =
       Mstr.Exceptionless.find x env.e_types
+
+    let add (env : env) (t : tdecl) =
+      { env with e_types = Mstr.add (Ast.Ident.to_string t.tname) t env.e_types }
 
     let exists (env : env) (x : symbol) =
       Option.is_some (get env x)
@@ -364,16 +370,23 @@ end = struct
       let decl = { vname = Ident.make x; vtype = ty; vrawty = Type.strip ty } in
       let env  = { env with e_vars = Mstr.add x decl env.e_vars } in
       (env, decl.vname)
+
+    let add (env : env) (v : vdecl) =
+      { env with e_vars = Mstr.add (Ast.Ident.to_string v.vname) v env.e_vars }
   end
 
   module Procs = struct
     let get (env : env) (x : symbol) =
       Mstr.Exceptionless.find x env.e_procs
 
+    let exists (env : env) (x : symbol) =
+      Option.is_some (get env x)
+
     let bind (env : env) (f : symbol) ((sig_, ret) : hotype list * type_) =
       let decl = { pname = Ident.make f; psig = sig_; pret = ret } in
       let env  = { env with e_procs = Mstr.add f decl env.e_procs } in
       (env, decl.pname)
+
     let add (env : env) (p : pdecl) =
       { env with e_procs = Mstr.add (Ast.Ident.to_string p.pname) p env.e_procs }
   end
@@ -1014,6 +1027,9 @@ and tt_module (env : env) (nm : pident list) =
 
 (* -------------------------------------------------------------------- *)
 and tt_import (e : env) (imp : pimport) =
+  (* TODO: This leads to duplicate symbols when imported modules use the same
+           identifiers and get imported. Add the module to imported symbols
+           to allow for duplicate checking. *)
   let impmod, impdec = imp in
   let impmodpath, impmod2 = impmod in
   if (unloc impmod2) = "speclib" then
@@ -1029,10 +1045,21 @@ and tt_import (e : env) (imp : pimport) =
       tt_program e past
     in
     let new_env, _ = pi in
-    let newdecls = List.map (fun d ->
-      Env.Procs.get new_env d) importeddeclarations in
-    let newdecls = List.map Option.get newdecls in
-    List.fold_left Env.Procs.add e newdecls
+    (* Add imported functions *)
+    let newpdecls = List.map (fun d -> Env.Procs.get new_env d)
+      (List.filter (fun x -> Env.Procs.exists new_env x) importeddeclarations) in
+    let newpdecls = List.map Option.get newpdecls in
+    let e = List.fold_left Env.Procs.add e newpdecls in
+    (* Add imported types *)
+    let newtdecls = List.map (fun d -> Env.Types.get new_env d)
+      (List.filter (fun x -> Env.Types.exists new_env x) importeddeclarations) in
+    let newtdecls = List.map Option.get newtdecls in
+    let e = List.fold_left Env.Types.add e newtdecls in
+    (* Add imported types *)
+    let newvdecls = List.map (fun d -> Env.Vars.get new_env d)
+      (List.filter (fun x -> Env.Vars.exists new_env x) importeddeclarations) in
+    let newvdecls = List.map Option.get newvdecls in
+    List.fold_left Env.Vars.add e newvdecls
   )
 
 (* -------------------------------------------------------------------- *)

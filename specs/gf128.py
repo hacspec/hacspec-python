@@ -3,6 +3,7 @@
 from lib.speclib import *
 
 blocksize : int = 16
+# TODO: can't use blocksize as argument here due to compiler bug.
 block_t = bytes_t(16)
 key_t = bytes_t(16)
 tag_t = bytes_t(16)
