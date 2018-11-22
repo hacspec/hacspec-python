@@ -38,9 +38,9 @@ def hash_sha256(msg: vlbytes_t) -> bytes_t(32):
 def mgf_sha256(mgfseed: vlbytes_t, maskLen: size_nat_t) -> vlbytes_t:
     counter_max : size_nat_t = blocks(maskLen, hLen)
     accLen : size_nat_t = counter_max * hLen
-    acc = array.create(accLen, uint8(0))
+    acc: vlbytes_t = array.create(accLen, uint8(0))
     mgfseedLen : int = array.length(mgfseed)
-    mgfseed_counter = array.create(mgfseedLen + 4, uint8(0))
+    mgfseed_counter: vlbytes_t = array.create(mgfseedLen + 4, uint8(0))
     mgfseed_counter[0:mgfseedLen] = mgfseed
 
     for i in range(counter_max):
@@ -83,14 +83,14 @@ def pss_encode(salt: vlbytes_t, msg: vlbytes_t, emBits: size_nat_t) -> vlbytes_t
     mHash : bytes_t = hash_sha256(msg)
     m1Len : size_nat_t = 8 + hLen + sLen
     # m1 = [8 * 0x00; mHash; salt]
-    m1 = array.create(m1Len, uint8(0))
+    m1: vlbytes_t = array.create(m1Len, uint8(0))
     m1[8:(8 + hLen)] = mHash
     m1[(8 + hLen):m1Len] = salt
     m1Hash : size_nat_t = hash_sha256(m1)
 
     dbLen : size_nat_t = size_nat(nat(emLen - hLen - 1))
     # db = [0x00; ..; 0x00; 0x01; salt]
-    db = array.create(dbLen, uint8(0))
+    db: vlbytes_t = array.create(dbLen, uint8(0))
     last_before_salt : size_nat_t = dbLen - sLen - 1
     db[last_before_salt] = uint8(0x01)
     db[(last_before_salt + 1):dbLen] = salt
@@ -100,7 +100,7 @@ def pss_encode(salt: vlbytes_t, msg: vlbytes_t, emBits: size_nat_t) -> vlbytes_t
     if msBits > 0:
         maskedDB[0] = maskedDB[0] & (uint8(0xff) >> (8 - msBits))
 
-    em = array.create(emLen, uint8(0))
+    em: vlbytes_t = array.create(emLen, uint8(0))
     # em = [maskedDB; m1Hash; 0xbc]
     em[0:dbLen] = maskedDB
     em[dbLen:(dbLen + hLen)] = m1Hash
@@ -141,7 +141,7 @@ def pss_verify(sLen: size_nat_t, msg: vlbytes_t, em: vlbytes_t, emBits: size_nat
                 db[0] = db[0] & (uint8(0xff) >> (8 - msBits))
 
             padLen : size_nat_t = emLen - sLen - hLen - 1
-            pad2 = array.create(padLen, uint8(0))
+            pad2: vlbytes_t = array.create(padLen, uint8(0))
             pad2[padLen - 1] = uint8(0x01)
 
             pad : vlbytes_t = db[0:padLen]
@@ -149,7 +149,7 @@ def pss_verify(sLen: size_nat_t, msg: vlbytes_t, em: vlbytes_t, emBits: size_nat
 
             if (eq_bytes(pad, pad2)):
                 m1Len : size_nat_t = 8 + hLen + sLen
-                m1 = array.create(m1Len, uint8(0))
+                m1: vlbytes_t = array.create(m1Len, uint8(0))
                 m1[8:(8 + hLen)] = mHash
                 m1[(8 + hLen):m1Len] = salt
                 m1Hash0 : vlbytes_t = hash_sha256(m1)

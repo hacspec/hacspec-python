@@ -10,7 +10,7 @@ op_range_t = range_t(0, 1)
 
 @typechecked
 def sha2(v:variant_t) -> FunctionType:
-    # Initializing types and constants for different variants 
+    # Initializing types and constants for different variants
     if v == 224 or v == 256:
         blockSize : int = 64
         block_t = bytes_t(blockSize)
@@ -18,7 +18,7 @@ def sha2(v:variant_t) -> FunctionType:
         len_t = uint64_t
         to_len : FunctionType = uint64
         len_to_bytes : FunctionType = bytes.from_uint64_be
-        word_t = uint32_t  
+        word_t = uint32_t
         to_word : FunctionType = uint32
         bytes_to_words : FunctionType = bytes.to_uint32s_be
         words_to_bytes : FunctionType = bytes.from_uint32s_be
@@ -91,7 +91,8 @@ def sha2(v:variant_t) -> FunctionType:
     hashSize : int = v // 8
     hash_t = array_t(word_t,8)
     digest_t = bytes_t(hashSize)
-    h0 = array.create(8,to_word(0))
+    h0_t = bytes_t(8)
+    h0: h0_t = array.create(8,to_word(0))
     if v == 224:
         h0 = hash_t([
             uint32(0xc1059ed8), uint32(0x367cd507), uint32(0x3070dd17), uint32(0xf70e5939),
@@ -109,7 +110,7 @@ def sha2(v:variant_t) -> FunctionType:
             uint64(0x6a09e667f3bcc908), uint64(0xbb67ae8584caa73b), uint64(0x3c6ef372fe94f82b), uint64(0xa54ff53a5f1d36f1),
             uint64(0x510e527fade682d1), uint64(0x9b05688c2b3e6c1f), uint64(0x1f83d9abfb41bd6b), uint64(0x5be0cd19137e2179)])
 
-    # Initialization complete: SHA-2 spec begins 
+    # Initialization complete: SHA-2 spec begins
 
     @typechecked
     def ch(x:word_t,y:word_t,z:word_t) -> word_t:
@@ -133,7 +134,7 @@ def sha2(v:variant_t) -> FunctionType:
     @typechecked
     def schedule(block:block_t) -> k_t:
         b : bytes_t = bytes_to_words(block)
-        s = array.create(kSize,to_word(0))
+        s : vlbytes_t = array.create(kSize,to_word(0))
         for i in range(kSize):
             if i < 16:
                 s[i] = b[i]
@@ -183,7 +184,7 @@ def sha2(v:variant_t) -> FunctionType:
 
     @typechecked
     def truncate(b:bytes_t(v)) -> digest_t:
-        result = array.create(hashSize, uint8(0))
+        result: vlbytes_t = array.create(hashSize, uint8(0))
         for i in range(hashSize):
             result[i] = b[i]
         return digest_t((result))
@@ -199,7 +200,7 @@ def sha2(v:variant_t) -> FunctionType:
             h = compress(blocks[i],h)
         last_len : int = array.length(last)
         len_bits : int = array.length(msg) * 8
-        pad = array.create(2*blockSize,uint8(0))
+        pad: vlbytes_t = array.create(2*blockSize,uint8(0))
         pad[0:last_len] = last
         pad[last_len] = uint8(0x80)
         if last_len < blockSize - lenSize:
@@ -213,7 +214,7 @@ def sha2(v:variant_t) -> FunctionType:
         return truncate(result)
     return hash
 
-# Specific instances of SHA-2 
+# Specific instances of SHA-2
 
 sha224 : FunctionType = sha2(224)
 sha256 : FunctionType = sha2(256)

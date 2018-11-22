@@ -14,7 +14,7 @@ This project is still in the early stages. We invite submissions of crypto specs
 
 ## compiler
 
-See [spec-compilers](spec-compilers/) for details.
+See [compilers](compilers/) for details.
 
 # How to use
 
@@ -53,3 +53,5 @@ to run or check specs.
 # contact
 
 Discussions are happening on the [mailing list](https://moderncrypto.org/mailman/listinfo/hacspec).
+
+Chat with us on [gitter](https://gitter.im/hacspec/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link).

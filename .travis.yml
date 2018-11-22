@@ -7,11 +7,9 @@ services:
   - docker
 
 install:
-  - pip install mypy
-  - pip install mypy_extensions
-  - pip install xml2rfc
   - pip install typeguard
-  - gem install --no-doc kramdown-rfc2629
+  - pip install Sphinx
+  - pip install mypy # for typed_ast
 
 jobs:
   include:
@@ -20,9 +18,14 @@ jobs:
       script:
         - make -C build test
     - stage: docs
-      name: rfc
+      name: docs
       script:
-        - make -C rfc
+        - make python-docs
+    # TODO: get hugo on here.
+    # -
+    #   name: website
+    #   script:
+    #     - make website
     - stage: "test & typecheck"
       name: run
       script: make run

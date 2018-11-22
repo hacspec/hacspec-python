@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='hacspec',
-      version='0.0.1.dev1',
+      version='0.0.1.dev3',
       description='hacspec is a new specification language for crypto primitives that is succinct, that is easy to read and implement, and that lends itself to formal verification.',
       url='https://github.com/HACS-workshop/hacspec',
       author='Franziskus Kiefer et al.',
