@@ -331,6 +331,8 @@ class _uintn(_natmod):
                 return _uintn(self.v >> key.start,
                               key.stop - key.start)
             else:
+                if key < 0:
+                    fail("i has to be positive for [i].")
                 return _uintn(self.v >> key,1)
         except:
             print('_uintn content:', self.v)
@@ -510,8 +512,11 @@ class _array(Generic[T]):
         try:
             if isinstance(key, slice):
                 return _array(self.l[key.start:key.stop])
-            elif isinstance(key,int) and key >= 0 and key < self.len:
+            # XXX: and key >= 0?
+            elif isinstance(key,int) and key < self.len:
                 return self.l[key]
+            else:
+                fail("Error accessing element(s)")
         except:
             print('array access error:')
             print('array content:', self.l)
@@ -1064,8 +1069,8 @@ matrix = _matrix
 # Typed versions of all python functions that can be used in specs.
 class speclib:
     @typechecked
-    def ceil(x: int) -> nat_t:
-        return nat(ceil(x))
+    def ceil(x: float) -> int:
+        return ceil(x)
 
     @typechecked
     def log(x: int, b: int) -> float:
