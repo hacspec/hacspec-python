@@ -243,9 +243,9 @@ inline_for_extraction let uintn_get_bit #n (x:numeric_t n) (i:size_nat) : bit_t 
   | NATm m ->  bit (((uintn_to_nat #n x) / pow2 i) % 2)
   | Int -> bit ((x % pow2 i) % 2)
   
-inline_for_extraction let uintn_rotate_left (#t:inttype) (a:uint_t t PUB) (b:Lib.IntTypes.rotval t) : uint_t t PUB = a <<<. b
+inline_for_extraction let uintn_rotate_left (#t:inttype) (a:uint_t t PUB) (b:nat{b > 0 /\ b < bits t}) : uint_t t PUB = a <<<. size b
 
-inline_for_extraction let uintn_rotate_right (#t:inttype) (a:uint_t t PUB) (b:Lib.IntTypes.rotval t) : uint_t t PUB = a >>>. b
+inline_for_extraction let uintn_rotate_right (#t:inttype) (a:uint_t t PUB) (b:nat{b > 0 /\ b < bits t}) : uint_t t PUB = a >>>. size b
 
 
 type result_t (t:Type0) = 
@@ -254,7 +254,7 @@ type result_t (t:Type0) =
 inline_for_extraction let result_retval #t (x:t) : result_t t = Retval x
 inline_for_extraction let result_error #t (x:string) : result_t t = Error x
 
-inline_for_extraction let range_t min max = n:size_t{v n >= min /\ v n < max}
+inline_for_extraction let range_t min max = n:nat{n >= min /\ n < max}
 unfold let range i = i
 inline_for_extraction let repeati = repeati
 
