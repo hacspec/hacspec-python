@@ -12,9 +12,9 @@ w_sixteen : uint32_t = uint32(16)
 # n := length (message, signature, key), SHA2 output length
 n : int = 32
 w : uint32_t = w_sixteen
-log_w : int = 4
+log_w : int = speclib.log(uint32.to_int(w), 2)
 
-length1 : uint32_t = uint32(int(speclib.ceil(8*n // log_w)))
+length1 : uint32_t = uint32(speclib.ceil(8*n / log_w))
 tmp : int = uint32.to_int(length1) * (uint32.to_int(w) - 1)
 tmp = speclib.log(tmp, 2)
 length2 : uint32_t = uint32(int(tmp // log_w + 1))
@@ -199,7 +199,7 @@ def base_w(msg: vlbytes_t, l: uint32_t) -> vlbytes_t:
     return basew
 
 @typechecked
-def wots_msg(msg: digest_t) -> vlbytes_t:
+def wots_msg(msg: vlbytes_t) -> vlbytes_t:
     csum : int = 0
     m : vlbytes_t = base_w(msg, length1)
     for i in range(uint32.to_int(length1)):
@@ -212,7 +212,7 @@ def wots_msg(msg: digest_t) -> vlbytes_t:
 
 
 @typechecked
-def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
+def wots_sign(msg: vlbytes_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
     m : vlbytes_t = wots_msg(msg)
     sig : sig_t = sig_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     for i in range(uint32.to_int(length)):
@@ -224,7 +224,7 @@ def wots_sign(msg: digest_t, sk: sk_t, adr: address_t, seed: seed_t) -> sig_t:
 
 
 @typechecked
-def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> tuple_t(pk_t, address_t):
+def wots_pk_from_sig(msg: vlbytes_t, sig: sig_t, adr: address_t, seed: seed_t) -> tuple_t(pk_t, address_t):
     m : vlbytes_t = wots_msg(msg)
     pk2 : pk_t = pk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     for i in range(uint32.to_int(length)):
@@ -234,3 +234,12 @@ def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_
         adr, pk_i = wots_chain(sig[i], m_i, uint32.to_int(w) - 1 - m_i, seed, adr)
         pk2[i] = pk_i
     return (pk2, adr)
+
+
+@typechecked
+def wots_verify(pk: pk_t, msg: digest_t, sig: sig_t, adr: address_t, seed: seed_t) -> bool:
+    pk2: pk_t
+    adr2: address_t
+    pk2, adr2 = wots_pk_from_sig(msg, sig, adr, seed)
+    return pk == pk2
+

@@ -3,9 +3,10 @@ from lib.speclib import *
 from specs.wots import *
 from specs.sha2 import sha256
 
-h : int = 2 # height -> number of signatures
+h : int = 10 # height -> number of signatures
 n_keys : int = 2**h
 
+n_bytes_t = bytes_t(n)
 key2_t = bytes_t(2*n)
 key3_t = bytes_t(3*n)
 wots_keys_t = array_t(sk_t, n_keys)
@@ -24,6 +25,14 @@ SK_t = tuple_t(wots_keys_t, nat_t, key_t, key_t, seed_t)
 # seed (n-bytes)
 PK_t = tuple_t(uint32_t, key_t, seed_t)
 
+# Signature:
+# idx_sig: WOTS+ key index (4 bytes)
+# randomness r: byte string (n-bytes)
+# sig_ots: WOTS+ signature (len * n bytes)
+# auth: path (h * n bytes)
+AUTH_PATH_t = array_t(key_t, h)
+SIG_t = tuple_t(uint32_t, key_t, sig_t, AUTH_PATH_t)
+
 @typechecked
 def get_seed(sk: SK_t) -> seed_t:
     sks : wots_keys_t
@@ -38,8 +47,10 @@ def get_seed(sk: SK_t) -> seed_t:
 # H_msg: SHA2-256(toByte(2, 32) || KEY || M),
 
 @typechecked
-def H_msg(key: key_t, m: vlbytes_t) -> digest_t:
-    return hash(bytes.from_nat_be(nat(2), nat(n)), key, m)
+def H_msg(key: key3_t, m: vlbytes_t) -> digest_t:
+    h_in : bytes_t = bytes.concat(key, m)
+    # TODO: this is ugly
+    return hash(bytes.from_nat_be(nat(2), nat(n)), array([]), h_in)
 
 
 @typechecked
@@ -78,10 +89,10 @@ def rand_hash(left: key_t, right: key_t, seed: seed_t, adr: address_t) -> digest
     bm_1 : digest_t = PRF(seed, adr)
     left_bm_o : digest_t = array.create(n, uint8(0))
     right_bm_1 : digest_t = array.create(n, uint8(0))
-    for i in range(0,n):
+    for i in range(n):
         left_bm_o[i] = left[i] ^ bm_0[i]
         right_bm_1[i] = right[i] ^ bm_1[i]
-    m = bytes.concat(left_bm_o, right_bm_1)
+    m : vlbytes_t = bytes.concat(left_bm_o, right_bm_1)
     r : digest_t = H(key, m)
     return r
 
@@ -107,20 +118,21 @@ def rand_hash(left: key_t, right: key_t, seed: seed_t, adr: address_t) -> digest
 @typechecked
 def ltree(pk: pk_t, adr: address_t, seed: seed_t) -> key_t:
     l : int = uintn.to_int(length)
-    l_half : int = l//2
     adr : address_t = set_tree_height(adr, uint32(0))
-    pk_i : vlbytes_t
-    for _ in range(0,l):
-        for i in range(0,l_half):
+    pk_i : pk_t = pk
+    for _ in range(l):
+        l_half : int = speclib.floor(l/2)
+        for i in range(l_half):
             adr = set_tree_index(adr, uint32(i))
-            pk[i] = rand_hash(pk[2*i], pk[2*i+1], seed, adr)
+            pk_i[i] = rand_hash(pk_i[2*i], pk_i[2*i+1], seed, adr)
         if l % 2 == 1:
-            pk[l_half] = pk[l-1]
+            pk_i[l_half] = pk_i[l-1]
         l = speclib.ceil(l/2)
-        adr = set_tree_height(get_tree_height(adr)+1)
+        adr = set_tree_height(adr, get_tree_height(adr)+uint32(1))
         if l <= 1:
+            # TODO: this is necessary because we simulate while l > 1 here.
             break
-    return pk[0]
+    return pk_i[0]
 
 # Algorithm 9: treeHash
 #   Input: XMSS private key SK, start index s, target node height t,
@@ -150,13 +162,12 @@ def ltree(pk: pk_t, adr: address_t, seed: seed_t) -> key_t:
 
 @typechecked
 def tree_hash(sk: SK_t, s: uint32_t, t: uint32_t, adr: address_t) -> key_t:
-    x = uint32.to_int(s) % (1 << uintn.to_int(t))
+    x: int = uint32.to_int(s) % (1 << uintn.to_int(t))
     if x != 0:
-        # TODO: handle this in the caller
-        return key_t.create(n, uint8(0))
+        fail("Invalid parameters to tree hash.")
     offset: int = 0
     stack: array_t = array.create(2**uint32.to_int(t), array.create(n, uint8(0)))
-    for i in range(0, 2**uint32.to_int(t)):
+    for i in range(2**uint32.to_int(t)):
         seed: seed_t = get_seed(sk) # FIXME
         adr: address_t = set_type(adr, uint32(0))
         a: uint32_t = s + uint32(i)
@@ -165,15 +176,16 @@ def tree_hash(sk: SK_t, s: uint32_t, t: uint32_t, adr: address_t) -> key_t:
         pk, _ = key_gen_pk(adr, seed, get_wots_sk(sk, uint32.to_int(a)))
         adr = set_type(adr, uint32(1))
         adr = set_ltree_address(adr, a)
-        node: key_t = ltree(pk, seed, adr)
+        node: key_t = ltree(pk, adr, seed)
         adr = set_type(adr, uint32(2))
         adr = set_tree_height(adr, uint32(0))
         adr = set_tree_index(adr, a)
         if offset > 1:
-            for _ in range(0,t): # The stack has at most t-1 elements.
-                adr = set_tree_index(adr, uint32(get_tree_index(adr) - 1 // 2))
+            for _ in range(uint32.to_int(t)): # The stack has at most t-1 elements.
+                new_index: uint32_t = uint32(uint32.to_int(get_tree_index(adr)) - 1 // 2)
+                adr = set_tree_index(adr, new_index)
                 node = rand_hash(stack[offset-1], node, seed, adr)
-                adr = set_tree_height(adr, get_tree_height(adr) + 1)
+                adr = set_tree_height(adr, get_tree_height(adr) + uint32(1))
         stack[offset] = node
         offset += 1
 
@@ -204,7 +216,7 @@ def tree_hash(sk: SK_t, s: uint32_t, t: uint32_t, adr: address_t) -> key_t:
 def key_gen_xmss() -> tuple_t(SK_t, PK_t):
     zero_key: sk_t = sk_t.create(uintn.to_int(length), key_t.create(n, uint8(0)))
     wots_keys: wots_keys_t = wots_keys_t.create(n_keys, zero_key)
-    for i in range(0, n_keys):
+    for i in range(n_keys):
         wots_sk : sk_t = key_gen_sk()
         wots_keys[i] = wots_sk
     idx: nat_t = 0
@@ -217,3 +229,132 @@ def key_gen_xmss() -> tuple_t(SK_t, PK_t):
     xmss_sk: SK_t = (wots_keys, idx, SK_PRF, root, seed)
     xmss_pk: PK_t = (uint32(0), root, seed)
     return xmss_sk, xmss_pk
+
+# Algorithm 11: treeSig - Generate a WOTS+ signature on a message with
+#                         corresponding authentication path
+#   Input: n-byte message M', XMSS private key SK,
+#          signature index idx_sig, ADRS
+#   Output: Concatenation of WOTS+ signature sig_ots and
+#           authentication path auth
+#
+#   auth = buildAuth(SK, idx_sig, ADRS);
+#   ADRS.setType(0);   // Type = OTS hash address
+#   ADRS.setOTSAddress(idx_sig);
+#   sig_ots = WOTS_sign(getWOTS_SK(SK, idx_sig),
+#                       M', getSEED(SK), ADRS);
+#   Sig = sig_ots || auth;
+#   return Sig;
+
+# TODO
+
+# Algorithm 12: XMSS_sign - Generate an XMSS signature and update the
+#                           XMSS private key
+#   Input: Message M, XMSS private key SK
+#   Output: Updated SK, XMSS signature Sig
+#
+#   idx_sig = getIdx(SK);
+#   setIdx(SK, idx_sig + 1);
+#   ADRS = toByte(0, 32);
+#   byte[n] r = PRF(getSK_PRF(SK), toByte(idx_sig, 32));
+#   byte[n] M' = H_msg(r || getRoot(SK) || (toByte(idx_sig, n)), M);
+#   Sig = idx_sig || r || treeSig(M', SK, idx_sig, ADRS);
+#   return (SK || Sig);
+
+# TODO
+
+# Algorithm 13: XMSS_rootFromSig - Compute a root node from a tree
+#                                  signature
+#   Input: index idx_sig, WOTS+ signature sig_ots, authentication path
+#          auth, n-byte message M', seed SEED, address ADRS
+#   Output: n-byte root value node[0]
+#
+#   ADRS.setType(0);   // Type = OTS hash address
+#   ADRS.setOTSAddress(idx_sig);
+#   pk_ots = WOTS_pkFromSig(sig_ots, M', SEED, ADRS);
+#   ADRS.setType(1);   // Type = L-tree address
+#   ADRS.setLTreeAddress(idx_sig);
+#   byte[n][2] node;
+#   node[0] = ltree(pk_ots, SEED, ADRS);
+#   ADRS.setType(2);   // Type = hash tree address
+#   ADRS.setTreeIndex(idx_sig);
+#   for ( k = 0; k < h; k++ ) {
+#     ADRS.setTreeHeight(k);
+#     if ( (floor(idx_sig / (2^k)) % 2) == 0 ) {
+#       ADRS.setTreeIndex(ADRS.getTreeIndex() / 2);
+#       node[1] = RAND_HASH(node[0], auth[k], SEED, ADRS);
+#     } else {
+#       ADRS.setTreeIndex((ADRS.getTreeIndex() - 1) / 2);
+#       node[1] = RAND_HASH(auth[k], node[0], SEED, ADRS);
+#     }
+#     node[0] = node[1];
+#   }
+#   return node[0];
+
+@typechecked
+def root_from_sig(idx_sig: uint32_t, sig_ots: sig_t, auth_path: AUTH_PATH_t,
+                  m: n_bytes_t, seed: seed_t, adr: address_t) -> key_t:
+    adr: address_t = set_type(adr, uint32(0))
+    adr = set_ots_address(adr, idx_sig)
+    pk_ots: pk_t
+    adr2: address_t
+    pk_ots, adr2 = wots_pk_from_sig(m, sig_ots, adr, seed)
+
+    adr = set_type(adr, uint32(1))
+    adr = set_ltree_address(adr, idx_sig)
+    node_0: key_t = ltree(pk_ots, adr, seed)
+
+    adr = set_type(adr, uint32(2))
+    adr = set_tree_index(adr, idx_sig)
+    for k in range(h):
+        node_1: key_t
+        adr = set_tree_height(adr, uint32(k))
+        if (speclib.floor(uintn.to_int(idx_sig) / (2 ** k)) % 2) == 0:
+            adr = set_tree_index(adr, uint32(uintn.to_int(get_tree_index(adr)) // 2))
+            node_1 = rand_hash(node_0, auth_path[k], seed, adr)
+        else:
+            adr = set_tree_index(adr, uint32((uintn.to_int(get_tree_index(adr)) - 1) // 2))
+            node_1 = rand_hash(auth_path[k], node_0, seed, adr)
+        node_0 = node_1
+    return node_0
+
+# Algorithm 14: XMSS_verify - Verify an XMSS signature using the
+#                             corresponding XMSS public key and a message
+#   Input: XMSS signature Sig, message M, XMSS public key PK
+#   Output: Boolean
+#
+#   ADRS = toByte(0, 32);
+#   byte[n] M' = H_msg(r || getRoot(PK) || (toByte(idx_sig, n)), M);
+#
+#   byte[n] node = XMSS_rootFromSig(idx_sig, sig_ots, auth, M',
+#                                   getSEED(PK), ADRS);
+#   if ( node == getRoot(PK) ) {
+#     return true;
+#   } else {
+#     return false;
+#   }
+
+@typechecked
+def xmss_verify(sig: SIG_t, m: vlbytes_t, pk: PK_t) -> bool:
+    adr: address_t = array.create(8, uint32(0))
+    idx_sig: uint32_t
+    r: key_t
+    sig_ots: sig_t
+    auth_path: AUTH_PATH_t
+    idx_sig, r, sig_ots, auth_path = sig
+    oid: uint32_t
+    root_node: key_t
+    seed: seed_t
+    oid, root_node, seed = pk
+    h_k: vlbytes_t = array.concat(r, root_node)
+    idx_sig_bytes_tmp: bytes_t = bytes.from_uint32_be(idx_sig)
+    # pad idx_sig_bytes with 0s up to n
+    # TODO: make this nicer
+    idx_sig_bytes: bytes_t = bytes.create(n, uint8(0))
+    for i in range(array.length(idx_sig_bytes_tmp)):
+        idx_sig_bytes[i] = idx_sig_bytes_tmp[i]
+    h_k = array.concat(h_k, idx_sig_bytes)
+
+    m2: digest_t = H_msg(h_k, m)
+    node: digest_t = root_from_sig(idx_sig, sig_ots, auth_path, m2, seed, adr)
+
+    return node == root_node
