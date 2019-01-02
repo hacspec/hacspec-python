@@ -4,10 +4,10 @@ FSTAR=$(FSTAR_HOME)/bin/fstar.exe --include $(HACL_HOME)/lib --include $(HACL_HO
 
 SPECS=aes.fst gf128.fst chacha20.fst poly1305.fst curve25519.fst curve448.fst
 BROKEN_SPECS=blake2.fst
-LIBS = Lib.IntTypes.fst Lib.RawIntTypes.fst Lib.Sequence.fst Lib.ByteSequence.fst
+LIBS = Lib.IntTypes.fst Lib.RawIntTypes.fst Lib.Sequence.fst Lib.ByteSequence.fst Lib.LoopCombinators.fst
 LIBS_FILES= $(addprefix $(HACL_HOME)/lib/fst/, $(LIBS)) speclib.fst
-LIBS_ML = Lib_IntTypes.ml Lib_RawIntTypes.ml Lib_Sequence.ml Lib_ByteSequence.ml Speclib.ml
-LIBS_EX = --extract_module Speclib --extract_module Lib.IntTypes --extract_module Lib.RawIntTypes  --extract_module Lib.Sequence --extract_module Lib.ByteSequence
+LIBS_ML = Lib_IntTypes.ml Lib_RawIntTypes.ml Lib_LoopCombinators.ml Lib_Sequence.ml Lib_ByteSequence.ml Speclib.ml
+LIBS_EX = --extract_module Speclib --extract_module Lib.IntTypes --extract_module Lib.RawIntTypes  --extract_module Lib.Sequence --extract_module Lib.ByteSequence  --extract_module Lib.LoopCombinators
 include $(FSTAR_HOME)/ulib/ml/Makefile.include
 
 SHELL:=/bin/bash
@@ -36,6 +36,7 @@ check: chacha20.fst.checked poly1305.fst.checked gf128.fst.checked
 	touch $*-ml
 
 %.exe: CAP = $(shell echo "$*" | sed 's/.*/\u&/')
+
 %.exe: $(LIBS_FILES) %-ml tests/%_test.ml
 	cp tests/testutil.ml $*-ml/
 	cp tests/$*_test.ml $*-ml/

@@ -16,16 +16,13 @@
 
 nat_t = int
 pos_t = int
-bitvector_t = uintn_t
 bit_t = uintn_t(1)
 uint8_t = uintn_t(8)
 uint16_t = uintn_t(16)
 uint32_t = uintn_t(32)
 uint64_t = uintn_t(64)
 uint128_t = uintn_t(128)
-array_t = vlarray_t
 vlbytes_t = vlarray_t(uint8_t)
-bytes_t  = vlbytes_t
 
 #operators
 # +, - , *: natmod_t, natmod_t -> natmod_t
