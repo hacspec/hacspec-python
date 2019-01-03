@@ -305,7 +305,7 @@ unfold inline_for_extraction let bytes_t len = lseq uint8_t len
 unfold inline_for_extraction let vlbytes_t = seq uint8_t
 inline_for_extraction let bytes x = x
 inline_for_extraction let bytes_copy x = x
-inline_for_extraction let bytes_length x = length x
+inline_for_extraction let bytes_length (x:vlbytes_t) : numeric_t Int = length x
 inline_for_extraction let bytes_to_nat_le #l (b:bytes_t l) = nat_from_bytes_le b
 inline_for_extraction let bytes_from_nat_le (n:nat) (l:nat{n < pow2 (8 * l)}) = nat_to_bytes_le #PUB l n
 
@@ -322,6 +322,9 @@ inline_for_extraction let bytes_from_uint64s_le (#l:size_nat{l * 8 <= max_size_t
 inline_for_extraction let bytes_to_uint64s_be (#l:size_nat{l * 8 <= max_size_t})
 		      (b:bytes_t (l * 8)) = uints_from_bytes_be #U64 #PUB #l b
 inline_for_extraction let bytes_from_uint64s_be (#l:size_nat{l * 8 <= max_size_t}) (b:lseq uint64_t l) : bytes_t (l*8) = uints_to_bytes_be #U64 b 
+
+inline_for_extraction let bytes_to_uint128_le (b:bytes_t 16) = uint_from_bytes_le #U128 #PUB b
+inline_for_extraction let bytes_from_uint128_le (u:uint128_t) = uint_to_bytes_le #U128 #PUB u
 
 inline_for_extraction let bytes_to_uint128s_le (#l:size_nat{l * 16 <= max_size_t})
 		      (b:bytes_t (l * 16)) = uints_from_bytes_le #U128 #PUB #l b
