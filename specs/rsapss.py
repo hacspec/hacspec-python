@@ -4,7 +4,7 @@ from lib.speclib import *
 from specs.sha2 import sha256
 
 max_size_t : int = 2 ** 32 - 1
-size_nat_t = refine_t(nat_t, lambda x: x <= max_size_t)
+size_nat_t, size_nat = refine(nat_t, lambda x: x <= max_size_t)
 max_input_len_sha256 : nat_t = nat(2 ** 61)
 hLen : nat_t = nat(32)
 
