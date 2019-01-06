@@ -254,7 +254,7 @@ type result_t (t:Type0) =
 inline_for_extraction let result_retval #t (x:t) : result_t t = Retval x
 inline_for_extraction let result_error #t (x:string) : result_t t = Error x
 
-inline_for_extraction let range_t min max = n:nat{n >= min /\ n < max}
+inline_for_extraction let range_t min max = n:numeric_t Int{n >= min /\ n < max}
 unfold let range i = i
 inline_for_extraction let repeati = repeati
 
