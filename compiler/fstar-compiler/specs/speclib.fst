@@ -254,7 +254,7 @@ type result_t (t:Type0) =
 inline_for_extraction let result_retval #t (x:t) : result_t t = Retval x
 inline_for_extraction let result_error #t (x:string) : result_t t = Error x
 
-inline_for_extraction let range_t min max = n:nat{n >= min /\ n < max}
+inline_for_extraction let range_t min max = n:numeric_t Int{n >= min /\ n < max}
 unfold let range i = i
 inline_for_extraction let repeati = repeati
 
@@ -325,6 +325,9 @@ inline_for_extraction let bytes_from_uint64s_be (#l:size_nat{l * 8 <= max_size_t
 
 inline_for_extraction let bytes_to_uint128_le (b:bytes_t 16) = uint_from_bytes_le #U128 #PUB b
 inline_for_extraction let bytes_from_uint128_le (u:uint128_t) = uint_to_bytes_le #U128 #PUB u
+
+inline_for_extraction let bytes_to_uint64_le (b: bytes_t 8) = uint_from_bytes_le #U128 #PUB b
+inline_for_extraction let bytes_from_uint64_le (u:uint64_t) = uint_to_bytes_le #U64 #PUB u
 
 inline_for_extraction let bytes_to_uint128s_le (#l:size_nat{l * 16 <= max_size_t})
           (b:bytes_t (l * 16)) = uints_from_bytes_le #U128 #PUB #l b
