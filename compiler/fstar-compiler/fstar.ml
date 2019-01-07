@@ -216,9 +216,9 @@ and assign p slo op e r fin =
   
 let fstar_of_topdecl d =
     match d with
-    | TD_TyDecl td ->  "let "^Ident.to_string td.tyd_name^" : Type0 = "^fstar_of_type false td.tyd_body
-    | TD_VarDecl vd -> "let "^Ident.to_string vd.vrd_name^" : "^fstar_of_type false vd.vrd_type^" = "^fstar_of_expr false vd.vrd_init
-    | TD_ProcDef pd -> "let "^Ident.to_string pd.prd_name^" "^(String.concat " " (List.map (fun (v,t) -> "(" ^ Ident.to_string v ^ " : " ^ fstar_of_hotype false t ^ ")") pd.prd_args)) ^" : " ^(fstar_of_type false pd.prd_ret)^" = \n"^fstar_of_instrs (snd pd.prd_body) ""
+    | TD_TyDecl td ->  "\nlet "^Ident.to_string td.tyd_name^" : Type0 = "^fstar_of_type false td.tyd_body
+    | TD_VarDecl vd -> "\nlet "^Ident.to_string vd.vrd_name^" : "^fstar_of_type false vd.vrd_type^" = "^fstar_of_expr false vd.vrd_init
+    | TD_ProcDef pd -> "\nlet "^Ident.to_string pd.prd_name^" "^(String.concat " " (List.map (fun (v,t) -> "(" ^ Ident.to_string v ^ " : " ^ fstar_of_hotype false t ^ ")") pd.prd_args)) ^" : " ^(fstar_of_type false pd.prd_ret)^" = \n"^fstar_of_instrs (snd pd.prd_body) ""
 let fstar_of_program (n:string) (p: T.Env.env * T.Env.env program) : string =
     let e,dl = p in
     "module " ^(String.capitalize_ascii n)^"\n"^

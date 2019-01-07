@@ -122,10 +122,10 @@ inline_for_extraction let ( >>. ) (#n:numeric{bitvector n}) (a:numeric_t n) (b:s
   match n with
   | Word t -> (a <: uint_t t PUB) >>. b
   | BV n -> let a : (x:nat{x < pow2 n}) = a in
-	   let mv = uint_v #U32 #PUB b in
+     let mv = uint_v #U32 #PUB b in
            let x = a / pow2 mv in
-	   Math.Lemmas.lemma_div_lt a n mv;
-	   x
+     Math.Lemmas.lemma_div_lt a n mv;
+     x
 
 let natm_to_bv (#n:size_nat{n > 0}) (x:nat{x < pow2 n}) : lseq bit_t n =  
   createi n (fun i -> uint ((x / pow2 i) % 2)) 
@@ -139,9 +139,9 @@ inline_for_extraction let ( &. ) (#n:numeric{bitvector n}) (a:numeric_t n) (b:nu
   match n with
   | Word t -> (a <: uint_t t PUB) &. b
   | BV n -> let a_bv = natm_to_bv #n a in
-	   let b_bv = natm_to_bv #n b in
-	   let c_bv = map2 ( &. ) a_bv b_bv in
-	   bv_to_natm #n c_bv
+     let b_bv = natm_to_bv #n b in
+     let c_bv = map2 ( &. ) a_bv b_bv in
+     bv_to_natm #n c_bv
     
 inline_for_extraction let ( |. ) (#n:numeric{bitvector n}) (a:numeric_t n) (b:numeric_t n) : numeric_t n = 
   match n with
@@ -254,7 +254,7 @@ type result_t (t:Type0) =
 inline_for_extraction let result_retval #t (x:t) : result_t t = Retval x
 inline_for_extraction let result_error #t (x:string) : result_t t = Error x
 
-inline_for_extraction let range_t min max = n:numeric_t Int{n >= min /\ n < max}
+inline_for_extraction let range_t min max = n:nat{n >= min /\ n < max}
 unfold let range i = i
 inline_for_extraction let repeati = repeati
 
@@ -281,10 +281,10 @@ inline_for_extraction let array_split_blocks #a s bs =
     assert (nblocks * bs <= len);
     let blocks = createi #(lseq a bs) nblocks
       (fun i -> assert (i + 1 <= nblocks);
-	     assert ((i + 1) * bs <= len); 
-	     assert (i * bs <= (i + 1) * bs); 
-	     let j:n:nat{i * bs <= n /\ n <= len} = (i+1) * bs in
-	     Seq.slice s (i * bs) j) in //(i*bs + bs)) in
+       assert ((i + 1) * bs <= len); 
+       assert (i * bs <= (i + 1) * bs); 
+       let j:n:nat{i * bs <= n /\ n <= len} = (i+1) * bs in
+       Seq.slice s (i * bs) j) in //(i*bs + bs)) in
     let last : lseq a rem = Seq.slice s (len - rem) len  in
     (blocks, last)
     
@@ -297,8 +297,8 @@ inline_for_extraction val array_concat_blocks:
 inline_for_extraction let array_concat_blocks #a #n #bs #rem bl l = 
   createi (n * bs + rem) 
     (fun i -> if i < n * bs then 
-	      (bl.[i / bs]).[i % bs]
-	   else l.[i - (n * bs)])
+        (bl.[i / bs]).[i % bs]
+     else l.[i - (n * bs)])
     
 
 unfold inline_for_extraction let bytes_t len = lseq uint8_t len
@@ -310,26 +310,25 @@ inline_for_extraction let bytes_to_nat_le #l (b:bytes_t l) = nat_from_bytes_le b
 inline_for_extraction let bytes_from_nat_le (n:nat) (l:nat{n < pow2 (8 * l)}) = nat_to_bytes_le #PUB l n
 
 inline_for_extraction let bytes_to_uint32s_le (#l:size_nat{l * 4 <= max_size_t})
-		      (b:bytes_t (l * 4)) = uints_from_bytes_le #U32 #PUB #l b
+          (b:bytes_t (l * 4)) = uints_from_bytes_le #U32 #PUB #l b
 inline_for_extraction let bytes_from_uint32s_le (#l:size_nat{l * 4 <= max_size_t}) (b:lseq uint32_t l) : bytes_t (l*4) = uints_to_bytes_le #U32 b 
 inline_for_extraction let bytes_to_uint32s_be (#l:size_nat{l * 4 <= max_size_t})
-		      (b:bytes_t (l * 4)) = uints_from_bytes_be #U32 #PUB #l b
+          (b:bytes_t (l * 4)) = uints_from_bytes_be #U32 #PUB #l b
 inline_for_extraction let bytes_from_uint32s_be (#l:size_nat{l * 4 <= max_size_t}) (b:lseq uint32_t l) : bytes_t (l*4) = uints_to_bytes_be #U32 b 
 
 inline_for_extraction let bytes_to_uint64s_le (#l:size_nat{l * 8 <= max_size_t})
-		      (b:bytes_t (l * 8)) = uints_from_bytes_le #U64 #PUB #l b
+          (b:bytes_t (l * 8)) = uints_from_bytes_le #U64 #PUB #l b
 inline_for_extraction let bytes_from_uint64s_le (#l:size_nat{l * 8 <= max_size_t}) (b:lseq uint64_t l) : bytes_t (l*8) = uints_to_bytes_le #U64 b 
 inline_for_extraction let bytes_to_uint64s_be (#l:size_nat{l * 8 <= max_size_t})
-		      (b:bytes_t (l * 8)) = uints_from_bytes_be #U64 #PUB #l b
+          (b:bytes_t (l * 8)) = uints_from_bytes_be #U64 #PUB #l b
 inline_for_extraction let bytes_from_uint64s_be (#l:size_nat{l * 8 <= max_size_t}) (b:lseq uint64_t l) : bytes_t (l*8) = uints_to_bytes_be #U64 b 
 
 inline_for_extraction let bytes_to_uint128_le (b:bytes_t 16) = uint_from_bytes_le #U128 #PUB b
 inline_for_extraction let bytes_from_uint128_le (u:uint128_t) = uint_to_bytes_le #U128 #PUB u
 
 inline_for_extraction let bytes_to_uint128s_le (#l:size_nat{l * 16 <= max_size_t})
-		      (b:bytes_t (l * 16)) = uints_from_bytes_le #U128 #PUB #l b
+          (b:bytes_t (l * 16)) = uints_from_bytes_le #U128 #PUB #l b
 inline_for_extraction let bytes_from_uint128s_le (#l:size_nat{l * 16 <= max_size_t}) (b:lseq uint128_t l) : bytes_t (l*16) = uints_to_bytes_le #U128 b 
 inline_for_extraction let bytes_to_uint128s_be (#l:size_nat{l * 16 <= max_size_t})
-		      (b:bytes_t (l * 16)) = uints_from_bytes_be #U128 #PUB #l b
+          (b:bytes_t (l * 16)) = uints_from_bytes_be #U128 #PUB #l b
 inline_for_extraction let bytes_from_uint128s_be (#l:size_nat{l * 16 <= max_size_t}) (b:lseq uint128_t l) : bytes_t (l*16) = uints_to_bytes_be #U128 b 
-

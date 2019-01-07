@@ -14,13 +14,25 @@ from copy import copy
 
 DEBUG = environ.get('HACSPEC_DEBUG')
 
-class Error(Exception):
-    pass
-
 
 @typechecked
 def fail(s: str) -> None:
     raise Error(s)
+
+@typechecked
+def pow2(i: int) -> int:
+    return 2 ** i
+
+@typechecked
+def op_Subtraction(a: int, b: int) -> int:
+    return  a - b   
+
+@typechecked
+def op_Multiply(a: int, b: int) -> int:
+    return  a * b       
+
+class Error(Exception):
+    pass
 
 
 T = TypeVar('T')
@@ -1079,3 +1091,9 @@ class speclib:
     @typechecked
     def floor(x: float) -> int:
         return floor(x)
+
+@typechecked
+def repeat(counter: int, f: (array_t, array_t), state: array_t) -> array_t:
+    for i in range(counter):
+        state = f(state)
+    return state    

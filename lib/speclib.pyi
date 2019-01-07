@@ -42,6 +42,9 @@ vlbytes_t = vlarray_t(uint8_t)
 #         : vlarray_t(t), int -> t
 # [ : ]   : uintn_t(i), i:int, j:int -> uintn_t(j-i)
 
+decl pow2 (x: int) -> int
+decl op_Subtraction(x: int, y: int) -> int
+decl op_Multiply(x: int, y: int) -> int
 #decl natmod(x:int,m:int) -> natmod_t(m)
 #decl natmod.to_int(x:natmod_t) -> int
 #decl uintn.rotate_left(x:uintn_t(i),r:int) -> uintn_t(i)
