@@ -67,7 +67,7 @@ c1 : uint32_t = uint32(0x3320646e)
 c2 : uint32_t = uint32(0x79622d32)
 c3 : uint32_t = uint32(0x6b206574)
 
-
+@typechecked
 def chacha20_set_counter(st: state_t, c: uint32_t) -> state_t:
     st[12] = c
     return st
@@ -89,6 +89,7 @@ def chacha20_init(k: key_t, nonce: nonce_t) -> state_t:
     st = setup(k,  nonce, st)
     return st
 
+@typechecked
 def chacha20(k: key_t, counter: uint32_t, nonce: nonce_t) -> state_t:
     st: state_t
     st = chacha20_init(k, nonce)
@@ -151,7 +152,7 @@ def chacha_encrypt_last(key: key_t, ctr : uint32_t, nonce : nonce_t, last : subb
     keyblock = chacha20_key_block0(key, ctr, nonce)
     last_block[0:array.length(last)] = last
     last_block = xor_block(last_block, keyblock)
-    last = last_block[0:array.length(last)]
+    last: block_t = last_block[0:array.length(last)]
     return last
 
 @typechecked
