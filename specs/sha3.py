@@ -19,10 +19,9 @@ lseq_uint64_5_t = array_t(uint64_t, 5)
 
 lbytes_200_t = array_t(uint8_t, 200)
 
-
-keccak_rotc: lseq_rotc_t_24_t = [1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14, 27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44]
-keccak_piln: lseq_pilns_t_24_t = [10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4, 15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6, 1]
-keccak_rndc: lseq_rndc_t_24_t =[uint64(0x0000000000000001), uint64(0x0000000000008082), uint64(0x800000000000808a), 
+keccak_rotc: lseq_rotc_t_24_t = lseq_rotc_t_24_t[1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14, 27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44]
+keccak_piln: lseq_pilns_t_24_t = lseq_pilns_t_24_t[10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4, 15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6, 1]
+keccak_rndc: lseq_rndc_t_24_t = lseq_rndc_t_24_t[uint64(0x0000000000000001), uint64(0x0000000000008082), uint64(0x800000000000808a), 
 uint64(0x8000000080008000), uint64(0x000000000000808b), uint64(0x0000000080000001), uint64(0x8000000080008081), 
 uint64(0x8000000000008009), uint64(0x000000000000008a), uint64(0x0000000000000088), uint64(0x0000000080008009), 
 uint64(0x000000008000000a), uint64(0x000000008000808b), uint64(0x800000000000008b), uint64(0x8000000000008089), 
@@ -55,10 +54,8 @@ def state_theta_inner_C(s: state_t, i: nat_t, _C: lseq_uint64_5_t) -> lseq_uint6
 @typechecked
 def state_theta0(s: state_t, _C: lseq_uint64_5_t) -> lseq_uint64_5_t:
     for x in range(5):
-        _C = state_theta_inner_C(s, x, _C)
+        _C: lseq_uint64_5_t = state_theta_inner_C(s, x, _C)
     return _C    
-
-
 
 @typechecked
 def state_theta_inner_s_inner(x: index_t, _D: uint64_t, y: index_t, s: state_t)-> state_t:
@@ -68,13 +65,13 @@ def state_theta_inner_s_inner(x: index_t, _D: uint64_t, y: index_t, s: state_t)-
 def state_theta_inner_s (_C : lseq_uint64_5_t, x: index_t, s: state_t) -> state_t:
     _D: uint64_t = _C[(x + 4) % 5] ^ rotl(_C[(x + 1) % 5], 1)
     for y in range(5):
-        s = state_theta_inner_s_inner(x, _D, y, s)
+        s:state_t = state_theta_inner_s_inner(x, _D, y, s)
     return s
 
 @typechecked
 def state_theta1(s: state_t, _C: lseq_uint64_5_t) -> state_t:
     for x in range(5):
-        s = state_theta_inner_s(_C, x, s)
+        s:state_t = state_theta_inner_s(_C, x, s)
     return s    
 
 @typechecked
@@ -150,23 +147,6 @@ def state_permute(s: state_t) -> state_t:
 #             True)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @typechecked
 def loadState_inner(block: lbytes_200_t, j: size_nat_25_t, s: state_t) -> state_t:
     nj : uint64_t = bytes.to_uint64_le(block[(j * 8):(j * 8 + 8)])
@@ -204,30 +184,12 @@ def storeState(rateInBytes: size_nat_200_t, s: state_t) -> lbytes_200_t:
 #             True)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @typechecked 
 def absorb_next(s: state_t, rateInBytes : size_nat_0_200_t)-> state_t : 
     nextBlock: vlbytes_t = array.create(rateInBytes, uint8(0))
     nextBlock[rateInBytes - 1] = uint8(0x80)
-    s = loadState(rateInBytes, nextBlock, s)
-    s = state_permute(s)
+    s:state_t = loadState(rateInBytes, nextBlock, s)
+    s:state_t = state_permute(s)
     return s
 
 @typechecked
@@ -236,7 +198,7 @@ def absorb_last(delimitedSuffix: uint8_t, rateInBytes: size_nat_0_200_t, rem: na
     lastBlock: vlbytes_t = array.create(rateInBytes, uint8(0))
     lastBlock[0:rem] = last
     lastBlock[rem] = delimitedSuffix
-    s = loadState(rateInBytes, lastBlock, s) 
+    s:state_t = loadState(rateInBytes, lastBlock, s) 
 
     if not(delimitedSuffix & uint8(0x80) == uint8(0)) and (rem == rateInBytes - 1):
         s = state_permute(s)
@@ -265,10 +227,10 @@ def absorb(s: state_t,
     return s
 
 
-# @contract3(lambda s, rateInBytes, outputByteLen:
-#             0 < rateInBytes and rateInBytes <= 200,
-#            lambda s, rateInBytes, outputByteLen, res:
-#             array.length(res) == outputByteLen)
+# # @contract3(lambda s, rateInBytes, outputByteLen:
+# #             0 < rateInBytes and rateInBytes <= 200,
+# #            lambda s, rateInBytes, outputByteLen, res:
+# #             array.length(res) == outputByteLen)
 
 
 @typechecked
@@ -285,6 +247,8 @@ def squeeze(s: state_t,
     output: vlbytes_t = array.create(outputByteLen, uint8(0))
     outBlocks : int = outputByteLen // rateInBytes
     block: vlbytes_t = array.create(200, uint8(0))
+    s: state_t
+    
     for i in range(outBlocks):
         (block, s) = squeeze_inner(rateInBytes, outputByteLen, i, s)
         output[(i*rateInBytes):(i*rateInBytes + rateInBytes)] = block
@@ -299,8 +263,8 @@ def squeeze(s: state_t,
 def keccak(rate: size_nat_t, capacity: size_nat_t, inputByteLen: size_nat_t,
            input_b: vlbytes_t, delimitedSuffix: uint8_t, outputByteLen: size_nat_t) -> vlbytes_t:
     rateInBytes : nat_t = rate // 8
-    s: vlarray_t(uint64_t)  = array.create(25, uint64(0))
-    s = absorb(s, rateInBytes, inputByteLen, input_b, delimitedSuffix)
+    s: state_t  = array.create(25, uint64(0))
+    s: state_t= absorb(s, rateInBytes, inputByteLen, input_b, delimitedSuffix)
     output : vlbytes_t = squeeze(s, rateInBytes, outputByteLen)
     return output
 
