@@ -9,12 +9,24 @@ hacspec specifications can also be compiled to cryptol, coq, F\*, easycrypt, and
 # status
 
 [![Build Status](https://travis-ci.org/HACS-workshop/hacspec.svg?branch=master)](https://travis-ci.org/HACS-workshop/hacspec)
+[![Join the chat at Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/hacspec/Lobby)
 
-This project is still in the early stages. We invite submissions of crypto specs in various formal languages and comments and suggestions for the specification syntax. This repository currently holds some preliminary examples collected at the HACS workshop in January 2018.
+This project is still in relatively early stages.
+
+[The wiki](https://github.com/HACS-workshop/hacspec/wiki) contains an overview of the hacspec architecture as well as its current state.
+
+An overview of the current state of hacspec can be found in this [blog post](https://franziskuskiefer.de/post/hacspec2/).
+For more details please see the [SSR paper](https://github.com/HACS-workshop/hacspec/blob/master/doc/hacspec-ssr18-paper.pdf) containing the hacspec language definition.
+
+## development
+
+The master branch holds a stable version of hacspec.
+Development happens on the [dev branch](https://github.com/HACS-workshop/hacspec/tree/dev).
+Please file pull requests against that branch.
 
 ## compiler
 
-See [compilers](compilers/) for details.
+See [compiler](compiler/) for details.
 
 # How to use
 
@@ -44,9 +56,10 @@ See the `example` directory for a spec using the hacspec python package.
 When working on hacspec itself installation is not necessary.
 The makefile has three main targets
 
-    make run     // disabled type checker
-    make check   // check hacspec compliance
-    make test    // run tests with type checker enabled
+    make run      // disabled type checker
+    make check    // check hacspec compliance
+    make test     // run tests with type checker enabled
+    make compiler // run the full spec checker and compiler (this requires ocaml)
 
 to run or check specs.
 
