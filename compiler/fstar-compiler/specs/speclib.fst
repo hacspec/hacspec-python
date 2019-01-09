@@ -326,6 +326,9 @@ inline_for_extraction let bytes_from_uint64s_be (#l:size_nat{l * 8 <= max_size_t
 inline_for_extraction let bytes_to_uint128_le (b:bytes_t 16) = uint_from_bytes_le #U128 #PUB b
 inline_for_extraction let bytes_from_uint128_le (u:uint128_t) = uint_to_bytes_le #U128 #PUB u
 
+inline_for_extraction let bytes_to_uint128_be (b:bytes_t 16) = uint_from_bytes_be #U128 #PUB b
+inline_for_extraction let bytes_from_uint128_be (u:uint128_t) = uint_to_bytes_be #U128 #PUB u
+
 inline_for_extraction let bytes_to_uint64_le (b: bytes_t 8) = uint_from_bytes_le #U128 #PUB b
 inline_for_extraction let bytes_from_uint64_le (u:uint64_t) = uint_to_bytes_le #U64 #PUB u
 
