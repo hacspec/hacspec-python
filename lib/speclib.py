@@ -31,6 +31,7 @@ def op_Subtraction(a: int, b: int) -> int:
 def op_Multiply(a: int, b: int) -> int:
     return  a * b       
 
+
 class Error(Exception):
     pass
 
@@ -703,7 +704,6 @@ class bytes(_array):
         result = vlbytes_t([uint8(i) for i in b])
         return vlbytes_t(array.concat(pad, result))
 
-
     @staticmethod
     @typechecked
     def to_nat_le(x: 'vlbytes_t') -> nat_t:
@@ -1097,3 +1097,14 @@ def repeat(counter: int, f: (array_t, array_t), state: array_t) -> array_t:
     for i in range(counter):
         state = f(state)
     return state    
+
+
+def bytes_from_nat_be(x: int, l: int=0) -> 'vlbytes_t':
+    if not isinstance(x, int):
+        fail("bytes.from_nat_be's first argument has to be of type nat_t.")
+    if not isinstance(l, int):
+        fail("bytes.from_nat_be's second argument has to be of type nat_t.")
+    b = x.to_bytes((x.bit_length() + 7) // 8, 'big') or b'\0'
+    pad = _array([uint8(0) for i in range(0, max(0, l-len(b)))])
+    result = _array([uint8(i) for i in b])
+    return vlbytes_t(array.concat(pad, result))    

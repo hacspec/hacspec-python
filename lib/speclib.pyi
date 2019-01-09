@@ -67,8 +67,9 @@ decl op_Multiply(x: int, y: int) -> int
 #
 #decl bytes.from_nat_le(x:int) -> vlbytes_t
 #decl bytes.to_nat_le(x:vlbytes_t) -> int
-#decl bytes.from_nat_be(x:int) -> vlbytes_t
+#decl bytes.from_nat_be(x:int, y: int) -> vlbytes_t
 #decl bytes.to_nat_be(x:vlbytes_t) -> int
+decl bytes_from_nat_be(x: int, y: int) -> vlbytes_t
 #
 #decl bytes.from_uintn_le(x:uintn_t(i)) -> vlbytes_t
 #decl bytes.to_uintn_le(x:vlbytes_t) -> uintn_t(i)
