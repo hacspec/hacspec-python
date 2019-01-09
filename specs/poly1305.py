@@ -16,6 +16,7 @@ felem_t = natmod_t(p130m5)
 def felem(n:nat_t) -> felem_t:
     return natmod(n,p130m5)
 
+@typechecked
 def from_elem(x: felem_t) -> nat_t:
     return x  
 
@@ -24,7 +25,7 @@ def update1 (block: subblock_t, acc: felem_t, r:felem_t) -> felem_t:
     b : block_t = array.create(16, uint8(0))
     b[0:bytes.length(block)] = block
     n : felem_t = felem(pow2(8 * array.length(block))) + felem(bytes.to_nat_le(b))
-    acc = (n + acc) * r
+    acc: felem_t = (n + acc) * r
     return acc
 
 @typechecked
@@ -43,9 +44,9 @@ def poly(text: vlbytes_t, acc: felem_t, r: felem_t) -> felem_t:
     last : subblock_t
     blocks, last = array.split_blocks(text, blocksize)
     for i in range(array.length(blocks)):
-        acc = update1(blocks[i], acc, r)
+        acc:felem_t = update1(blocks[i], acc, r)
     if (array.length(last) > 0):
-        acc = update1(last, acc, r) 
+        acc:felem_t = update1(last, acc, r) 
     return acc
 
 @typechecked
