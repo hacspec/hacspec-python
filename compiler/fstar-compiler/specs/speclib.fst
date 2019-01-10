@@ -308,6 +308,8 @@ inline_for_extraction let bytes_copy x = x
 inline_for_extraction let bytes_length (x:vlbytes_t) : numeric_t Int = length x
 inline_for_extraction let bytes_to_nat_le #l (b:bytes_t l) = nat_from_bytes_le b
 inline_for_extraction let bytes_from_nat_le (n:nat) (l:nat{n < pow2 (8 * l)}) = nat_to_bytes_le #PUB l n
+inline_for_extraction let bytes_from_nat_be (n: nat) (l:nat{n < pow2 (8 * l)}) = nat_to_bytes_be #PUB l n
+
 
 inline_for_extraction let bytes_to_uint32s_le (#l:size_nat{l * 4 <= max_size_t})
           (b:bytes_t (l * 4)) = uints_from_bytes_le #U32 #PUB #l b

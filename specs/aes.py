@@ -17,9 +17,12 @@ bytes_176_t = bytes_t(176)
 
 index_t  = range_t(0,16)
 rotval_t = range_t(1,32)
-quart_t = array_t (uint32_t, 4)
-state_t  = array_t(uint32_t,16)
 sbox_t = array_t(uint8_t,256)
+
+indexes_t = range_t(0, 176)
+
+
+state_t = tuple_t(bytes_176_t, block_t)
 
 size_nat_t = range_t(0, 4294967295)
 
@@ -131,137 +134,130 @@ def aes_enc_last(state:block_t,round_key:block_t) -> block_t:
     return state
 
 @typechecked
+def rounds_inside(key:bytes_144_t, i: indexes_t) -> block_t:
+    return key[i * 16: i * 16 + 16]
+
+@typechecked
 def rounds(state:block_t,key:bytes_144_t) -> block_t:
     out : block_t = bytes(array.copy(state))
+    index0 : indexes_t = 0
+    index1: indexes_t = 1
+    shift: indexes_t = 16
     for i in range(9):
-        out = aes_enc(out,key[16*i:16*i+16])
+        out = aes_enc(out, rounds_inside(key, i))
     return out
 
 @typechecked
 def block_cipher(input:block_t,key:bytes_176_t) -> block_t:
     state : block_t = bytes(array.copy(input))
     k0    : block_t = key[0:16]
-    k     : bytes_144_t = key[16:10*16]
-    kn    : block_t = key[10*16:11*16]
+    k     : bytes_144_t = key[16: op_Multiply(10,16)]
+    kn    : block_t = key[op_Multiply(10, 16): op_Multiply(11, 16)]
     state = addRoundKey(state,k0)
     state = rounds(state,k)
     state = aes_enc_last(state,kn)
     return state
 
-@typechecked
-def rotate_word(w:word_t) -> word_t:
-    out : word_t = bytes(array.copy(w))
-    out[0] = w[1]
-    out[1] = w[2]
-    out[2] = w[3]
-    out[3] = w[0]
-    return out
+# @typechecked
+# def rotate_word(w:word_t) -> word_t:
+#     out : word_t = bytes(array.copy(w))
+#     out[0] = w[1]
+#     out[1] = w[2]
+#     out[2] = w[3]
+#     out[3] = w[0]
+#     return out
 
-@typechecked
-def sub_word(w:word_t) -> word_t:
-    out : word_t = bytes(array.copy(w))
-    out[0] = sbox[uintn.to_int(w[0])]
-    out[1] = sbox[uintn.to_int(w[1])]
-    out[2] = sbox[uintn.to_int(w[2])]
-    out[3] = sbox[uintn.to_int(w[3])]
-    return out
+# @typechecked
+# def sub_word(w:word_t) -> word_t:
+#     out : word_t = bytes(array.copy(w))
+#     out[0] = sbox[uintn.to_int(w[0])]
+#     out[1] = sbox[uintn.to_int(w[1])]
+#     out[2] = sbox[uintn.to_int(w[2])]
+#     out[3] = sbox[uintn.to_int(w[3])]
+#     return out
 
-rcon_t = bytes_t(11)
-rcon : rcon_t = array([uint8(0x8d), uint8(0x01), uint8(0x02), uint8(0x04), uint8(0x08), uint8(0x10), uint8(0x20), uint8(0x40), uint8(0x80), uint8(0x1b), uint8(0x36)])
+# rcon_t = bytes_t(11)
+# rcon : rcon_t = array([uint8(0x8d), uint8(0x01), uint8(0x02), uint8(0x04), uint8(0x08), uint8(0x10), uint8(0x20), uint8(0x40), uint8(0x80), uint8(0x1b), uint8(0x36)])
 
-@typechecked
-def aes_keygen_assist(w:word_t,rcon:uint8_t) -> word_t:
-    k : word_t = rotate_word(w)
-    k = sub_word(k)
-    k[0] ^= rcon
-    return k
+# @typechecked
+# def aes_keygen_assist(w:word_t,rcon:uint8_t) -> word_t:
+#     k : word_t = rotate_word(w)
+#     k = sub_word(k)
+#     k[0] ^= rcon
+#     return k
 
-@typechecked
-def key_expansion_word(w0:word_t, w1:word_t, i:expindex_t) -> word_t:
-    k : word_t = bytes(array.copy(w1))
-    if i % 4 == 0:
-        k = aes_keygen_assist(k,rcon[i//4])
-    for i in range(4):
-        k[i] ^= w0[i]
-    return k
+# @typechecked
+# def key_expansion_word(w0:word_t, w1:word_t, i:expindex_t) -> word_t:
+#     k : word_t = bytes(array.copy(w1))
+#     if i % 4 == 0:
+#         k = aes_keygen_assist(k,rcon[i//4])
+#     for i in range(4):
+#         k[i] ^= w0[i]
+#     return k
 
-@typechecked
-def key_expansion(key:block_t) -> bytes_t(176):
-    print("The input key:")
-    print(key)
-    
-    key_ex : bytes_176_t = bytes(array.create(11*16,uint8(0)))
-    key_ex[0:16] = key
-    i : nat_t = 0
-    for j in range(40):
-        i = j + 4
-        key_ex[4*i:4*i+4] = key_expansion_word(key_ex[4*i-16:4*i-12],key_ex[4*i-4:4*i],i)
-
-    print("The first output vector: ")
-    print(key_ex)    
-
-    # print("Key:")    
-    # print(sbox[uintn.to_int(key[13])]  ^ rcon[1] ^ key[0])
-
-    key_ex2: bytes_t(176) = aes128_key_expansion(key) 
-
-    print("The second output vector: ")
-    print(key_ex2)   
-
-    return key_ex
+# @typechecked
+# def key_expansion(key:block_t) -> bytes_176_t:
+#     key_ex : bytes_176_t = bytes(array.create(11*16,uint8(0)))
+#     key_ex[0:16] = key
+#     i : nat_t = 0
+#     for j in range(40):
+#         i = j + 4
+#         key_ex[4*i:4*i+4] = key_expansion_word(key_ex[4*i-16:4*i-12],key_ex[4*i-4:4*i],i)
+#     return key_ex
 
 
-@typechecked
-def aes128_encrypt_block(k:key_t,input:bytes_t(16)) -> block_t:
-    key_ex : bytes_176_t = key_expansion(k)
-    out    : block_t = block_cipher(input,key_ex)
-    return out
+# @typechecked
+# def aes128_encrypt_block(k:key_t,input:bytes_t(16)) -> block_t:
+#     key_ex : bytes_176_t = key_expansion(k)
+#     out    : block_t = block_cipher(input,key_ex)
+#     return out
 
-@typechecked
-def aes128_ctr_keyblock(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
-    input : block_t = bytes(array.create(16,uint8(0)))
-    input[0:12] = n
-    input[12:16] = bytes.from_uint32_be(c)
-    return aes128_encrypt_block(k,input)
-
-
-# Many ways of extending this to CTR
-# This version: use first-order CTR function specific to AES128 with a loop
-
-@typechecked
-def xor_block(block:block_t, keyblock:block_t) -> block_t:
-    out : block_t = bytes.copy(block)
-    for i in range(blocksize):
-        out[i] ^= keyblock[i]
-    return out
+# @typechecked
+# def aes128_ctr_keyblock(k:key_t,n:nonce_t,c:uint32_t) -> block_t:
+#     input : block_t = bytes(array.create(16,uint8(0)))
+#     input[0:12] = n
+#     input[12:16] = bytes.from_uint32_be(c)
+#     return aes128_encrypt_block(k,input)
 
 
-@typechecked
-def aes128_counter_mode(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t) -> vlbytes_t:
-    blocks   : vlarray_t(block_t)
-    last     : subblock_t
-    blocks, last = array.split_blocks(msg, blocksize)
-    keyblock   : block_t  = array.create(blocksize, uint8(0))
-    last_block : block_t  = array.create(blocksize, uint8(0))
-    ctr        : uint32_t = counter
-    for i in range(array.length(blocks)):
-        keyblock = aes128_ctr_keyblock(key, nonce, ctr)
-        blocks[i] = xor_block(blocks[i], keyblock)
-        ctr += uint32(1)
+# # Many ways of extending this to CTR
+# # This version: use first-order CTR function specific to AES128 with a loop
 
-    keyblock = aes128_ctr_keyblock(key, nonce, ctr)
-    last_block[0:array.length(last)] = last
-    last_block = xor_block(last_block, keyblock)
-    last = last_block[0:array.length(last)]
-    return array.concat_blocks(blocks, last)
+# @typechecked
+# def xor_block(block:block_t, keyblock:block_t) -> block_t:
+#     out : block_t = bytes.copy(block)
+#     for i in range(blocksize):
+#         out[i] ^= keyblock[i]
+#     return out
 
-@typechecked
-def aes128_encrypt(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t) -> vlbytes_t:
-    return aes128_counter_mode(key,nonce,counter,msg)
 
-@typechecked
-def aes128_decrypt(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t) -> vlbytes_t:
-    return aes128_counter_mode(key,nonce,counter,msg)
+# @typechecked
+# def aes128_counter_mode(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t) -> vlbytes_t:
+#     blocks   : vlarray_t(block_t)
+#     last     : subblock_t
+#     blocks, last = array.split_blocks(msg, blocksize)
+#     keyblock   : block_t  = array.create(blocksize, uint8(0))
+#     last_block : block_t  = array.create(blocksize, uint8(0))
+#     ctr        : uint32_t = counter
+
+#     for i in range(array.length(blocks)):
+#         keyblock = aes128_ctr_keyblock(key, nonce, ctr)
+#         blocks[i] = xor_block(blocks[i], keyblock)
+#         ctr += uint32(1)
+
+#     keyblock = aes128_ctr_keyblock(key, nonce, ctr)
+#     last_block[0:array.length(last)] = last
+#     last_block = xor_block(last_block, keyblock)
+#     last = last_block[0:array.length(last)]
+#     return array.concat_blocks(blocks, last)
+
+# @typechecked
+# def aes128_encrypt(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t) -> vlbytes_t:
+#     return aes128_encrypt_bytes(key, nonce, counter.v, msg)
+
+# @typechecked
+# def aes128_decrypt(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t) -> vlbytes_t:
+#     return aes128_counter_mode(key,nonce,counter,msg)
 
 
 
@@ -270,8 +266,8 @@ def aes128_decrypt(key: key_t, nonce: nonce_t, counter: uint32_t, msg:vlbytes_t)
 
 rcon_l_t =  array_t(uint8_t, 11)
 
-rcon_l: rcon_l_t = [uint8(0x8d), uint8(0x01), uint8(0x02), uint8(0x04), uint8(0x08),
-uint8(0x10), uint8(0x20), uint8(0x40), uint8(0x80), uint8(0x1b), uint8(0x36)]
+rcon_l: rcon_l_t = array([uint8(0x8d), uint8(0x01), uint8(0x02), uint8(0x04), uint8(0x08),
+uint8(0x10), uint8(0x20), uint8(0x40), uint8(0x80), uint8(0x1b), uint8(0x36)])
 
 @typechecked
 def aes_keygen_assist_(rcon: uint8_t, s: block_t) -> block_t:
@@ -310,74 +306,84 @@ def key_expansion_step(p: block_t, assist: block_t) -> block_t:
     pTemp: block_t = array.copy(p0)
     k: block_t = array.copy(p)
 
-    k_part: bytes_t(12) = k[0:12]
-    pTemp[4:12] = k_part
+    pTemp[4:12] = k[0:12]
     k = xor_block(k, pTemp)
 
-    k_part: bytes_t(12) = k[0:12]
-    pTemp[4:12] = k_part
+    pTemp[4:12] = k[0:12]
     k = xor_block(k, pTemp)
     
-    k_part: bytes_t(12) = k[0:12]
-    pTemp[4:12] = k_part
+    pTemp[4:12] = k[0:12]
     k = xor_block(k, pTemp)
 
     return xor_block(k, assist)    
 
 @typechecked
-def aes128_key_expansion_step(kex: bytes_t(176), i: nat_t) ->  bytes_t(176) :
-    p : bytes_t(16) = kex[i*16: i * 16 + 16]
-    a : block_t = aes128_keygen_assist(rcon_l[i+1], p)
-    n: block_t = key_expansion_step(p, a)
-    kex[(i + 1)*16: (i + 1) * 16 + 16] = n
-    return kex    
-
+def get_block(f: bytes_176_t, a: index_t, b: index_t) -> block_t: 
+    return f[a:b]
 
 @typechecked
-def aes128_key_expansion (key: block_t) -> bytes_t(176):
-    key_ex: bytes_t(176) = array.create(176, uint8(0))
+def get_rcon(rcon_l: rcon_l_t, index: index_t) -> uint8_t: 
+    return rcon_l[index]    
+
+@typechecked
+def aes128_key_expansion_step(kex: bytes_176_t, i: nat_t) ->  bytes_176_t :
+    p : block_t = get_block(kex, i*16, i * 16 + 16)
+    a : block_t = aes128_keygen_assist(get_rcon(rcon_l, i + 1), p)
+    n: block_t = key_expansion_step(p, a)
+    kex[op_Multiply(op_Addition(i, 1), 16): op_Multiply(op_Addition(op_Addition(i, 1), 16),16)] = n
+    return kex    
+
+@typechecked
+def aes128_key_expansion (key: block_t) -> bytes_176_t:
+    key_ex : bytes_176_t = array.create(176, uint8(0))
+    
     for i in range(16):
         key_ex[i] = key[i]
 
-    for i in range(0,10):
+    for i in range(10):
         key_ex = aes128_key_expansion_step(key_ex, i)
 
     return key_ex    
 
-@typechecked
-def aes128_block(k: block_t, n: bytes_t(12), c: size_nat_t) -> block_t:
-    ctrby: bytes_t(4) = bytes_from_nat_be(c, 4)
-    input: block_t = array.create(16, uint8(0))
-    for i in range(12):
-        input[i] = n[i]
-    for i in range(4):   
-        input[12+i] = ctrby[i]
-    key_ex: bytes_t(176) = aes128_key_expansion(k)  
-    return block_cipher(key_ex, input) 
+# @typechecked
+# def aes128_block(k: block_t, n: bytes_t(12), c: size_nat_t) -> block_t:
+#     ctrby: word_t = bytes_from_nat_be(c, 4)
+#     input: block_t = array.create(16, uint8(0))
+#     for i in range(12):
+#         input[i] = n[i]
+#     for i in range(4):   
+#         input[12+i] = ctrby[i]    
+#     key_ex: bytes_176_t = aes128_key_expansion(k)  
+#     return block_cipher(input, key_ex) 
 
 @typechecked
-def aes_init(k: block_t, n_len: size_nat_t, n: bytes_t(16)) -> tuple_t(bytes_t(176), bytes_t(16)):
-    inp:bytes_t(16) =  array.create(16, uint8(0))
+def aes128_encrypt_block_(k: block_t, m: block_t) -> block_t:
+    key_ex: bytes_176_t = aes128_key_expansion(k)        
+    return block_cipher(m, key_ex)  
+
+@typechecked
+def aes_init(k: block_t, n_len: size_nat_t, n: block_t) -> state_t:
+    inp:block_t =  array.create(16, uint8(0))
     for i in range(n_len):
         inp[i] = n[i]
-    key_ex: bytes_t(176) = aes128_key_expansion(k)    
+    key_ex: bytes_176_t = aes128_key_expansion(k)    
     return (key_ex, inp)    
 
 @typechecked
-def aes_set_counter(st: tuple_t(bytes_t(176), bytes_t(16)), c: size_nat_t) -> tuple_t(bytes_t(176), bytes_t(16)):
-    cby: bytes_t(4) = bytes_from_nat_be(c, 4)
-    kex: bytes_t(176)
-    bl: bytes_t(16)
+def aes_set_counter(st: state_t, c: size_nat_t) -> state_t:
+    cby: word_t = bytes_from_nat_be(c, 4)
+    kex: bytes_176_t
+    bl: block_t
     (kex, bl) = st
-    bl[12:4] = cby
+    bl[12:16] = cby
     return (kex, bl)
 
 @typechecked
-def aes_key_block(st: tuple_t(bytes_t(176), bytes_t(16))) -> block_t:
-    kex: bytes_t(176)
-    bl: bytes_t(16)
+def aes_key_block(st: state_t) -> block_t:
+    kex: bytes_176_t
+    bl: block_t
     (kex, bl) = st
-    return block_cipher(kex, bl)    
+    return block_cipher(bl, kex)    
 
 @typechecked
 def aes_key_block0(k: block_t, n_len: size_nat_t, n: subblock_t) -> block_t:
@@ -385,41 +391,44 @@ def aes_key_block0(k: block_t, n_len: size_nat_t, n: subblock_t) -> block_t:
 
 @typechecked
 def aes_key_block1(k: block_t, n_len: size_nat_t, n: subblock_t) -> block_t:
-    st: tuple_t(bytes_t(176), bytes_t(16)) = aes_init(k, n_len, n)
+    st: state_t = aes_init(k, n_len, n)
     st = aes_set_counter(st, 1)
     return aes_key_block(st)
 
 @typechecked
-def aes_encrypt_block(st0: tuple_t(bytes_t(176), bytes_t(16)), ctr0: size_nat_t, incr: size_nat_t, b: block_t) -> block_t:
-    st: tuple_t(bytes_t(176), bytes_t(16)) = aes_set_counter(st, ctr0 + incr)
+def aes_encrypt_block(st0: state_t, ctr0: size_nat_t,  b: block_t) -> block_t:
+    st: state_t = aes_set_counter(st0, ctr0)
     kb: block_t = aes_key_block(st)
     for i in range(16):
         kb[i] ^= b[i]
     return kb    
 
 @typechecked
-def aes_encrypt_last (st0: tuple_t(bytes_t(176), bytes_t(16)), ctr0: size_nat_t, incr: size_nat_t, l: size_nat_t, b: subblock_t) -> vlbytes_t:
-    plain: bytes_t(16) = array.create(16, uint8(0))
+def aes_encrypt_last (st0: state_t, ctr0: size_nat_t,  l: size_nat_t, b: subblock_t) -> vlbytes_t:
+    plain: block_t = array.create(16, uint8(0))
     plain[0:l] = b
-    cip:block_t = aes_encrypt_block(st0, ctr0, incr, plain)
+    cip:block_t = aes_encrypt_block(st0, ctr0, plain)
     return cip[0:l]
+
+@typechecked
+def incr_counter(c: size_nat_t, incr: size_nat_t) -> size_nat_t:
+    return c + incr
 
 
 @typechecked
-def aes128_encrypt_bytes(key: block_t, n_len: size_nat_t, nonce: nonce_t, c: size_nat_t, msg: vlbytes_t) -> vlbytes_t:
+def aes128_encrypt_bytes(key: block_t, nonce: nonce_t, c: size_nat_t, msg: vlbytes_t) -> vlbytes_t:
     blocks   : vlarray_t(block_t)
     last     : subblock_t
     blocks, last = array.split_blocks(msg, blocksize)
     keyblock   : block_t  = array.create(blocksize, uint8(0))
     last_block : block_t  = array.create(blocksize, uint8(0))
-    ctr        : size_nat_t = c
-    
-    st0: tuple_t(bytes_t(176), bytes_t(16)) = aes_init(key, n_len, nonce)
+
+    st0: state_t = aes_init(key, array.length(nonce), nonce)
 
     for i in range(array.length(blocks)):
-        blocks[i] = aes_encrypt_block(st0, ctr, 1, blocks[i])
-        ctr += 1
+        blocks[i] = aes_encrypt_block(st0, c, blocks[i])
+        c:size_nat_t = incr_counter(c, 1)
 
-    last = aes_encrypt_last(st0, ctr, 1, array.length(last), last)
+    last = aes_encrypt_last(st0, c, array.length(last), last)
     return array.concat_blocks(blocks, last)
 

@@ -28,6 +28,10 @@ def op_Subtraction(a: int, b: int) -> int:
     return  a - b   
 
 @typechecked
+def op_Addition(a: int, b: int) -> int:
+    return  a + b   
+
+@typechecked
 def op_Multiply(a: int, b: int) -> int:
     return  a * b       
 

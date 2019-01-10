@@ -44,6 +44,7 @@ vlbytes_t = vlarray_t(uint8_t)
 
 decl pow2 (x: int) -> int
 decl op_Subtraction(x: int, y: int) -> int
+decl op_Addition(x: int, y: int) -> int
 decl op_Multiply(x: int, y: int) -> int
 #decl natmod(x:int,m:int) -> natmod_t(m)
 #decl natmod.to_int(x:natmod_t) -> int

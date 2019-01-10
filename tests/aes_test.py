@@ -12,7 +12,7 @@ def main(x: int) -> None:
         n   = bytes.from_hex(aes128_test_vectors[i]['nonce'])
         ctr = int(aes128_test_vectors[i]['counter'],16)
         expected = bytes.from_hex(aes128_test_vectors[i]['output'])
-        computed = aes128_encrypt(k,n,uint32(ctr),msg)
+        computed = aes128_encrypt_bytes(k,n,ctr,msg)
         if (computed == expected):
             print("Aes128 Test ",i," passed.")
         else:
