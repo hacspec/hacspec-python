@@ -187,12 +187,27 @@ def key_expansion_word(w0:word_t, w1:word_t, i:expindex_t) -> word_t:
 
 @typechecked
 def key_expansion(key:block_t) -> bytes_t(176):
+    print("The input key:")
+    print(key)
+    
     key_ex : bytes_176_t = bytes(array.create(11*16,uint8(0)))
     key_ex[0:16] = key
     i : nat_t = 0
     for j in range(40):
         i = j + 4
         key_ex[4*i:4*i+4] = key_expansion_word(key_ex[4*i-16:4*i-12],key_ex[4*i-4:4*i],i)
+
+    print("The first output vector: ")
+    print(key_ex)    
+
+    # print("Key:")    
+    # print(sbox[uintn.to_int(key[13])]  ^ rcon[1] ^ key[0])
+
+    key_ex2: bytes_t(176) = aes128_key_expansion(key) 
+
+    print("The second output vector: ")
+    print(key_ex2)   
+
     return key_ex
 
 
@@ -285,28 +300,27 @@ def aes_keygen_assist_(rcon: uint8_t, s: block_t) -> block_t:
 @typechecked
 def aes128_keygen_assist(rcon: uint8_t, s: block_t) -> block_t:
     st: block_t = aes_keygen_assist_(rcon, s)
-    st_part: bytes_t(4) = st[12:16]
-    st[8:12] = st[12:4]
-    st_part2 : bytes_t(8) =  st[8:16]
-    st[0:8] = st_part2
+    st[8:12] = st[12:16]
+    st[0:8] = st[8:16]
     return st
 
 @typechecked
 def key_expansion_step(p: block_t, assist: block_t) -> block_t:
     p0 : block_t = array.create(16, uint8(0))
+    pTemp: block_t = array.copy(p0)
     k: block_t = array.copy(p)
 
     k_part: bytes_t(12) = k[0:12]
-    p0[4:12] = k_part
-    k = xor_block(k, p0)
+    pTemp[4:12] = k_part
+    k = xor_block(k, pTemp)
 
     k_part: bytes_t(12) = k[0:12]
-    p0[4:12] = k_part
-    k = xor_block(k, p0)
+    pTemp[4:12] = k_part
+    k = xor_block(k, pTemp)
     
     k_part: bytes_t(12) = k[0:12]
-    p0[4:12] = k_part
-    k = xor_block(k, p0)
+    pTemp[4:12] = k_part
+    k = xor_block(k, pTemp)
 
     return xor_block(k, assist)    
 
@@ -315,7 +329,7 @@ def aes128_key_expansion_step(kex: bytes_t(176), i: nat_t) ->  bytes_t(176) :
     p : bytes_t(16) = kex[i*16: i * 16 + 16]
     a : block_t = aes128_keygen_assist(rcon_l[i+1], p)
     n: block_t = key_expansion_step(p, a)
-    kex[i*16: i * 16 + 16] = n
+    kex[(i + 1)*16: (i + 1) * 16 + 16] = n
     return kex    
 
 
@@ -325,7 +339,7 @@ def aes128_key_expansion (key: block_t) -> bytes_t(176):
     for i in range(16):
         key_ex[i] = key[i]
 
-    for i in range(10):
+    for i in range(0,10):
         key_ex = aes128_key_expansion_step(key_ex, i)
 
     return key_ex    
