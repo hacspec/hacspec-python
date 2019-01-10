@@ -10,7 +10,7 @@ let main () =
       let counter = read_uint32 j "counter" in
       let input = read_bytes j "input" in
       let output = read_bytes j "output" in
-      let computed = Aes.aes128_encrypt key nonce counter input in
+      let computed = Aes.aes128_encrypt_bytes key nonce counter input in
       if output = computed then Printf.printf "Aes128 Test %d passed.\n" i
       else (Printf.printf "Aes128 Test %d failed.\n" i;
             Printf.printf "expected ciphertext: %s\n" (hex_of_bytes output);

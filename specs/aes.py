@@ -140,9 +140,6 @@ def rounds_inside(key:bytes_144_t, i: indexes_t) -> block_t:
 @typechecked
 def rounds(state:block_t,key:bytes_144_t) -> block_t:
     out : block_t = bytes(array.copy(state))
-    index0 : indexes_t = 0
-    index1: indexes_t = 1
-    shift: indexes_t = 16
     for i in range(9):
         out = aes_enc(out, rounds_inside(key, i))
     return out
