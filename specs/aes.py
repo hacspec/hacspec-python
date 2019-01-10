@@ -403,12 +403,18 @@ def aes_encrypt_block(st0: state_t, ctr0: size_nat_t,  b: block_t) -> block_t:
         kb[i] ^= b[i]
     return kb    
 
+# @typechecked
+# def aes_encrypt_last (st0: state_t, ctr0: size_nat_t,  l: size_nat_t, b: subblock_t) -> vlbytes_t:
+#     plain: block_t = array.create(16, uint8(0))
+#     plain[0:l] = b
+#     cip:block_t = aes_encrypt_block(st0, ctr0, plain)
+#     return cip[0:l]
+
 @typechecked
-def aes_encrypt_last (st0: state_t, ctr0: size_nat_t,  l: size_nat_t, b: subblock_t) -> vlbytes_t:
-    plain: block_t = array.create(16, uint8(0))
-    plain[0:l] = b
-    cip:block_t = aes_encrypt_block(st0, ctr0, plain)
-    return cip[0:l]
+def aes_encrypt_last (st0: state_t, ctr0: size_nat_t, last: block_t) -> block_t:
+    cip:block_t = aes_encrypt_block(st0, ctr0, last)
+    return cip
+
 
 @typechecked
 def incr_counter(c: size_nat_t, incr: size_nat_t) -> size_nat_t:
@@ -429,6 +435,8 @@ def aes128_encrypt_bytes(key: block_t, nonce: nonce_t, c: size_nat_t, msg: vlbyt
         blocks[i] = aes_encrypt_block(st0, c, blocks[i])
         c:size_nat_t = incr_counter(c, 1)
 
-    last = aes_encrypt_last(st0, c, array.length(last), last)
+    last_block[0: array.length(last)] = last    
+    last_block = aes_encrypt_last(st0, c, last_block)
+    last = last_block[0:array.length(last)]
     return array.concat_blocks(blocks, last)
 
