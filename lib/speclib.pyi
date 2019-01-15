@@ -23,6 +23,7 @@ uint32_t = uintn_t(32)
 uint64_t = uintn_t(64)
 uint128_t = uintn_t(128)
 vlbytes_t = vlarray_t(uint8_t)
+bytes_t = vlbytes_t
 
 #operators
 # +, - , *: natmod_t, natmod_t -> natmod_t

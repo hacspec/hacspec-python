@@ -52,7 +52,7 @@ let stdlib =
       (fs2 (fun aty _bty -> match aty with TArray(aty,None) -> aty | _ -> assert false)),
       Ident.make "bytes_concat_blocks"));
   ((["bytes"],"to_uint32_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword32)), Ident.make "bytes_to_uint32_be"));
-  ((["bytes"],"from_uint32_be"), ([Some (`Exact (tword32))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32_be"));
+  ((["bytes"],"from_uint32_be"), ([Some (`Exact (tword32))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_be"));
   ((["bytes"],"to_uint32s_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (tword32,None))), Ident.make "bytes_to_uint32s_le"));
   ((["bytes"],"from_uint32s_le"), ([Some (`Exact (TArray (tword32,None)))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint32s_le"));
   ((["bytes"],"to_uint32s_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> TArray (tword32,None))), Ident.make "bytes_to_uint32s_be"));

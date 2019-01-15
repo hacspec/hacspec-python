@@ -6,7 +6,7 @@ ENV haclrepo https://github.com/franziskuskiefer/hacl-star.git
 
 # Define versions of dependencies
 ENV opamv 4.05.0
-ENV haclversion aa1d94cf2b2fb852cefaadc1b0a5b07f8fe80360
+ENV haclversion 898daddf709494645429399165f85f3f8093cb95
 
 # Create user.
 RUN useradd -ms /bin/bash worker
