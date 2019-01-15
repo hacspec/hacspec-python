@@ -18,12 +18,6 @@ This project is still in relatively early stages.
 An overview of the current state of hacspec can be found in this [blog post](https://franziskuskiefer.de/post/hacspec2/).
 For more details please see the [SSR paper](https://github.com/HACS-workshop/hacspec/blob/master/doc/hacspec-ssr18-paper.pdf) containing the hacspec language definition.
 
-## development
-
-The master branch holds a stable version of hacspec.
-Development happens on the [dev branch](https://github.com/HACS-workshop/hacspec/tree/dev).
-Please file pull requests against that branch.
-
 ## compiler
 
 See [compiler](compiler/) for details.
@@ -62,6 +56,10 @@ The makefile has three main targets
     make compiler // run the full spec checker and compiler (this requires ocaml)
 
 to run or check specs.
+
+The master branch holds a stable version of hacspec.
+Development happens on the [dev branch](https://github.com/HACS-workshop/hacspec/tree/dev).
+Please file pull requests against that branch.
 
 # contact
 
