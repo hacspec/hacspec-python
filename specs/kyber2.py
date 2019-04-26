@@ -294,10 +294,8 @@ def Kyber(kyber_k:variant_k_t,kyber_du:variant_du_t,kyber_dv:variant_dv_t,kyber_
                 j = j + 1
             i = i + 2
             if (i > shake128_rate * nblocks - 2):
-                nblocks = 1
-                buf = shake128_squeeze(state, shake128_rate * nblocks)
-                print("warning! squeeze is reset, this might explain an error")
-                i = 0
+                print("Failure:End of random byte stream reached")
+                exit(1)
             if j == kyber_n:
                 break
         return res
