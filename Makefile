@@ -1,5 +1,5 @@
 #To run these specs in Python you need to install Python >= 3.6.4
-PYTHON?=python3.6
+PYTHON?=python3
 
 # hacspecs passing compiler checks
 FINISHED_SPECS=poly1305 chacha20 aead_chacha20poly1305 curve25519 curve448 \
@@ -9,7 +9,7 @@ FINISHED_SPECS=poly1305 chacha20 aead_chacha20poly1305 curve25519 curve448 \
 SPECS=$(FINISHED_SPECS) sha2 sha3 ed25519 p256 rsapss blake2
 
 # Don't use these in test. They take too long.
-SLOW_SPECS=wots kyber
+SLOW_SPECS=wots kyber kyber2
 
 # Like SLOW_SPECS and they fail the spec checker.
 SLOW_SPECS_FAILING_SPECHECK=frodo argon2i
