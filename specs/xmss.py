@@ -1,7 +1,7 @@
 
 from lib.speclib import *
 from specs.wots import *
-from specs.sha2 import sha256
+from specs.sha256 import sha256
 
 h : int = 10 # height -> number of signatures
 n_keys : int = 2**h

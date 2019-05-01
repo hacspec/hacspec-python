@@ -1,0 +1,8 @@
+[package]
+name = "hacspec_specs"
+version = "0.0.1"
+authors = [ "Franziskus Kiefer <franziskuskiefer@gmail.com>" ]
+
+[[bin]]
+name = "sha256"
+path = "src/sha256.rs"

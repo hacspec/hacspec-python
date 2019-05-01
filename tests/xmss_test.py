@@ -38,7 +38,7 @@ def test_xmss_self():
 
 def main():
     print_dot()
-    # test_xmss_self()
+    test_xmss_self()
     test_xmss_kat()
     exit(0)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from lib.speclib import *
-from specs.sha2 import sha256
+from specs.sha256 import sha256
 
 # Influences signature length, not security
 w_four : uint32_t = uint32(4)

@@ -6,7 +6,7 @@ FINISHED_SPECS=poly1305 chacha20 aead_chacha20poly1305 curve25519 curve448 \
                aes gf128 aead_aes128gcm
 
 # hacspecs that pass all python checks and can be used in any make target.
-SPECS=$(FINISHED_SPECS) sha2 sha3 ed25519 p256 rsapss blake2 xmss
+SPECS=$(FINISHED_SPECS) sha2 sha256 sha3 ed25519 p256 rsapss blake2 xmss
 
 # Don't use these in test. They take too long.
 SLOW_SPECS=wots kyber
