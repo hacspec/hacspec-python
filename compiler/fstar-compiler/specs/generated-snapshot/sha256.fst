@@ -60,13 +60,20 @@ let sigma (x: word_t) (i: i_range_t) (op: op_range_t) : word_t =
 let schedule (block: block_t) : k_t =
   let b = bytes_to_uint32s_be block in
   let s = array_create 64 (uint32 0) in
-  let s =
+  let t16 = uint32 0 in
+  let t15 = uint32 0 in
+  let t7 = uint32 0 in
+  let t2 = uint32 0 in
+  let t1 = uint32 0 in
+  let s1 = uint32 0 in
+  let s0 = uint32 0 in
+  let s, s0, s1, t15, t16, t2, t7 =
     repeati kSize
-      (fun i (s) ->
+      (fun i (s, s0, s1, t15, t16, t2, t7) ->
           if i <. 16
           then
             let s = s.[ i ] <- b.[ i ] in
-            (s)
+            (s, s0, s1, t15, t16, t2, t7)
           else
             let t16 = s.[ i -. 16 ] in
             let t15 = s.[ i -. 15 ] in
@@ -75,15 +82,25 @@ let schedule (block: block_t) : k_t =
             let s1 = sigma t2 3 0 in
             let s0 = sigma t15 2 0 in
             let s = s.[ i ] <- ((s1 +. t7) +. s0) +. t16 in
-            (s))
-      (s)
+            (s, s0, s1, t15, t16, t2, t7))
+      (s, s0, s1, t15, t16, t2, t7)
   in
   s
 let shuffle (ws: k_t) (hashi: hash_t) : hash_t =
   let h = array_copy hashi in
-  let h =
+  let a0 = h.[ 0 ] in
+  let b0 = h.[ 1 ] in
+  let c0 = h.[ 2 ] in
+  let d0 = h.[ 3 ] in
+  let e0 = h.[ 4 ] in
+  let f0 = h.[ 5 ] in
+  let g0 = h.[ 6 ] in
+  let h0 = h.[ 7 ] in
+  let t1 = uint32 0 in
+  let t2 = uint32 0 in
+  let a0, b0, c0, d0, e0, f0, g0, h, h0, t1, t2 =
     repeati kSize
-      (fun i (h) ->
+      (fun i (a0, b0, c0, d0, e0, f0, g0, h, h0, t1, t2) ->
           let a0 = h.[ 0 ] in
           let b0 = h.[ 1 ] in
           let c0 = h.[ 2 ] in
@@ -102,8 +119,8 @@ let shuffle (ws: k_t) (hashi: hash_t) : hash_t =
           let h = h.[ 5 ] <- e0 in
           let h = h.[ 6 ] <- f0 in
           let h = h.[ 7 ] <- g0 in
-          (h))
-      (h)
+          (a0, b0, c0, d0, e0, f0, g0, h, h0, t1, t2))
+      (a0, b0, c0, d0, e0, f0, g0, h, h0, t1, t2)
   in
   h
 let compress (block: block_t) (hIn: hash_t) : hash_t =

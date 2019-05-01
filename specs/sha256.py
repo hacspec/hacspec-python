@@ -5,6 +5,7 @@ op_range_t = range_t(0, 1)
 
 # Initializing types and constants
 blockSize : int = 64
+# NOTE: This is currently necessary due to compiler limitations.
 block_t = bytes_t(64)
 lenSize : int = 8
 len_t = uint64_t
@@ -67,34 +68,53 @@ def sigma(x:word_t,i:i_range_t,op:op_range_t) -> word_t:
 def schedule(block:block_t) -> k_t:
     b : array_t(word_t,16) = bytes.to_uint32s_be(block)
     s : array_t(word_t,64) = array.create(64,uint32(0)) # kSize = 64
+    # NOTE: This is currently necessary due to compiler limitations.
+    t16: word_t = uint32(0)
+    t15: word_t = uint32(0)
+    t7: word_t = uint32(0)
+    t2: word_t = uint32(0)
+    t1: word_t = uint32(0)
+    s1: word_t = uint32(0)
+    s0: word_t = uint32(0)
     for i in range(kSize):
         if i < 16:
             s[i] = b[i]
         else:
-            t16 : word_t = s[i-16]
-            t15 : word_t = s[i-15]
-            t7  : word_t = s[i-7]
-            t2  : word_t = s[i-2]
-            s1  : word_t = sigma(t2,3,0)
-            s0  : word_t = sigma(t15,2,0)
+            t16 = s[i-16]
+            t15 = s[i-15]
+            t7  = s[i-7]
+            t2  = s[i-2]
+            s1  = sigma(t2,3,0)
+            s0  = sigma(t15,2,0)
             s[i] = s1 + t7 + s0 + t16
     return s
 
 @typechecked
 def shuffle(ws:k_t,hashi:hash_t) -> hash_t:
     h: hash_t = array.copy(hashi)
+    # NOTE: This is currently necessary due to compiler limitations.
+    a0 : word_t = h[0]
+    b0 : word_t = h[1]
+    c0 : word_t = h[2]
+    d0 : word_t = h[3]
+    e0 : word_t = h[4]
+    f0 : word_t = h[5]
+    g0 : word_t = h[6]
+    h0 : word_t = h[7]
+    t1 : word_t = uint32(0)
+    t2 : word_t = uint32(0)
     for i in range(kSize):
-        a0 : word_t = h[0]
-        b0 : word_t = h[1]
-        c0 : word_t = h[2]
-        d0 : word_t = h[3]
-        e0 : word_t = h[4]
-        f0 : word_t = h[5]
-        g0 : word_t = h[6]
-        h0 : word_t = h[7]
+        a0 = h[0]
+        b0 = h[1]
+        c0 = h[2]
+        d0 = h[3]
+        e0 = h[4]
+        f0 = h[5]
+        g0 = h[6]
+        h0 = h[7]
 
-        t1 : word_t = h0 + sigma(e0,1,1) + ch(e0,f0,g0) + kTable[i] + ws[i]
-        t2 : word_t = sigma(a0,0,1) + maj(a0,b0,c0)
+        t1 = h0 + sigma(e0,1,1) + ch(e0,f0,g0) + kTable[i] + ws[i]
+        t2 = sigma(a0,0,1) + maj(a0,b0,c0)
 
         h[0] = t1 + t2
         h[1] = a0

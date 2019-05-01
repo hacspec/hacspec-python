@@ -60,9 +60,9 @@ let stdlib =
   ((["bytes"],"to_nat_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> nat_t)), Ident.make "bytes_to_nat_le"));
   ((["bytes"],"from_nat_le"), ([Some (`Approx PInt); Some (`Approx PInt)], (fs2 (fun _aty _bty -> bytes_t)), Ident.make "bytes_from_nat_le"));
   ((["bytes"],"to_uint128_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword128)), Ident.make "bytes_to_uint128_le"));
-  ((["bytes"],"from_uint128_le"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_le"));
-  ((["bytes"],"to_uint128_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword128)), Ident.make "bytes_to_uint128_be"));
-  ((["bytes"],"from_uint128_be"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128_be"));
+  ((["bytes"],"from_uint128_le"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128s_le"));
+  ((["bytes"],"to_uint128_be"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword128)), Ident.make "bytes_to_uint128s_be"));
+  ((["bytes"],"from_uint128_be"), ([Some (`Exact (tword128))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint128s_be"));
   ((["bytes"],"to_uint64_le"), ([Some (`Exact bytes_t)], (fs1 (fun _aty -> tword64)), Ident.make "bytes_to_uint64_le"));
   ((["bytes"],"from_uint64_le"), ([Some (`Exact (tword64))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint64s_le"));
   ((["bytes"],"from_uint64_be"), ([Some (`Exact (tword64))], (fs1 (fun _aty -> bytes_t)), Ident.make "bytes_from_uint64s_be"));

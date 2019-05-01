@@ -1,6 +1,6 @@
 FSTAR_HOME?=../../../../FStar
 HACL_HOME?=../../../../hacl-star
-FSTAR=$(FSTAR_HOME)/bin/fstar.exe --include $(HACL_HOME)/lib --include $(HACL_HOME)/lib/fst --expose_interfaces
+FSTAR=$(FSTAR_HOME)/bin/fstar.exe --include $(HACL_HOME)/lib --include $(HACL_HOME)/lib --expose_interfaces
 
 SPECS=aes.fst gf128.fst chacha20.fst poly1305.fst curve25519.fst curve448.fst sha256.fst
 BROKEN_SPECS=blake2.fst
