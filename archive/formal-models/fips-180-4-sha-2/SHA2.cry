@@ -3,7 +3,7 @@ module SHA where
 
 ROTL (n : [8]) x = x <<< n
 
-ROTLDef n x = ~(n < width x) || (ROTL n x == ((x << n) || (x >> ((width x) - n))))
+ROTLDef n x = ~(n < length x) || (ROTL n x == ((x << n) || (x >> ((length x) - n))))
 property ROTLDefs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) = 
   ROTLDef n x8  && 
   ROTLDef n x16 &&
@@ -12,34 +12,34 @@ property ROTLDefs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) =
 
 ROTR (n : [8]) x = x >>> n
 
-ROTRDef n x = ~(n < width x) || (ROTR n x == ((x >> n) || (x << ((width x) - n))))
+ROTRDef n x = ~(n < length x) || (ROTR n x == ((x >> n) || (x << ((length x) - n))))
 property ROTRDefs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) = 
   ROTRDef n x8 && ROTRDef n x16 && ROTRDef n x32 && ROTRDef n x64
 
-SHR : {a, b, c} (fin b) => [b] -> [a]c -> [a]c
+SHR : {a, b, c} (fin b, Zero c) => [b] -> [a]c -> [a]c
 SHR n x = x >> n
 
-ROTLREquiv n x = ROTL n x == ROTR (width x - n) x
+ROTLREquiv n x = ROTL n x == ROTR (length x - n) x
 property ROTLREquivs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) =
   ROTLREquiv n x8 && ROTLREquiv n x16 && ROTLREquiv n x32 && ROTLREquiv n x64
 
-ROTRLEquiv n x = ROTR n x == ROTL (width x - n) x
+ROTRLEquiv n x = ROTR n x == ROTL (length x - n) x
 property ROTRLEquivs n (x8 : [8]) (x16 : [16]) (x32 : [32]) (x64 : [64]) =
   ROTRLEquiv n x8 && ROTRLEquiv n x16 && ROTRLEquiv n x32 && ROTRLEquiv n x64
 
-Ch : {a} a -> a -> a -> a
+Ch : {a} (Logic a) => a -> a -> a -> a
 Ch x y z = (x && y) ^ (~x && z)
 
-Parity : {a} a -> a -> a -> a
+Parity : {a} (Logic a) => a -> a -> a -> a
 Parity x y z = x ^ y ^ z
 
-Maj : {a} a -> a -> a -> a
+Maj : {a} (Logic a) => a -> a -> a -> a
 Maj x y z = (x && y) ^ (x && z) ^ (y && z)
 
-Ch' : {a} a -> a -> a -> a
+Ch' : {a} (Logic a) => a -> a -> a -> a
 Ch' x y z = (x && y) || (~x && z)
 
-Maj' : {a} a -> a -> a -> a
+Maj' : {a} (Logic a) => a -> a -> a -> a
 Maj' x y z = (x && y) || (x && z) || (y && z)
 
 ChXorOrEquiv x y z = Ch x y z == Ch' x y z
