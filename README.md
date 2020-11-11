@@ -1,3 +1,7 @@
+⚠️ This repository is outdated. Please check out https://github.com/hacspec/hacspec for further development of hacspec.
+
+---
+
 # hacspec
 
 hacspec is a proposal for a new specification language for crypto primitives that is succinct, that is easy to read and implement, and that lends itself to formal verification.
